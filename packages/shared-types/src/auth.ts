@@ -91,7 +91,7 @@ export interface UserSession {
 export interface Permission {
   resource: string
   action: string
-  conditions?: Record<string, any>
+  conditions?: Record<string, unknown>
 }
 
 export interface RolePermissions {

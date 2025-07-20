@@ -4,13 +4,13 @@ export type ISO8601 = string
 export type Email = string
 
 // API Response wrapper
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: {
     code: string
     message: string
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   }
   metadata?: {
     timestamp: ISO8601
@@ -51,11 +51,11 @@ export interface AuditFields {
 export interface ValidationError {
   field: string
   message: string
-  value?: any
+  value?: unknown
 }
 
 export interface BusinessError {
   code: string
   message: string
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 }

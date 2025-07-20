@@ -47,14 +47,14 @@ export interface QueryParams {
   GSI2PK?: string
   GSI2SK?: string
   limit?: number
-  exclusiveStartKey?: Record<string, any>
+  exclusiveStartKey?: Record<string, unknown>
   scanIndexForward?: boolean
 }
 
 // DynamoDB operations result
 export interface DynamoDBResult<T> {
   items: T[]
-  lastEvaluatedKey?: Record<string, any>
+  lastEvaluatedKey?: Record<string, unknown>
   count: number
   scannedCount?: number
 }

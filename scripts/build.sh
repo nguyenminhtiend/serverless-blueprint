@@ -21,8 +21,8 @@ pnpm build
 echo "🔍 Type checking..."
 pnpm typecheck
 
-# Lint all packages (skipped for now due to lint errors)
-echo "🧼 Linting... (skipped)"
-# pnpm lint
+# Lint all packages
+echo "🧼 Linting..."
+pnpm lint
 
 echo "✅ Build completed successfully!"

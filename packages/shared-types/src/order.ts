@@ -31,7 +31,7 @@ export interface OrderItem {
   quantity: number
   unitPrice: number
   totalPrice: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 // Order totals

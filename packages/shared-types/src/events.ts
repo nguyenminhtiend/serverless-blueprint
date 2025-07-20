@@ -10,7 +10,7 @@ export interface BaseEvent {
   source: string
   timestamp: ISO8601
   correlationId?: UUID
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 // User events
@@ -102,7 +102,7 @@ export interface NotificationEvent extends BaseEvent {
     template: string
     recipient: string
     subject?: string
-    payload: Record<string, any>
+    payload: Record<string, unknown>
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   }
 }
@@ -141,7 +141,7 @@ export interface SQSEventRecord<T extends BaseEvent = DomainEvent> {
     SenderId: string
     ApproximateFirstReceiveTimestamp: string
   }
-  messageAttributes: Record<string, any>
+  messageAttributes: Record<string, unknown>
   md5OfBody: string
   eventSource: string
   eventSourceARN: string
