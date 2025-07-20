@@ -1,0 +1,28 @@
+{
+  "name": "@serverless/infrastructure",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AWS CDK Infrastructure for Serverless Microservices",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "clean": "rimraf dist lib/*.js lib/*.d.ts",
+    "cdk": "cdk",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.165.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "rimraf": "^6.0.0",
+    "aws-cdk": "^2.165.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

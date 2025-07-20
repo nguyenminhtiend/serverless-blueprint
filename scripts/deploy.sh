@@ -21,9 +21,9 @@ if [ "$ENVIRONMENT" = "prod" ] || [ "$ENVIRONMENT" = "staging" ]; then
     pnpm cdk bootstrap
 fi
 
-# Deploy all stacks
-echo "📤 Deploying stacks..."
-pnpm cdk deploy --all --require-approval never
+# Deploy all stacks with environment context
+echo "📤 Deploying stacks for $ENVIRONMENT environment..."
+pnpm cdk deploy --all --require-approval never -c environment=$ENVIRONMENT
 
 echo "✅ Deployment completed successfully!"
 
