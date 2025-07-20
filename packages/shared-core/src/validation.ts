@@ -21,7 +21,7 @@ export const validateUuid = (id: string): boolean => {
 }
 
 
-export const createValidationError = (field: string, message: string, value?: any): ValidationError => {
+export const createValidationError = (field: string, message: string, value?: unknown): ValidationError => {
   return { field, message, value }
 }
 

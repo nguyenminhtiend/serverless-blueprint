@@ -3,13 +3,13 @@ import { HttpStatus, type BusinessError, type ValidationError } from '@shared/ty
 export class AppError extends Error {
   public readonly statusCode: HttpStatus
   public readonly isOperational: boolean
-  public readonly context?: Record<string, any>
+  public readonly context?: Record<string, unknown>
 
   constructor(
     message: string,
     statusCode: HttpStatus = 500,
     isOperational: boolean = true,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ) {
     super(message)
     this.statusCode = statusCode
@@ -24,7 +24,7 @@ export class AppError extends Error {
 export class ValidationErrorException extends AppError {
   public readonly validationErrors: ValidationError[]
 
-  constructor(errors: ValidationError[], context?: Record<string, any>) {
+  constructor(errors: ValidationError[], context?: Record<string, unknown>) {
     const message = `Validation failed: ${errors.map(e => e.message).join(', ')}`
     super(message, 400, true, context)
     this.validationErrors = errors
@@ -33,7 +33,7 @@ export class ValidationErrorException extends AppError {
 }
 
 export class NotFoundError extends AppError {
-  constructor(resource: string, identifier?: string, context?: Record<string, any>) {
+  constructor(resource: string, identifier?: string, context?: Record<string, unknown>) {
     const message = identifier 
       ? `${resource} with identifier '${identifier}' not found`
       : `${resource} not found`
@@ -43,21 +43,21 @@ export class NotFoundError extends AppError {
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized access', context?: Record<string, any>) {
+  constructor(message: string = 'Unauthorized access', context?: Record<string, unknown>) {
     super(message, 401, true, context)
     Object.setPrototypeOf(this, UnauthorizedError.prototype)
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message: string = 'Access forbidden', context?: Record<string, any>) {
+  constructor(message: string = 'Access forbidden', context?: Record<string, unknown>) {
     super(message, 403, true, context)
     Object.setPrototypeOf(this, ForbiddenError.prototype)
   }
 }
 
 export class ConflictError extends AppError {
-  constructor(message: string, context?: Record<string, any>) {
+  constructor(message: string, context?: Record<string, unknown>) {
     super(message, 409, true, context)
     Object.setPrototypeOf(this, ConflictError.prototype)
   }
@@ -66,7 +66,7 @@ export class ConflictError extends AppError {
 export class BusinessLogicError extends AppError {
   public readonly businessError: BusinessError
 
-  constructor(businessError: BusinessError, context?: Record<string, any>) {
+  constructor(businessError: BusinessError, context?: Record<string, unknown>) {
     super(businessError.message, 422, true, context)
     this.businessError = businessError
     Object.setPrototypeOf(this, BusinessLogicError.prototype)
@@ -76,7 +76,7 @@ export class BusinessLogicError extends AppError {
 export class ExternalServiceError extends AppError {
   public readonly service: string
 
-  constructor(service: string, message: string, context?: Record<string, any>) {
+  constructor(service: string, message: string, context?: Record<string, unknown>) {
     super(`External service error (${service}): ${message}`, HttpStatus.BAD_GATEWAY, true, context)
     this.service = service
     Object.setPrototypeOf(this, ExternalServiceError.prototype)
@@ -86,22 +86,22 @@ export class ExternalServiceError extends AppError {
 export class RateLimitError extends AppError {
   public readonly retryAfter?: number
 
-  constructor(message: string = 'Rate limit exceeded', retryAfter?: number, context?: Record<string, any>) {
+  constructor(message: string = 'Rate limit exceeded', retryAfter?: number, context?: Record<string, unknown>) {
     super(message, HttpStatus.TOO_MANY_REQUESTS, true, context)
     this.retryAfter = retryAfter
     Object.setPrototypeOf(this, RateLimitError.prototype)
   }
 }
 
-export const isAppError = (error: any): error is AppError => {
+export const isAppError = (error: unknown): error is AppError => {
   return error instanceof AppError
 }
 
-export const createBusinessError = (code: string, message: string, context?: Record<string, any>): BusinessError => {
+export const createBusinessError = (code: string, message: string, context?: Record<string, unknown>): BusinessError => {
   return { code, message, context }
 }
 
-export const formatErrorForLogging = (error: Error): Record<string, any> => {
+export const formatErrorForLogging = (error: Error): Record<string, unknown> => {
   const baseError = {
     name: error.name,
     message: error.message,
@@ -120,7 +120,7 @@ export const formatErrorForLogging = (error: Error): Record<string, any> => {
   return baseError
 }
 
-export const sanitizeError = (error: Error): Record<string, any> => {
+export const sanitizeError = (error: Error): Record<string, unknown> => {
   if (isAppError(error) && error.isOperational) {
     return {
       message: error.message,
