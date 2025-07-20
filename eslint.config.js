@@ -16,6 +16,12 @@ export default [
           './packages/*/tsconfig.json',
           './infrastructure/tsconfig.json'
         ]
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        setTimeout: 'readonly',
+        Buffer: 'readonly'
       }
     },
     plugins: {

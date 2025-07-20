@@ -20,38 +20,6 @@ export const validateUuid = (id: string): boolean => {
   return UuidSchema.safeParse(id).success
 }
 
-export const validatePassword = (password: string): { valid: boolean; errors: string[] } => {
-  const errors: string[] = []
-  
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long')
-  }
-  
-  if (password.length > 128) {
-    errors.push('Password must be less than 128 characters')
-  }
-  
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter')
-  }
-  
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter')
-  }
-  
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number')
-  }
-  
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push('Password must contain at least one special character')
-  }
-  
-  return {
-    valid: errors.length === 0,
-    errors
-  }
-}
 
 export const createValidationError = (field: string, message: string, value?: any): ValidationError => {
   return { field, message, value }
@@ -90,6 +58,3 @@ export const creditCardSchema = z.string().regex(
   'Invalid credit card number'
 )
 
-export const isStrongPassword = (password: string): boolean => {
-  return validatePassword(password).valid
-}

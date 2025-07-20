@@ -3,18 +3,6 @@ export const API_VERSION = 'v1'
 export const DEFAULT_PAGE_SIZE = 10
 export const MAX_PAGE_SIZE = 100
 
-export const PASSWORD_MIN_LENGTH = 8
-export const PASSWORD_MAX_LENGTH = 128
-
-export const JWT_EXPIRY_TIME = '1h'
-export const REFRESH_TOKEN_EXPIRY_TIME = '7d'
-
-export const OTP_LENGTH = 6
-export const OTP_EXPIRY_MINUTES = 10
-
-export const EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = 24
-export const PASSWORD_RESET_TOKEN_EXPIRY_HOURS = 2
-
 export const MAX_LOGIN_ATTEMPTS = 5
 export const ACCOUNT_LOCKOUT_DURATION_MINUTES = 15
 
@@ -96,6 +84,5 @@ export const REGEX_PATTERNS = {
   UUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   PHONE: /^\+?[1-9]\d{1,14}$/,
   ZIP_CODE: /^\d{5}(-\d{4})?$/,
-  CREDIT_CARD: /^\d{13,19}$/,
-  STRONG_PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/
+  CREDIT_CARD: /^\d{13,19}$/
 } as const
