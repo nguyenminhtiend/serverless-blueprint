@@ -1,0 +1,35 @@
+{
+  "name": "serverless-microservices",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AWS Serverless Microservices Blueprint with CDK and TypeScript",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
+    "dev": "pnpm -r run dev",
+    "deploy": "cd infrastructure && pnpm cdk deploy --all",
+    "destroy": "cd infrastructure && pnpm cdk destroy --all",
+    "bootstrap": "cd infrastructure && pnpm cdk bootstrap",
+    "clean": "pnpm -r run clean && rm -rf node_modules",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.0",
+    "ts-jest": "^29.2.0",
+    "eslint": "^9.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "prettier": "^3.3.0",
+    "rimraf": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

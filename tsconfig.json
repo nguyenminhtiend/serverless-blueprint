@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "incremental": true,
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["./packages/shared-*/src"],
+      "@auth/*": ["./packages/service-auth/src/*"],
+      "@users/*": ["./packages/service-users/src/*"],
+      "@orders/*": ["./packages/service-orders/src/*"],
+      "@notifications/*": ["./packages/service-notifications/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "references": [
+    { "path": "./packages/shared-types" },
+    { "path": "./packages/shared-core" },
+    { "path": "./packages/shared-database" },
+    { "path": "./packages/shared-middleware" },
+    { "path": "./packages/service-auth" },
+    { "path": "./packages/service-users" },
+    { "path": "./packages/service-orders" },
+    { "path": "./packages/service-notifications" },
+    { "path": "./infrastructure" }
+  ]
+}
