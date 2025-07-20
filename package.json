@@ -2,6 +2,7 @@
   "name": "serverless-microservices",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "AWS Serverless Microservices Blueprint with CDK and TypeScript",
   "scripts": {
     "build": "pnpm -r run build",

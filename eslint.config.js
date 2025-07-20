@@ -23,7 +23,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/prefer-const': 'error',
+      'prefer-const': 'error',
       '@typescript-eslint/no-var-requires': 'error'
     }
   },

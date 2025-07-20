@@ -1,6 +1,6 @@
 import { UUID, ISO8601 } from './common'
 import { User, UserRole } from './user'
-import { Order, OrderStatus } from './order'
+import { OrderStatus } from './order'
 
 // Base event interface
 export interface BaseEvent {
