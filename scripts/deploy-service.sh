@@ -33,11 +33,11 @@ echo "🔨 Building service: $SERVICE"
 # Map service to CDK stack names
 case $SERVICE in
     "auth"|"users"|"orders"|"notifications")
-        STACK_NAME="LambdaStack"
+        STACK_NAME="ServerlessMicroservices-Lambda-$ENVIRONMENT"
         ;;
     "shared-middleware")
         echo "⚠️  Shared middleware affects all services. Full deployment recommended."
-        STACK_NAME="LambdaStack"
+        STACK_NAME="ServerlessMicroservices-Lambda-$ENVIRONMENT"
         ;;
     *)
         echo "❌ Error: Service '$SERVICE' is not deployable (shared libraries are built into other services)"

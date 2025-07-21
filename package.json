@@ -21,6 +21,7 @@
     "what-changed": "./scripts/detect-changes.sh",
     "deploy:auto": "./scripts/detect-changes.sh && echo '\n❓ Run suggested command above'",
     "deploy:smart": "./scripts/smart-deploy.sh",
+    "deploy:stack": "./scripts/deploy-stack.sh",
     "diff": "cd infrastructure && pnpm cdk diff --all",
     "diff:dev": "cd infrastructure && pnpm cdk diff --all -c environment=dev",
     "diff:prod": "cd infrastructure && pnpm cdk diff --all -c environment=prod",
