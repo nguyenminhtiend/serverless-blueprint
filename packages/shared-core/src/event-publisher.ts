@@ -1,5 +1,5 @@
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
-import { AllEvents } from '@shared/types';
+import type { DomainEvent } from '@shared/types';
 
 export class EventPublisher {
   private client: EventBridgeClient;
@@ -12,7 +12,7 @@ export class EventPublisher {
     this.eventBusName = eventBusName || process.env.EVENT_BUS_NAME || 'default';
   }
 
-  async publish(event: AllEvents): Promise<void> {
+  async publish(event: DomainEvent): Promise<void> {
     const command = new PutEventsCommand({
       Entries: [
         {
@@ -43,7 +43,7 @@ export class EventPublisher {
     }
   }
 
-  async publishBatch(events: AllEvents[]): Promise<void> {
+  async publishBatch(events: DomainEvent[]): Promise<void> {
     const entries = events.map(event => ({
       Source: event.source,
       DetailType: event.eventType,
@@ -68,22 +68,28 @@ export class EventPublisher {
     }
   }
 
-  createEvent<T extends AllEvents>(
+  createEvent<T extends DomainEvent>(
     eventType: T['eventType'],
     source: T['source'],
     data: T['data'],
     correlationId?: string
   ): T {
     return {
+      eventId: this.generateEventId(),
       eventType,
+      eventVersion: '1.0',
       source,
-      data,
       timestamp: new Date().toISOString(),
       correlationId: correlationId || this.generateCorrelationId(),
+      data,
     } as T;
   }
 
   private generateCorrelationId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private generateEventId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
