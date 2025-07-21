@@ -1,0 +1,31 @@
+{
+  "name": "@service/users",
+  "version": "1.0.0",
+  "description": "User management service for serverless microservices",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rimraf dist *.tsbuildinfo",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts",
+    "dev": "tsc --build --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@shared/types": "workspace:*",
+    "@shared/core": "workspace:*",
+    "@shared/middleware": "workspace:*",
+    "@shared/database": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "rimraf": "^6.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
