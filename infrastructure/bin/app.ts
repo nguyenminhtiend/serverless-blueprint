@@ -2,6 +2,8 @@
 import 'source-map-support/register'
 import * as cdk from 'aws-cdk-lib'
 import { DatabaseStack } from '../lib/database-stack'
+import { LambdaStack } from '../lib/lambda-stack'
+import { ApiGatewayStack } from '../lib/api-gateway-stack'
 
 const app = new cdk.App()
 
@@ -30,10 +32,32 @@ const stackProps: cdk.StackProps = {
 }
 
 // Database Stack - Phase 3
-new DatabaseStack(app, `ServerlessMicroservices-Database-${environment}`, {
+const databaseStack = new DatabaseStack(app, `ServerlessMicroservices-Database-${environment}`, {
   ...stackProps,
   environment,
   description: `DynamoDB infrastructure for ${environment} environment`,
 })
+
+// Lambda Stack - Phase 4
+const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${environment}`, {
+  ...stackProps,
+  environment,
+  table: databaseStack.table,
+  description: `Lambda functions for ${environment} environment`,
+})
+
+// API Gateway Stack - Phase 4  
+const apiGatewayStack = new ApiGatewayStack(app, `ServerlessMicroservices-ApiGateway-${environment}`, {
+  ...stackProps,
+  environment,
+  authFunction: lambdaStack.authFunction,
+  userFunction: lambdaStack.userFunction,
+  orderFunction: lambdaStack.orderFunction,
+  description: `API Gateway infrastructure for ${environment} environment`,
+})
+
+// Add stack dependencies
+lambdaStack.addDependency(databaseStack)
+apiGatewayStack.addDependency(lambdaStack)
 
 // Stack naming convention is set in cdk.json context
