@@ -1,33 +1,33 @@
-import { PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { DatabaseClient } from '../client'
+import { PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DatabaseClient } from '../client';
 
 export interface OrderItem {
-  productId: string
-  quantity: number
-  price: number
+  productId: string;
+  quantity: number;
+  price: number;
 }
 
 export interface Order {
-  orderId: string
-  userId: string
-  items: OrderItem[]
-  total: number
-  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED'
-  createdAt: string
-  updatedAt: string
+  orderId: string;
+  userId: string;
+  items: OrderItem[];
+  total: number;
+  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export class OrderModel {
-  private client = DatabaseClient.getInstance()
-  private tableName = this.client.getTableName()
+  private client = DatabaseClient.getInstance();
+  private tableName = this.client.getTableName();
 
   async create(order: Omit<Order, 'createdAt' | 'updatedAt'>): Promise<Order> {
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
     const orderData: Order = {
       ...order,
       createdAt: now,
       updatedAt: now,
-    }
+    };
 
     await this.client.getClient().send(
       new PutCommand({
@@ -40,7 +40,7 @@ export class OrderModel {
           ...orderData,
         },
       })
-    )
+    );
 
     // Also create user-order relationship
     await this.client.getClient().send(
@@ -57,9 +57,9 @@ export class OrderModel {
           createdAt: now,
         },
       })
-    )
+    );
 
-    return orderData
+    return orderData;
   }
 
   async findById(orderId: string): Promise<Order | null> {
@@ -71,12 +71,12 @@ export class OrderModel {
           SK: 'DETAILS',
         },
       })
-    )
+    );
 
-    if (!result.Item) return null
+    if (!result.Item) return null;
 
-    const { PK, SK, GSI1PK, GSI1SK, ...orderData } = result.Item
-    return orderData as Order
+    const { PK, SK, GSI1PK, GSI1SK, ...orderData } = result.Item;
+    return orderData as Order;
   }
 
   async findByUserId(userId: string): Promise<Order[]> {
@@ -89,20 +89,20 @@ export class OrderModel {
           ':sk': 'ORDER#',
         },
       })
-    )
+    );
 
-    const orderIds = (result.Items || []).map((item) => item.orderId)
+    const orderIds = (result.Items || []).map(item => item.orderId);
 
-    if (orderIds.length === 0) return []
+    if (orderIds.length === 0) return [];
 
     // Fetch full order details
-    const orders: Order[] = []
+    const orders: Order[] = [];
     for (const orderId of orderIds) {
-      const order = await this.findById(orderId)
-      if (order) orders.push(order)
+      const order = await this.findById(orderId);
+      if (order) orders.push(order);
     }
 
-    return orders
+    return orders;
   }
 
   async findByStatus(status: Order['status']): Promise<Order[]> {
@@ -116,11 +116,11 @@ export class OrderModel {
           ':sk': status,
         },
       })
-    )
+    );
 
-    return (result.Items || []).map((item) => {
-      const { PK, SK, GSI1PK, GSI1SK, ...orderData } = item
-      return orderData as Order
-    })
+    return (result.Items || []).map(item => {
+      const { PK, SK, GSI1PK, GSI1SK, ...orderData } = item;
+      return orderData as Order;
+    });
   }
 }

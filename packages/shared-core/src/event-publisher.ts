@@ -1,15 +1,15 @@
-import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge'
-import { AllEvents } from '@shared/types'
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
+import { AllEvents } from '@shared/types';
 
 export class EventPublisher {
-  private client: EventBridgeClient
-  private eventBusName: string
+  private client: EventBridgeClient;
+  private eventBusName: string;
 
   constructor(eventBusName?: string) {
     this.client = new EventBridgeClient({
       region: process.env.AWS_REGION || 'us-east-1',
-    })
-    this.eventBusName = eventBusName || process.env.EVENT_BUS_NAME || 'default'
+    });
+    this.eventBusName = eventBusName || process.env.EVENT_BUS_NAME || 'default';
   }
 
   async publish(event: AllEvents): Promise<void> {
@@ -23,48 +23,48 @@ export class EventPublisher {
           Time: new Date(event.timestamp),
         },
       ],
-    })
+    });
 
     try {
-      const result = await this.client.send(command)
-      
+      const result = await this.client.send(command);
+
       if (result.FailedEntryCount && result.FailedEntryCount > 0) {
-        throw new Error(`Failed to publish event: ${JSON.stringify(result.Entries)}`)
+        throw new Error(`Failed to publish event: ${JSON.stringify(result.Entries)}`);
       }
-      
+
       console.log('Event published successfully:', {
         eventType: event.eventType,
         source: event.source,
         correlationId: event.correlationId,
-      })
+      });
     } catch (error) {
-      console.error('Failed to publish event:', error)
-      throw error
+      console.error('Failed to publish event:', error);
+      throw error;
     }
   }
 
   async publishBatch(events: AllEvents[]): Promise<void> {
-    const entries = events.map((event) => ({
+    const entries = events.map(event => ({
       Source: event.source,
       DetailType: event.eventType,
       Detail: JSON.stringify(event.data),
       EventBusName: this.eventBusName,
       Time: new Date(event.timestamp),
-    }))
+    }));
 
-    const command = new PutEventsCommand({ Entries: entries })
+    const command = new PutEventsCommand({ Entries: entries });
 
     try {
-      const result = await this.client.send(command)
-      
+      const result = await this.client.send(command);
+
       if (result.FailedEntryCount && result.FailedEntryCount > 0) {
-        throw new Error(`Failed to publish ${result.FailedEntryCount} events`)
+        throw new Error(`Failed to publish ${result.FailedEntryCount} events`);
       }
-      
-      console.log(`Published ${events.length} events successfully`)
+
+      console.log(`Published ${events.length} events successfully`);
     } catch (error) {
-      console.error('Failed to publish events:', error)
-      throw error
+      console.error('Failed to publish events:', error);
+      throw error;
     }
   }
 
@@ -80,10 +80,10 @@ export class EventPublisher {
       data,
       timestamp: new Date().toISOString(),
       correlationId: correlationId || this.generateCorrelationId(),
-    } as T
+    } as T;
   }
 
   private generateCorrelationId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }

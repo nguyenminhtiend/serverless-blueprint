@@ -1,25 +1,25 @@
-import { PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { DatabaseClient } from '../client'
+import { PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DatabaseClient } from '../client';
 
 export interface User {
-  userId: string
-  email: string
-  name: string
-  createdAt: string
-  updatedAt: string
+  userId: string;
+  email: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export class UserModel {
-  private client = DatabaseClient.getInstance()
-  private tableName = this.client.getTableName()
+  private client = DatabaseClient.getInstance();
+  private tableName = this.client.getTableName();
 
   async create(user: Omit<User, 'createdAt' | 'updatedAt'>): Promise<User> {
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
     const userData: User = {
       ...user,
       createdAt: now,
       updatedAt: now,
-    }
+    };
 
     await this.client.getClient().send(
       new PutCommand({
@@ -32,9 +32,9 @@ export class UserModel {
           ...userData,
         },
       })
-    )
+    );
 
-    return userData
+    return userData;
   }
 
   async findById(userId: string): Promise<User | null> {
@@ -46,12 +46,12 @@ export class UserModel {
           SK: 'PROFILE',
         },
       })
-    )
+    );
 
-    if (!result.Item) return null
+    if (!result.Item) return null;
 
-    const { PK, SK, GSI1PK, GSI1SK, ...userData } = result.Item
-    return userData as User
+    const { PK, SK, GSI1PK, GSI1SK, ...userData } = result.Item;
+    return userData as User;
   }
 
   async findAll(limit = 20): Promise<User[]> {
@@ -65,11 +65,11 @@ export class UserModel {
         },
         Limit: limit,
       })
-    )
+    );
 
-    return (result.Items || []).map((item) => {
-      const { PK, SK, GSI1PK, GSI1SK, ...userData } = item
-      return userData as User
-    })
+    return (result.Items || []).map(item => {
+      const { PK, SK, GSI1PK, GSI1SK, ...userData } = item;
+      return userData as User;
+    });
   }
 }
