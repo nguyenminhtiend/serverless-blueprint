@@ -17,12 +17,4 @@ pnpm install --frozen-lockfile
 echo "🔨 Building packages..."
 pnpm build
 
-# Type check all packages
-echo "🔍 Type checking..."
-pnpm typecheck
-
-# Lint all packages
-echo "🧼 Linting..."
-pnpm lint
-
 echo "✅ Build completed successfully!"

@@ -19,7 +19,7 @@ cd infrastructure
 echo "📤 Deploying stacks for $ENVIRONMENT environment..."
 if [ "$ENVIRONMENT" = "dev" ]; then
     echo "🔥 Using hotswap deployment for dev..."
-    pnpm cdk deploy --all --require-approval never --hotswap -c environment=$ENVIRONMENT
+    pnpm cdk deploy --verbose --all --require-approval never --hotswap -c environment=$ENVIRONMENT
 else
     pnpm cdk deploy --all --require-approval never -c environment=$ENVIRONMENT
 fi
