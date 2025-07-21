@@ -1,25 +1,25 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda'
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 
 // Enhanced API Gateway types
 export interface ApiGatewayEvent extends APIGatewayProxyEvent {
   user?: {
-    id: string
-    email: string
-    roles: string[]
-  }
+    id: string;
+    email: string;
+    roles: string[];
+  };
 }
 
 export interface ApiGatewayContext extends Context {
-  requestId: string
+  requestId: string;
 }
 
 export type ApiHandler = (
   event: ApiGatewayEvent,
   context: ApiGatewayContext
-) => Promise<APIGatewayProxyResult>
+) => Promise<APIGatewayProxyResult>;
 
 // HTTP methods
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS';
 
 // Standard HTTP status codes
 export enum HttpStatus {
@@ -35,15 +35,15 @@ export enum HttpStatus {
   TOO_MANY_REQUESTS = 429,
   INTERNAL_SERVER_ERROR = 500,
   BAD_GATEWAY = 502,
-  SERVICE_UNAVAILABLE = 503
+  SERVICE_UNAVAILABLE = 503,
 }
 
 // CORS configuration
 export interface CorsConfig {
-  origin: string | string[]
-  methods: HttpMethod[]
-  allowedHeaders: string[]
-  exposedHeaders?: string[]
-  credentials?: boolean
-  maxAge?: number
+  origin: string | string[];
+  methods: HttpMethod[];
+  allowedHeaders: string[];
+  exposedHeaders?: string[];
+  credentials?: boolean;
+  maxAge?: number;
 }

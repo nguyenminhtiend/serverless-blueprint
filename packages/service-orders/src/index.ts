@@ -1,8 +1,8 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  console.log('Order service - event:', JSON.stringify(event, null, 2))
-  
+  console.log('Order service - event:', JSON.stringify(event, null, 2));
+
   return {
     statusCode: 200,
     headers: {
@@ -14,5 +14,5 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       path: event.path,
       method: event.httpMethod,
     }),
-  }
-}
+  };
+};

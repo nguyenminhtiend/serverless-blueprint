@@ -1,18 +1,18 @@
-import * as cdk from 'aws-cdk-lib'
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
-import { Construct } from 'constructs'
+import * as cdk from 'aws-cdk-lib';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import { Construct } from 'constructs';
 
 export interface DatabaseStackProps extends cdk.StackProps {
-  readonly environment?: string
+  readonly environment?: string;
 }
 
 export class DatabaseStack extends cdk.Stack {
-  public readonly table: dynamodb.Table
+  public readonly table: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props?: DatabaseStackProps) {
-    super(scope, id, props)
+    super(scope, id, props);
 
-    const environment = props?.environment || 'dev'
+    const environment = props?.environment || 'dev';
 
     // Main DynamoDB table with single-table design
     this.table = new dynamodb.Table(this, 'MainTable', {
@@ -31,20 +31,18 @@ export class DatabaseStack extends cdk.Stack {
       pointInTimeRecoverySpecification: {
         pointInTimeRecoveryEnabled: environment === 'prod',
       },
-      
+
       // Streams disabled - can be enabled later for event-driven processing
       // stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      
+
       // Enable deletion protection for production
       deletionProtection: environment === 'prod',
-      
+
       // TTL attribute for automatic cleanup
       timeToLiveAttribute: 'ttl',
-      
-      removalPolicy: environment === 'prod' 
-        ? cdk.RemovalPolicy.RETAIN 
-        : cdk.RemovalPolicy.DESTROY,
-    })
+
+      removalPolicy: environment === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
 
     // GSI1 - Generic purpose index for various access patterns
     this.table.addGlobalSecondaryIndex({
@@ -57,7 +55,7 @@ export class DatabaseStack extends cdk.Stack {
         name: 'GSI1SK',
         type: dynamodb.AttributeType.STRING,
       },
-    })
+    });
 
     // Additional indexes can be added as needed:
     // GSI2 - For status-based queries (orders by status, products by category)
@@ -70,13 +68,13 @@ export class DatabaseStack extends cdk.Stack {
       value: this.table.tableName,
       description: 'DynamoDB table name',
       exportName: `${environment}-main-table-name`,
-    })
+    });
 
     new cdk.CfnOutput(this, 'TableArn', {
       value: this.table.tableArn,
       description: 'DynamoDB table ARN',
       exportName: `${environment}-main-table-arn`,
-    })
+    });
 
     // Stream ARN output commented out since streams are disabled
     // new cdk.CfnOutput(this, 'TableStreamArn', {
@@ -86,8 +84,8 @@ export class DatabaseStack extends cdk.Stack {
     // })
 
     // Tags for cost allocation and management
-    cdk.Tags.of(this).add('Environment', environment)
-    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices')
-    cdk.Tags.of(this).add('Component', 'Database')
+    cdk.Tags.of(this).add('Environment', environment);
+    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices');
+    cdk.Tags.of(this).add('Component', 'Database');
   }
 }

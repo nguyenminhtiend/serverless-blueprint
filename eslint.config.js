@@ -14,18 +14,18 @@ export default [
         project: [
           './tsconfig.json',
           './packages/*/tsconfig.json',
-          './infrastructure/tsconfig.json'
-        ]
+          './infrastructure/tsconfig.json',
+        ],
       },
       globals: {
         console: 'readonly',
         process: 'readonly',
         setTimeout: 'readonly',
-        Buffer: 'readonly'
-      }
+        Buffer: 'readonly',
+      },
     },
     plugins: {
-      '@typescript-eslint': typescript
+      '@typescript-eslint': typescript,
     },
     rules: {
       ...typescript.configs.recommended.rules,
@@ -34,16 +34,16 @@ export default [
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       'prefer-const': 'error',
-      '@typescript-eslint/no-var-requires': 'error'
-    }
+      '@typescript-eslint/no-var-requires': 'error',
+    },
   },
   {
     files: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off'
-    }
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', 'cdk.out/**', '*.js']
-  }
+    ignores: ['dist/**', 'node_modules/**', 'cdk.out/**', '*.js'],
+  },
 ];

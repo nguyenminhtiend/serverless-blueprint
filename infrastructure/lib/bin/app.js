@@ -1,88 +1,122 @@
 #!/usr/bin/env node
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
+'use strict';
+var __createBinding =
+  (this && this.__createBinding) ||
+  (Object.create
+    ? function (o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ('get' in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = {
+            enumerable: true,
+            get: function () {
+              return m[k];
+            },
+          };
+        }
+        Object.defineProperty(o, k2, desc);
+      }
+    : function (o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        o[k2] = m[k];
+      });
+var __setModuleDefault =
+  (this && this.__setModuleDefault) ||
+  (Object.create
+    ? function (o, v) {
+        Object.defineProperty(o, 'default', { enumerable: true, value: v });
+      }
+    : function (o, v) {
+        o['default'] = v;
+      });
+var __importStar =
+  (this && this.__importStar) ||
+  (function () {
+    var ownKeys = function (o) {
+      ownKeys =
+        Object.getOwnPropertyNames ||
+        function (o) {
+          var ar = [];
+          for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+          return ar;
         };
-        return ownKeys(o);
+      return ownKeys(o);
     };
     return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
+      if (mod && mod.__esModule) return mod;
+      var result = {};
+      if (mod != null)
+        for (var k = ownKeys(mod), i = 0; i < k.length; i++)
+          if (k[i] !== 'default') __createBinding(result, mod, k[i]);
+      __setModuleDefault(result, mod);
+      return result;
     };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-require("source-map-support/register");
-const cdk = __importStar(require("aws-cdk-lib"));
-const database_stack_1 = require("../lib/database-stack");
-const lambda_stack_1 = require("../lib/lambda-stack");
-const api_gateway_stack_1 = require("../lib/api-gateway-stack");
+  })();
+Object.defineProperty(exports, '__esModule', { value: true });
+require('source-map-support/register');
+const cdk = __importStar(require('aws-cdk-lib'));
+const database_stack_1 = require('../lib/database-stack');
+const lambda_stack_1 = require('../lib/lambda-stack');
+const api_gateway_stack_1 = require('../lib/api-gateway-stack');
 const app = new cdk.App();
 // Get environment from context or default to 'dev'
 const environment = app.node.tryGetContext('environment') || 'dev';
 const account = app.node.tryGetContext('account') || process.env.CDK_DEFAULT_ACCOUNT;
-const region = app.node.tryGetContext('region') || process.env.CDK_DEFAULT_REGION || 'ap-southeast-1';
+const region =
+  app.node.tryGetContext('region') || process.env.CDK_DEFAULT_REGION || 'ap-southeast-1';
 // Validate required parameters
 if (!account) {
-    throw new Error('Account must be specified either via context or CDK_DEFAULT_ACCOUNT environment variable');
+  throw new Error(
+    'Account must be specified either via context or CDK_DEFAULT_ACCOUNT environment variable'
+  );
 }
 // Common stack props
 const stackProps = {
-    env: {
-        account,
-        region,
-    },
-    description: `Serverless Microservices - ${environment} environment`,
-    tags: {
-        Environment: environment,
-        Project: 'ServerlessMicroservices',
-        ManagedBy: 'CDK',
-    },
+  env: {
+    account,
+    region,
+  },
+  description: `Serverless Microservices - ${environment} environment`,
+  tags: {
+    Environment: environment,
+    Project: 'ServerlessMicroservices',
+    ManagedBy: 'CDK',
+  },
 };
 // Database Stack - Phase 3
-const databaseStack = new database_stack_1.DatabaseStack(app, `ServerlessMicroservices-Database-${environment}`, {
+const databaseStack = new database_stack_1.DatabaseStack(
+  app,
+  `ServerlessMicroservices-Database-${environment}`,
+  {
     ...stackProps,
     environment,
     description: `DynamoDB infrastructure for ${environment} environment`,
-});
+  }
+);
 // Lambda Stack - Phase 4
-const lambdaStack = new lambda_stack_1.LambdaStack(app, `ServerlessMicroservices-Lambda-${environment}`, {
+const lambdaStack = new lambda_stack_1.LambdaStack(
+  app,
+  `ServerlessMicroservices-Lambda-${environment}`,
+  {
     ...stackProps,
     environment,
     table: databaseStack.table,
     description: `Lambda functions for ${environment} environment`,
-});
-// API Gateway Stack - Phase 4  
-const apiGatewayStack = new api_gateway_stack_1.ApiGatewayStack(app, `ServerlessMicroservices-ApiGateway-${environment}`, {
+  }
+);
+// API Gateway Stack - Phase 4
+const apiGatewayStack = new api_gateway_stack_1.ApiGatewayStack(
+  app,
+  `ServerlessMicroservices-ApiGateway-${environment}`,
+  {
     ...stackProps,
     environment,
     authFunction: lambdaStack.authFunction,
     userFunction: lambdaStack.userFunction,
     orderFunction: lambdaStack.orderFunction,
     description: `API Gateway infrastructure for ${environment} environment`,
-});
+  }
+);
 // Add stack dependencies
 lambdaStack.addDependency(databaseStack);
 apiGatewayStack.addDependency(lambdaStack);

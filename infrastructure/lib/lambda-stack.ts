@@ -77,20 +77,16 @@ export class LambdaStack extends cdk.Stack {
     });
 
     // Notification Service Function
-    this.notificationFunction = new nodejs.NodejsFunction(
-      this,
-      'NotificationFunction',
-      {
-        ...commonLambdaProps,
-        functionName: `${environment}-notification-service`,
-        entry: '../packages/service-notifications/src/index.ts',
-        description: 'Event-driven notification service',
-        environment: {
-          ...commonLambdaProps.environment,
-          SQS_QUEUE_URL: '', // Will be set by Events stack
-        },
-      }
-    );
+    this.notificationFunction = new nodejs.NodejsFunction(this, 'NotificationFunction', {
+      ...commonLambdaProps,
+      functionName: `${environment}-notification-service`,
+      entry: '../packages/service-notifications/src/index.ts',
+      description: 'Event-driven notification service',
+      environment: {
+        ...commonLambdaProps.environment,
+        SQS_QUEUE_URL: '', // Will be set by Events stack
+      },
+    });
 
     // IAM Policies and Roles
 
@@ -111,14 +107,11 @@ export class LambdaStack extends cdk.Stack {
     });
 
     // Add DynamoDB permissions to all functions
-    [
-      this.authFunction,
-      this.userFunction,
-      this.orderFunction,
-      this.notificationFunction,
-    ].forEach(func => {
-      func.addToRolePolicy(dynamoDbPolicy);
-    });
+    [this.authFunction, this.userFunction, this.orderFunction, this.notificationFunction].forEach(
+      func => {
+        func.addToRolePolicy(dynamoDbPolicy);
+      }
+    );
 
     // Secrets Manager permissions for auth function
     this.authFunction.addToRolePolicy(
@@ -146,25 +139,15 @@ export class LambdaStack extends cdk.Stack {
     this.notificationFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: [
-          'sqs:ReceiveMessage',
-          'sqs:DeleteMessage',
-          'sqs:GetQueueAttributes',
-        ],
-        resources: [
-          `arn:aws:sqs:${this.region}:${this.account}:${environment}-*`,
-        ],
+        actions: ['sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
+        resources: [`arn:aws:sqs:${this.region}:${this.account}:${environment}-*`],
       })
     );
 
     // CloudWatch Logs permissions (automatically added by CDK but explicit for clarity)
     const cloudWatchLogsPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
-      actions: [
-        'logs:CreateLogGroup',
-        'logs:CreateLogStream',
-        'logs:PutLogEvents',
-      ],
+      actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
       resources: [
         `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/lambda/${environment}-*`,
       ],
@@ -178,15 +161,12 @@ export class LambdaStack extends cdk.Stack {
     });
 
     // Add CloudWatch and X-Ray permissions to all functions
-    [
-      this.authFunction,
-      this.userFunction,
-      this.orderFunction,
-      this.notificationFunction,
-    ].forEach(func => {
-      func.addToRolePolicy(cloudWatchLogsPolicy);
-      func.addToRolePolicy(xrayPolicy);
-    });
+    [this.authFunction, this.userFunction, this.orderFunction, this.notificationFunction].forEach(
+      func => {
+        func.addToRolePolicy(cloudWatchLogsPolicy);
+        func.addToRolePolicy(xrayPolicy);
+      }
+    );
 
     // CloudWatch Alarms for monitoring
     this.createCloudWatchAlarms(environment);
