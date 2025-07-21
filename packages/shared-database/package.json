@@ -20,7 +20,8 @@
     "@shared/types": "workspace:*",
     "@shared/core": "workspace:*",
     "@aws-sdk/client-dynamodb": "^3.665.0",
-    "@aws-sdk/lib-dynamodb": "^3.665.0"
+    "@aws-sdk/lib-dynamodb": "^3.665.0",
+    "nanoid": "^5.1.5"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

@@ -1,4 +1,5 @@
 import { PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { nanoid } from 'nanoid';
 import { DatabaseClient } from '../client';
 
 export interface User {
@@ -13,10 +14,12 @@ export class UserModel {
   private client = DatabaseClient.getInstance();
   private tableName = this.client.getTableName();
 
-  async create(user: Omit<User, 'createdAt' | 'updatedAt'>): Promise<User> {
+  async create(user: Omit<User, 'userId' | 'createdAt' | 'updatedAt'>): Promise<User> {
     const now = new Date().toISOString();
+    const userId = nanoid();
     const userData: User = {
       ...user,
+      userId,
       createdAt: now,
       updatedAt: now,
     };
@@ -25,10 +28,10 @@ export class UserModel {
       new PutCommand({
         TableName: this.tableName,
         Item: {
-          PK: `USER#${user.userId}`,
+          PK: `USER#${userId}`,
           SK: 'PROFILE',
           GSI1PK: 'USER',
-          GSI1SK: user.userId,
+          GSI1SK: userId,
           ...userData,
         },
       })

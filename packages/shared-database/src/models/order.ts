@@ -1,4 +1,5 @@
 import { PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { nanoid } from 'nanoid';
 import { DatabaseClient } from '../client';
 
 export interface OrderItem {
@@ -21,10 +22,12 @@ export class OrderModel {
   private client = DatabaseClient.getInstance();
   private tableName = this.client.getTableName();
 
-  async create(order: Omit<Order, 'createdAt' | 'updatedAt'>): Promise<Order> {
+  async create(order: Omit<Order, 'orderId' | 'createdAt' | 'updatedAt'>): Promise<Order> {
     const now = new Date().toISOString();
+    const orderId = nanoid();
     const orderData: Order = {
       ...order,
+      orderId,
       createdAt: now,
       updatedAt: now,
     };
@@ -33,7 +36,7 @@ export class OrderModel {
       new PutCommand({
         TableName: this.tableName,
         Item: {
-          PK: `ORDER#${order.orderId}`,
+          PK: `ORDER#${orderId}`,
           SK: 'DETAILS',
           GSI1PK: 'STATUS',
           GSI1SK: order.status,
@@ -48,10 +51,10 @@ export class OrderModel {
         TableName: this.tableName,
         Item: {
           PK: `USER#${order.userId}`,
-          SK: `ORDER#${order.orderId}`,
+          SK: `ORDER#${orderId}`,
           GSI1PK: 'ORDER',
-          GSI1SK: order.orderId,
-          orderId: order.orderId,
+          GSI1SK: orderId,
+          orderId: orderId,
           status: order.status,
           total: order.total,
           createdAt: now,
