@@ -4,6 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { DatabaseStack } from '../lib/database-stack';
 import { LambdaStack } from '../lib/lambda-stack';
 import { ApiGatewayStack } from '../lib/api-gateway-stack';
+import { EventsStack } from '../lib/events-stack';
 
 const app = new cdk.App();
 
@@ -41,6 +42,13 @@ const databaseStack = new DatabaseStack(app, `ServerlessMicroservices-Database-$
   description: `DynamoDB infrastructure for ${environment} environment`,
 });
 
+// Events Stack - Phase 5
+const eventsStack = new EventsStack(app, `ServerlessMicroservices-Events-${environment}`, {
+  ...stackProps,
+  environment,
+  description: `EventBridge and SQS infrastructure for ${environment} environment`,
+});
+
 // Lambda Stack - Phase 4
 const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${environment}`, {
   ...stackProps,
@@ -65,6 +73,7 @@ const apiGatewayStack = new ApiGatewayStack(
 
 // Add stack dependencies
 lambdaStack.addDependency(databaseStack);
+lambdaStack.addDependency(eventsStack);
 apiGatewayStack.addDependency(lambdaStack);
 
 // Stack naming convention is set in cdk.json context

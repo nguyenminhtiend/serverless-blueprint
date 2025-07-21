@@ -15,3 +15,6 @@ export * from './date';
 
 // Constants
 export * from './constants';
+
+// Event Publisher
+export * from './event-publisher';

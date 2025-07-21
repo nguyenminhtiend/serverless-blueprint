@@ -10,7 +10,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       'Access-Control-Allow-Origin': '*',
     },
     body: JSON.stringify({
-      message: 'User service placeholder updated',
+      message: 'User service placeholder updated v2',
       path: event.path,
       method: event.httpMethod,
     }),
