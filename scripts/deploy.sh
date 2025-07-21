@@ -15,15 +15,14 @@ echo "🔨 Building packages..."
 echo "🏗️  Deploying infrastructure..."
 cd infrastructure
 
-# Bootstrap CDK if needed
-if [ "$ENVIRONMENT" = "prod" ] || [ "$ENVIRONMENT" = "staging" ]; then
-    echo "🥾 Bootstrapping CDK..."
-    pnpm cdk bootstrap
-fi
-
-# Deploy all stacks with environment context
+# Deploy all stacks with environment context - try with hotswap for dev
 echo "📤 Deploying stacks for $ENVIRONMENT environment..."
-pnpm cdk deploy --all --require-approval never -c environment=$ENVIRONMENT
+if [ "$ENVIRONMENT" = "dev" ]; then
+    echo "🔥 Using hotswap deployment for dev..."
+    pnpm cdk deploy --all --require-approval never --hotswap -c environment=$ENVIRONMENT
+else
+    pnpm cdk deploy --all --require-approval never -c environment=$ENVIRONMENT
+fi
 
 echo "✅ Deployment completed successfully!"
 
