@@ -63,7 +63,7 @@ export class ApiGatewayStack extends cdk.Stack {
       apiName: `${environment}-microservices-api`,
       description: `Serverless Microservices API - ${environment} environment`,
       corsPreflight: {
-        allowCredentials: true,
+        allowCredentials: environment === 'prod' ? true : false,
         allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
         allowMethods: [
           apigatewayv2.CorsHttpMethod.GET,
