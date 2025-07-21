@@ -6,6 +6,8 @@
   "description": "AWS Serverless Microservices Blueprint with CDK and TypeScript",
   "scripts": {
     "build": "pnpm -r run build",
+    "build:changed": "pnpm -r --filter='{.}[HEAD~1]' run build",
+    "build:service": "./scripts/build-service.sh",
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
@@ -13,6 +15,9 @@
     "deploy": "./scripts/deploy.sh",
     "deploy:dev": "./scripts/deploy.sh dev",
     "deploy:prod": "./scripts/deploy.sh prod",
+    "deploy:inc": "./scripts/deploy.sh dev incremental",
+    "deploy:fast": "./scripts/deploy.sh dev incremental",
+    "deploy:service": "./scripts/deploy-service.sh",
     "diff": "cd infrastructure && pnpm cdk diff --all",
     "diff:dev": "cd infrastructure && pnpm cdk diff --all -c environment=dev",
     "diff:prod": "cd infrastructure && pnpm cdk diff --all -c environment=prod",
