@@ -61,6 +61,100 @@ importers:
         specifier: ^5.6.0
         version: 5.8.3
 
+  packages/service-auth:
+    dependencies:
+      '@shared/core':
+        specifier: workspace:*
+        version: link:../shared-core
+      '@shared/middleware':
+        specifier: workspace:*
+        version: link:../shared-middleware
+      '@shared/types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@types/aws-lambda':
+        specifier: ^8.10.145
+        version: 8.10.152
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.0
+        version: 6.0.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.8.3
+
+  packages/service-notifications:
+    dependencies:
+      '@shared/core':
+        specifier: workspace:*
+        version: link:../shared-core
+      '@shared/middleware':
+        specifier: workspace:*
+        version: link:../shared-middleware
+      '@shared/types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@types/aws-lambda':
+        specifier: ^8.10.145
+        version: 8.10.152
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.0
+        version: 6.0.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.8.3
+
+  packages/service-orders:
+    dependencies:
+      '@shared/core':
+        specifier: workspace:*
+        version: link:../shared-core
+      '@shared/database':
+        specifier: workspace:*
+        version: link:../shared-database
+      '@shared/middleware':
+        specifier: workspace:*
+        version: link:../shared-middleware
+      '@shared/types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@types/aws-lambda':
+        specifier: ^8.10.145
+        version: 8.10.152
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.0
+        version: 6.0.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.8.3
+
+  packages/service-users:
+    dependencies:
+      '@shared/core':
+        specifier: workspace:*
+        version: link:../shared-core
+      '@shared/database':
+        specifier: workspace:*
+        version: link:../shared-database
+      '@shared/middleware':
+        specifier: workspace:*
+        version: link:../shared-middleware
+      '@shared/types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@types/aws-lambda':
+        specifier: ^8.10.145
+        version: 8.10.152
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.0
+        version: 6.0.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.8.3
+
   packages/shared-core:
     dependencies:
       '@shared/types':
