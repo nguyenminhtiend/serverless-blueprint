@@ -57,7 +57,7 @@ export class ApiGatewayStack extends cdk.Stack {
     const logGroup = new logs.LogGroup(this, 'ApiGatewayLogGroup', {
       logGroupName: `/aws/apigateway/${environment}-microservices-api`,
       retention:
-        environment === 'prod' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        environment === 'prod' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.THREE_DAYS,
       removalPolicy: environment === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
@@ -220,8 +220,10 @@ export class ApiGatewayStack extends cdk.Stack {
       // For now, we'll rely on Lambda concurrency limits and monitoring
     }
 
-    // CloudWatch alarms for API Gateway
-    this.createCloudWatchAlarms(environment);
+    // CloudWatch alarms for API Gateway (production only to reduce costs)
+    if (environment === 'prod') {
+      this.createCloudWatchAlarms(environment);
+    }
 
     // Outputs
     new cdk.CfnOutput(this, 'HttpApiUrl', {

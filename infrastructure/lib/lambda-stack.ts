@@ -168,8 +168,10 @@ export class LambdaStack extends cdk.Stack {
       }
     );
 
-    // CloudWatch Alarms for monitoring
-    this.createCloudWatchAlarms(environment);
+    // CloudWatch Alarms for monitoring (production only to reduce costs)
+    if (environment === 'prod') {
+      this.createCloudWatchAlarms(environment);
+    }
 
     // Outputs for other stacks
     new cdk.CfnOutput(this, 'AuthFunctionArn', {
