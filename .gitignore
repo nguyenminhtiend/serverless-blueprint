@@ -64,6 +64,11 @@ docker-compose.override.yml
 # TypeScript
 *.tsbuildinfo
 
+# Compiled TypeScript files in infrastructure
+infrastructure/lib/**/*.js
+infrastructure/lib/**/*.d.ts
+infrastructure/lib/lib/
+
 # Optional npm cache directory
 .npm
 
