@@ -1,26 +1,26 @@
-import * as cdk from 'aws-cdk-lib'
-import * as lambda from 'aws-cdk-lib/aws-lambda'
-import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs'
-import * as iam from 'aws-cdk-lib/aws-iam'
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
-import { Construct } from 'constructs'
+import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import { Construct } from 'constructs';
 
 export interface LambdaStackProps extends cdk.StackProps {
-  readonly environment?: string
-  readonly table: dynamodb.Table
+  readonly environment?: string;
+  readonly table: dynamodb.Table;
 }
 
 export class LambdaStack extends cdk.Stack {
-  public readonly authFunction: nodejs.NodejsFunction
-  public readonly userFunction: nodejs.NodejsFunction
-  public readonly orderFunction: nodejs.NodejsFunction
-  public readonly notificationFunction: nodejs.NodejsFunction
+  public readonly authFunction: nodejs.NodejsFunction;
+  public readonly userFunction: nodejs.NodejsFunction;
+  public readonly orderFunction: nodejs.NodejsFunction;
+  public readonly notificationFunction: nodejs.NodejsFunction;
 
   constructor(scope: Construct, id: string, props: LambdaStackProps) {
-    super(scope, id, props)
+    super(scope, id, props);
 
-    const environment = props.environment || 'dev'
-    const { table } = props
+    const environment = props.environment || 'dev';
+    const { table } = props;
 
     // Common Lambda configuration
     const commonLambdaProps = {
@@ -40,7 +40,7 @@ export class LambdaStack extends cdk.Stack {
       },
       tracing: lambda.Tracing.ACTIVE,
       depsLockFilePath: '../pnpm-lock.yaml',
-    }
+    };
 
     // Auth Service Function
     this.authFunction = new nodejs.NodejsFunction(this, 'AuthFunction', {
@@ -54,7 +54,7 @@ export class LambdaStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: '', // Will be set by Cognito stack
         COGNITO_CLIENT_ID: '', // Will be set by Cognito stack
       },
-    })
+    });
 
     // User Service Function
     this.userFunction = new nodejs.NodejsFunction(this, 'UserFunction', {
@@ -62,7 +62,7 @@ export class LambdaStack extends cdk.Stack {
       functionName: `${environment}-user-service`,
       entry: '../packages/service-users/src/index.ts',
       description: 'User management service',
-    })
+    });
 
     // Order Service Function
     this.orderFunction = new nodejs.NodejsFunction(this, 'OrderFunction', {
@@ -74,19 +74,23 @@ export class LambdaStack extends cdk.Stack {
         ...commonLambdaProps.environment,
         EVENT_BUS_NAME: `${environment}-microservices-bus`,
       },
-    })
+    });
 
     // Notification Service Function
-    this.notificationFunction = new nodejs.NodejsFunction(this, 'NotificationFunction', {
-      ...commonLambdaProps,
-      functionName: `${environment}-notification-service`,
-      entry: '../packages/service-notifications/src/index.ts',
-      description: 'Event-driven notification service',
-      environment: {
-        ...commonLambdaProps.environment,
-        SQS_QUEUE_URL: '', // Will be set by Events stack
-      },
-    })
+    this.notificationFunction = new nodejs.NodejsFunction(
+      this,
+      'NotificationFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `${environment}-notification-service`,
+        entry: '../packages/service-notifications/src/index.ts',
+        description: 'Event-driven notification service',
+        environment: {
+          ...commonLambdaProps.environment,
+          SQS_QUEUE_URL: '', // Will be set by Events stack
+        },
+      }
+    );
 
     // IAM Policies and Roles
 
@@ -103,51 +107,55 @@ export class LambdaStack extends cdk.Stack {
         'dynamodb:BatchGetItem',
         'dynamodb:BatchWriteItem',
       ],
-      resources: [
-        table.tableArn,
-        `${table.tableArn}/index/*`,
-      ],
-    })
+      resources: [table.tableArn, `${table.tableArn}/index/*`],
+    });
 
     // Add DynamoDB permissions to all functions
-    ;[this.authFunction, this.userFunction, this.orderFunction, this.notificationFunction].forEach(func => {
-      func.addToRolePolicy(dynamoDbPolicy)
-    })
+    [
+      this.authFunction,
+      this.userFunction,
+      this.orderFunction,
+      this.notificationFunction,
+    ].forEach(func => {
+      func.addToRolePolicy(dynamoDbPolicy);
+    });
 
     // Secrets Manager permissions for auth function
-    this.authFunction.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'secretsmanager:GetSecretValue',
-      ],
-      resources: [
-        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:${environment}/microservices/*`,
-      ],
-    }))
+    this.authFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:${environment}/microservices/*`,
+        ],
+      })
+    );
 
     // EventBridge permissions for order function
-    this.orderFunction.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'events:PutEvents',
-      ],
-      resources: [
-        `arn:aws:events:${this.region}:${this.account}:event-bus/${environment}-microservices-bus`,
-      ],
-    }))
+    this.orderFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['events:PutEvents'],
+        resources: [
+          `arn:aws:events:${this.region}:${this.account}:event-bus/${environment}-microservices-bus`,
+        ],
+      })
+    );
 
     // SQS permissions for notification function
-    this.notificationFunction.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'sqs:ReceiveMessage',
-        'sqs:DeleteMessage',
-        'sqs:GetQueueAttributes',
-      ],
-      resources: [
-        `arn:aws:sqs:${this.region}:${this.account}:${environment}-*`,
-      ],
-    }))
+    this.notificationFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'sqs:ReceiveMessage',
+          'sqs:DeleteMessage',
+          'sqs:GetQueueAttributes',
+        ],
+        resources: [
+          `arn:aws:sqs:${this.region}:${this.account}:${environment}-*`,
+        ],
+      })
+    );
 
     // CloudWatch Logs permissions (automatically added by CDK but explicit for clarity)
     const cloudWatchLogsPolicy = new iam.PolicyStatement({
@@ -160,56 +168,58 @@ export class LambdaStack extends cdk.Stack {
       resources: [
         `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/lambda/${environment}-*`,
       ],
-    })
+    });
 
     // X-Ray permissions for tracing
     const xrayPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
-      actions: [
-        'xray:PutTraceSegments',
-        'xray:PutTelemetryRecords',
-      ],
+      actions: ['xray:PutTraceSegments', 'xray:PutTelemetryRecords'],
       resources: ['*'],
-    })
+    });
 
     // Add CloudWatch and X-Ray permissions to all functions
-    ;[this.authFunction, this.userFunction, this.orderFunction, this.notificationFunction].forEach(func => {
-      func.addToRolePolicy(cloudWatchLogsPolicy)
-      func.addToRolePolicy(xrayPolicy)
-    })
+    [
+      this.authFunction,
+      this.userFunction,
+      this.orderFunction,
+      this.notificationFunction,
+    ].forEach(func => {
+      func.addToRolePolicy(cloudWatchLogsPolicy);
+      func.addToRolePolicy(xrayPolicy);
+    });
 
     // CloudWatch Alarms for monitoring
-    this.createCloudWatchAlarms(environment)
+    this.createCloudWatchAlarms(environment);
 
     // Outputs for other stacks
     new cdk.CfnOutput(this, 'AuthFunctionArn', {
       value: this.authFunction.functionArn,
       description: 'Auth service Lambda function ARN',
       exportName: `${environment}-auth-function-arn`,
-    })
+    });
 
     new cdk.CfnOutput(this, 'UserFunctionArn', {
       value: this.userFunction.functionArn,
       description: 'User service Lambda function ARN',
       exportName: `${environment}-user-function-arn`,
-    })
+    });
 
     new cdk.CfnOutput(this, 'OrderFunctionArn', {
       value: this.orderFunction.functionArn,
       description: 'Order service Lambda function ARN',
       exportName: `${environment}-order-function-arn`,
-    })
+    });
 
     new cdk.CfnOutput(this, 'NotificationFunctionArn', {
       value: this.notificationFunction.functionArn,
       description: 'Notification service Lambda function ARN',
       exportName: `${environment}-notification-function-arn`,
-    })
+    });
 
     // Tags
-    cdk.Tags.of(this).add('Environment', environment)
-    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices')
-    cdk.Tags.of(this).add('Component', 'Lambda')
+    cdk.Tags.of(this).add('Environment', environment);
+    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices');
+    cdk.Tags.of(this).add('Component', 'Lambda');
   }
 
   private createCloudWatchAlarms(environment: string) {
@@ -218,7 +228,7 @@ export class LambdaStack extends cdk.Stack {
       { func: this.userFunction, name: 'User' },
       { func: this.orderFunction, name: 'Order' },
       { func: this.notificationFunction, name: 'Notification' },
-    ]
+    ];
 
     functions.forEach(({ func, name }) => {
       // Error rate alarm
@@ -231,7 +241,7 @@ export class LambdaStack extends cdk.Stack {
         threshold: 5,
         evaluationPeriods: 2,
         treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING,
-      })
+      });
 
       // Duration alarm
       new cdk.aws_cloudwatch.Alarm(this, `${name}DurationAlarm`, {
@@ -243,7 +253,7 @@ export class LambdaStack extends cdk.Stack {
         threshold: 10000, // 10 seconds
         evaluationPeriods: 3,
         treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING,
-      })
+      });
 
       // Throttles alarm
       new cdk.aws_cloudwatch.Alarm(this, `${name}ThrottleAlarm`, {
@@ -255,7 +265,7 @@ export class LambdaStack extends cdk.Stack {
         threshold: 1,
         evaluationPeriods: 1,
         treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING,
-      })
-    })
+      });
+    });
   }
 }
