@@ -1,0 +1,73 @@
+# Phase 7 - Cognito Authentication Testing
+# VS Code REST Client Extension
+# Install: ms-vscode.vscode-restclient
+
+@API_URL = https://vvktlt1hti.execute-api.ap-southeast-1.amazonaws.com
+@test_email = test@example.com
+@test_password = TestPass123!
+
+### 1. Register User
+POST {{API_URL}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{test_email}}",
+  "password": "{{test_password}}",
+  "givenName": "John",
+  "familyName": "Doe"
+}
+
+### 2. Confirm Sign Up (Replace confirmationCode with code from email)
+POST {{API_URL}}/auth/confirm-signup
+Content-Type: application/json
+
+{
+  "email": "{{test_email}}",
+  "confirmationCode": "123456"
+}
+
+### 3. Login User (Save the tokens from response)
+POST {{API_URL}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{test_email}}",
+  "password": "{{test_password}}"
+}
+
+### 4. Test Protected Route (Replace YOUR_ID_TOKEN with idToken from login)
+GET {{API_URL}}/users/profile
+Authorization: Bearer YOUR_ID_TOKEN
+Content-Type: application/json
+
+### 5. Forgot Password
+POST {{API_URL}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{test_email}}"
+}
+
+### 6. Reset Password (Replace confirmationCode with code from email)
+POST {{API_URL}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{test_email}}",
+  "confirmationCode": "RESET_CODE",
+  "newPassword": "NewTestPass123!"
+}
+
+### 7. Invalid Login (Should return 401)
+POST {{API_URL}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{test_email}}",
+  "password": "WrongPassword123!"
+}
+
+### 8. Invalid JWT Token (Should return 401)
+GET {{API_URL}}/users/profile
+Authorization: Bearer invalid_token_here
+Content-Type: application/json

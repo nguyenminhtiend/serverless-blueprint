@@ -104,7 +104,19 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     this.httpApi.addRoutes({
-      path: '/auth/verify',
+      path: '/auth/confirm-signup',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: authIntegration,
+    });
+
+    this.httpApi.addRoutes({
+      path: '/auth/forgot-password',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: authIntegration,
+    });
+
+    this.httpApi.addRoutes({
+      path: '/auth/reset-password',
       methods: [apigatewayv2.HttpMethod.POST],
       integration: authIntegration,
     });

@@ -39,8 +39,8 @@ export class Logger {
     const logLevel = options.level || getLogLevel();
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // Configure Pino logger
-    this.pinoLogger = pino({
+    // Configure Pino logger - Lambda-optimized
+    const pinoConfig: Record<string, unknown> = {
       level: logLevel,
       base: {
         service: this.service,
@@ -48,21 +48,31 @@ export class Logger {
         version: options.version || process.env.VERSION || '1.0.0',
         ...this.defaultContext,
       },
-      // Use pretty printing in development
-      transport:
-        !isProduction && options.prettyPrint !== false
-          ? {
-              target: 'pino-pretty',
-              options: {
-                colorize: true,
-                translateTime: 'HH:MM:ss Z',
-                ignore: 'pid,hostname',
-              },
-            }
-          : undefined,
       // AWS Lambda optimizations
       timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
-    });
+    };
+
+    // Only add pretty printing in local development (not Lambda)
+    const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
+    if (!isProduction && !isLambda && options.prettyPrint !== false) {
+      try {
+        // Only use pino-pretty if available
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        require.resolve('pino-pretty');
+        pinoConfig.transport = {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'HH:MM:ss Z',
+            ignore: 'pid,hostname',
+          },
+        };
+      } catch {
+        // pino-pretty not available, use standard JSON logging
+      }
+    }
+
+    this.pinoLogger = pino(pinoConfig);
   }
 
   debug(message: string, context?: LogContext): void {

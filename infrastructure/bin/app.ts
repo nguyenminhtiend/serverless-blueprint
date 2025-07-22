@@ -62,6 +62,8 @@ const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${envir
   ...stackProps,
   environment,
   table: databaseStack.table,
+  userPool: cognitoStack.userPool,
+  userPoolClient: cognitoStack.userPoolClient,
   description: `Lambda functions for ${environment} environment`,
 });
 
@@ -84,6 +86,7 @@ const apiGatewayStack = new ApiGatewayStack(
 // Add stack dependencies
 lambdaStack.addDependency(databaseStack);
 lambdaStack.addDependency(eventsStack);
+lambdaStack.addDependency(cognitoStack); // Lambda needs Cognito for env vars
 apiGatewayStack.addDependency(lambdaStack);
 apiGatewayStack.addDependency(cognitoStack);
 
