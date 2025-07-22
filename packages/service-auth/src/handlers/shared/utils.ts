@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 export const CLIENT_ID = process.env.CLIENT_ID!;
 export const CLIENT_SECRET = process.env.CLIENT_SECRET;
-export const REGION = process.env.AWS_REGION || 'ap-southeast-1';
+export const REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'ap-southeast-1';
 
 export const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });
 export const logger = createLogger('auth-service');

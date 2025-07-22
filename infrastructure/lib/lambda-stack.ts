@@ -55,7 +55,7 @@ export class LambdaStack extends cdk.Stack {
         ...commonLambdaProps.environment,
         USER_POOL_ID: userPool?.userPoolId || '',
         CLIENT_ID: userPoolClient?.userPoolClientId || '',
-        AWS_REGION: this.region,
+        // AWS_REGION is automatically available in Lambda runtime
         // CLIENT_SECRET not needed for public clients
       },
     });
