@@ -255,6 +255,12 @@ importers:
       '@middy/http-header-normalizer':
         specifier: ^5.5.1
         version: 5.5.1
+      '@middy/http-json-body-parser':
+        specifier: ^6.4.1
+        version: 6.4.1
+      '@middy/http-multipart-body-parser':
+        specifier: ^6.4.1
+        version: 6.4.1
       '@shared/core':
         specifier: workspace:*
         version: link:../shared-core
@@ -837,6 +843,9 @@ packages:
     resolution: {integrity: sha512-1+WqvgNMhmlAambTvT3KPtCl/Ibr68VldY2XY40SL1CE0ZXiakFR/cbTspaF5HsnpDMvcYYoJHfl4980NBjGag==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@fastify/busboy@3.1.1':
+    resolution: {integrity: sha512-5DGmA8FTdB2XbDeEwc/5ZXBl6UbBAyBOOLlPuBnZ/N1SwdH9Ii+cOX3tBROlDgcTXxjOYnLMVoKk9+FXAw0CJw==}
+
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
     engines: {node: '>=18.18.0'}
@@ -976,9 +985,21 @@ packages:
     resolution: {integrity: sha512-5h3EO627MEZqmRksehzXZPhlyzafBbqD8AUF+0N5iySDiInfnEQPebfUzdDz1U5EpNB5Pbj6ryqJAlyxyHw3Kw==}
     engines: {node: '>=18'}
 
+  '@middy/http-json-body-parser@6.4.1':
+    resolution: {integrity: sha512-gEjx2LD/7tkun1kCOHR1lg4Wu8FAwDbRqv38rhM+Pkd/yZP02cfrRzyG9GS5qQV9CsGRpdpuJLX7ZcAEPmNLsg==}
+    engines: {node: '>=20'}
+
+  '@middy/http-multipart-body-parser@6.4.1':
+    resolution: {integrity: sha512-QbP4mDLid5ZPxP49Svt/blwZFqg/4HlPyGR0o2JguWJZ/bBPxKg2F4VGjy07cJfj4EI4ISL7XBg7edGDtGPQQg==}
+    engines: {node: '>=20'}
+
   '@middy/util@5.5.1':
     resolution: {integrity: sha512-yWvycirftFpXFYt4MXCPjPfM4tQOs4Ib2eyzZEIPOJoEz2cg8mogVNI1TehiCD5O2S1rOPbMduUaXNO6LXiOMA==}
     engines: {node: '>=18'}
+
+  '@middy/util@6.4.1':
+    resolution: {integrity: sha512-/re+VOjVo/UrGbUmFDW5ty4H7YNUor76SWo+tjtEOj1950luXSvdfb1xQUz850SQs0HVUfBCfJaGYZ5hy/o2Vg==}
+    engines: {node: '>=20'}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3483,6 +3504,8 @@ snapshots:
       '@eslint/core': 0.15.1
       levn: 0.4.1
 
+  '@fastify/busboy@3.1.1': {}
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.6':
@@ -3713,7 +3736,17 @@ snapshots:
 
   '@middy/http-header-normalizer@5.5.1': {}
 
+  '@middy/http-json-body-parser@6.4.1':
+    dependencies:
+      '@middy/util': 6.4.1
+
+  '@middy/http-multipart-body-parser@6.4.1':
+    dependencies:
+      '@fastify/busboy': 3.1.1
+
   '@middy/util@5.5.1': {}
+
+  '@middy/util@6.4.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

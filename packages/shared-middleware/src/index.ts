@@ -6,3 +6,4 @@ export * from './validation';
 export * from './cors';
 export * from './common';
 export * from './authorizer';
+export * from './router';

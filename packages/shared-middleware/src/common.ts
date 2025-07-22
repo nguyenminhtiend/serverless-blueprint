@@ -1,6 +1,8 @@
 import middy, { MiddlewareObj, MiddlewareFn, MiddyfiedHandler } from '@middy/core';
 import httpEventNormalizer from '@middy/http-event-normalizer';
 import httpHeaderNormalizer from '@middy/http-header-normalizer';
+import httpJsonBodyParser from '@middy/http-json-body-parser';
+import httpMultipartBodyParser from '@middy/http-multipart-body-parser';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authMiddleware, AuthMiddlewareOptions } from './auth';
 import {
@@ -37,6 +39,10 @@ export interface MiddlewareStackOptions {
 
   // Event normalization
   normalization?: boolean;
+
+  // Body parsing
+  jsonBodyParser?: boolean;
+  multipartBodyParser?: boolean;
 }
 
 export interface LambdaHandler {
@@ -51,6 +57,8 @@ const DEFAULT_STACK_OPTIONS: MiddlewareStackOptions = {
   performance: true,
   correlationIds: true,
   normalization: true,
+  jsonBodyParser: true,
+  multipartBodyParser: false,
 };
 
 /**
@@ -86,7 +94,15 @@ export const createMiddlewareStack = (
     middlewareStack = middlewareStack.use(loggingMiddleware(loggingOptions));
   }
 
-  // 5. CORS (before auth to handle preflight)
+  // 5. Body parsing (before CORS and validation)
+  if (config.jsonBodyParser) {
+    middlewareStack = middlewareStack.use(httpJsonBodyParser());
+  }
+  if (config.multipartBodyParser) {
+    middlewareStack = middlewareStack.use(httpMultipartBodyParser());
+  }
+
+  // 6. CORS (before auth to handle preflight)
   if (config.cors) {
     if (typeof config.cors === 'boolean') {
       middlewareStack = middlewareStack.use(getEnvironmentCors());
@@ -95,18 +111,18 @@ export const createMiddlewareStack = (
     }
   }
 
-  // 6. Validation (before auth and business logic)
+  // 7. Validation (before auth and business logic)
   if (config.validation) {
     middlewareStack = middlewareStack.use(zodValidationMiddleware(config.validation));
   }
 
-  // 7. Authentication (after validation, before business logic)
+  // 8. Authentication (after validation, before business logic)
   if (config.auth) {
     const authOptions = typeof config.auth === 'boolean' ? {} : config.auth;
     middlewareStack = middlewareStack.use(authMiddleware(authOptions));
   }
 
-  // 8. Error handling (should be last to catch all errors)
+  // 9. Error handling (should be last to catch all errors)
   if (config.errorHandler) {
     const errorOptions = typeof config.errorHandler === 'boolean' ? {} : config.errorHandler;
     middlewareStack = middlewareStack.use(errorHandlerMiddleware(errorOptions));

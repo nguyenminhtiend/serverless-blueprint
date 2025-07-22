@@ -134,7 +134,9 @@ function createErrorResponse(
 }
 
 function parseRequestBody<T>(event: APIGatewayProxyEvent, schema: z.ZodSchema<T>): T {
-  const body = JSON.parse(event.body || '{}');
+  // Middy http-json-body-parser will parse JSON automatically
+  // event.body will be an object when using middleware, string when not
+  const body = typeof event.body === 'string' ? JSON.parse(event.body || '{}') : event.body || {};
   return schema.parse(body);
 }
 
@@ -350,7 +352,16 @@ const resetPasswordHandler = async (
   }
 };
 
-// Export handlers with middleware
+// Export raw handlers for internal routing
+export {
+  loginHandler,
+  registerHandler,
+  confirmSignUpHandler,
+  forgotPasswordHandler,
+  resetPasswordHandler,
+};
+
+// Export middleware-wrapped handlers for individual function deployment (optional)
 export const login = createPublicApiHandler(loginHandler, {
   logging: { serviceName: 'auth-service' },
   cors: true,
