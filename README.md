@@ -68,28 +68,7 @@ pnpm synth                 # Validate stacks
 
 ## 📁 Project Structure
 
-```
-serverless-blueprint/
-├── packages/                    # Shared libraries and services
-│   ├── shared-core/            # Business logic utilities
-│   ├── shared-types/           # TypeScript interfaces
-│   ├── shared-database/        # DynamoDB models & clients
-│   ├── shared-middleware/      # Common Middy middleware
-│   ├── service-auth/           # Authentication microservice
-│   ├── service-users/          # User management microservice
-│   ├── service-orders/         # Orders microservice
-│   └── service-notifications/  # Event-driven notifications
-├── infrastructure/             # AWS CDK infrastructure
-│   ├── lib/                   # CDK stack definitions
-│   └── bin/                   # CDK app entry point
-├── layers/                    # Lambda layers
-│   ├── aws-sdk/              # AWS SDK layer
-│   └── monitoring/           # Observability tools layer
-├── scripts/                  # Smart deployment scripts
-│   ├── deploy-infra.sh      # Infrastructure deployment
-│   └── deploy-services.sh   # Service deployment
-└── README.md                # This file
-```
+See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed project structure and architecture.
 
 ## 🔧 Available Scripts
 
@@ -141,34 +120,16 @@ pnpm deploy:services:prod   # Services second
 
 ## 🏗️ Architecture Overview
 
-- **Infrastructure**: AWS CDK v2 with TypeScript
-- **Runtime**: Node.js 22.x on Lambda (ARM64)
-- **Framework**: Middy + Pino Logger + Zod Validation
-- **Database**: DynamoDB with single-table design
-- **Events**: EventBridge + SQS for async communication
-- **API**: API Gateway HTTP API v2 with JWT authorization
-- **Authentication**: AWS Cognito User Pools
-- **Monitoring**: CloudWatch + X-Ray + Pino structured logging
+Modern serverless microservices using AWS CDK, Node.js 22.x, DynamoDB, and EventBridge.
 
-## 📋 Implementation Phases
+See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for complete architecture details and technology stack.
 
-This project follows a phased implementation approach:
+## 📋 Implementation Status
 
-- ✅ **Phase 1**: Project Foundation
-- ✅ **Phase 2**: Shared Libraries Setup
-- ✅ **Phase 3**: AWS CDK Infrastructure Foundation
-- ✅ **Phase 4**: Core Infrastructure Stacks
-- ✅ **Phase 5**: Event-Driven Architecture
-- ✅ **Phase 6**: Middleware & Common Services (Pino + Zod)
-- 🔄 **Phase 7**: Simple Cognito Authentication Setup (Current)
-  - ✅ Phase 7.1: Basic Cognito Stack
-  - ⏳ Phase 7.2: API Gateway JWT Integration
-  - ⏳ Phase 7.3: Update Auth Service
-- ⏳ **Phase 8**: Core Microservices
-- ⏳ **Phase 9**: Event-Driven Services
-- ⏳ **Phase 10**: Monitoring & Observability
-- ⏳ **Phase 11**: Testing & Quality Assurance
-- ⏳ **Phase 12**: CI/CD Pipeline
+**Current Phase**: 7.1 (Cognito Stack) ✅  
+**Next Phase**: 7.2 (API Gateway JWT Integration)
+
+See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for complete phase details and technical specifications.
 
 ## 🔍 Verification
 
@@ -202,18 +163,7 @@ pnpm deploy:services --help
 
 ## 📚 Documentation
 
-- [Implementation Plan](./IMPLEMENTATION_PLAN.md) - Detailed phase-by-phase guide
-
-## 🤝 Contributing
-
-1. Follow the existing code style and conventions
-2. Run tests before submitting changes
-3. Update documentation for new features
-4. Use conventional commit messages
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) - Complete technical guide, architecture details, and phase-by-phase implementation
 
 ---
 

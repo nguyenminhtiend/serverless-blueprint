@@ -24,6 +24,7 @@ serverless-blueprint/
 ├── infrastructure/
 │   ├── lib/
 │   │   ├── database-stack.ts     # DynamoDB tables
+│   │   ├── cognito-stack.ts      # Authentication (User Pools)
 │   │   ├── api-gateway-stack.ts  # API Gateway setup
 │   │   ├── lambda-stack.ts       # Lambda functions
 │   │   └── events-stack.ts       # EventBridge + SQS
@@ -35,8 +36,8 @@ serverless-blueprint/
 │   └── monitoring/               # Observability tools layer
 ├── scripts/
 │   ├── build.sh                  # Build all packages
-│   ├── deploy.sh                 # Deploy infrastructure
-│   └── test.sh                   # Run all tests
+│   ├── deploy-infra.sh           # Smart infrastructure deployment
+│   └── deploy-services.sh        # Smart service deployment
 ├── package.json                  # Root package.json with workspaces
 ├── pnpm-lock.yaml                # Dependency lock file
 ├── tsconfig.json                 # TypeScript configuration
