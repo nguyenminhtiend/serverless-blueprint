@@ -3,13 +3,15 @@ import { UserRole } from './user';
 
 // JWT token types
 export interface JwtPayload {
-  sub: UUID; // User ID
-  email: Email;
-  roles: UserRole[];
-  iat: number;
-  exp: number;
-  iss: string;
-  aud: string;
+  sub?: UUID; // User ID
+  userId?: UUID; // Alternative user ID field
+  email?: Email;
+  roles?: UserRole[];
+  permissions?: string[];
+  iat?: number;
+  exp?: number;
+  iss?: string;
+  aud?: string;
 }
 
 // Authentication request/response types

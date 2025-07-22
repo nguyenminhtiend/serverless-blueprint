@@ -51,6 +51,7 @@ export interface AuditFields {
 export interface ValidationError {
   field: string;
   message: string;
+  code?: string;
   value?: unknown;
 }
 
