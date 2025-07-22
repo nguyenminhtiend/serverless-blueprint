@@ -96,7 +96,7 @@ export class CognitoStack extends cdk.Stack {
       // Auth flows
       authFlows: {
         userSrp: true, // Secure Remote Password protocol
-        userPassword: false, // Direct password auth disabled for security
+        userPassword: true, // Enable direct password auth for simple API usage
         adminUserPassword: false, // Admin auth disabled
         custom: false, // Custom auth disabled for now
       },

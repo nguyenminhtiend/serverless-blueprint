@@ -28,7 +28,7 @@ export const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGate
     addSecretHashIfNeeded(authParameters, email);
 
     const command = new InitiateAuthCommand({
-      AuthFlow: AuthFlowType.USER_SRP_AUTH,
+      AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
       ClientId: CLIENT_ID,
       AuthParameters: authParameters,
     });
