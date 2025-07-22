@@ -3,8 +3,8 @@
 # Install: ms-vscode.vscode-restclient
 
 @API_URL = https://vvktlt1hti.execute-api.ap-southeast-1.amazonaws.com
-@test_email = test@example.com
-@test_password = TestPass123!
+@test_email = your-email@example.com
+@test_password = YourTestPassword123!
 
 ### 1. Register User
 POST {{API_URL}}/auth/register
@@ -37,7 +37,7 @@ Content-Type: application/json
 
 ### 4. Test Protected Route (Replace YOUR_ID_TOKEN with idToken from login)
 GET {{API_URL}}/users/profile
-Authorization: Bearer YOUR_ID_TOKEN
+Authorization: Bearer YOUR_ID_TOKEN_FROM_LOGIN_RESPONSE
 Content-Type: application/json
 
 ### 5. Forgot Password

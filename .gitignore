@@ -108,3 +108,7 @@ dist
 # Temporary folders
 tmp/
 temp/
+
+# Testing files with sensitive data
+*.http
+!*.http.example
