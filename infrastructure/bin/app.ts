@@ -5,6 +5,7 @@ import { DatabaseStack } from '../lib/database-stack';
 import { LambdaStack } from '../lib/lambda-stack';
 import { ApiGatewayStack } from '../lib/api-gateway-stack';
 import { EventsStack } from '../lib/events-stack';
+import { CognitoStack } from '../lib/cognito-stack';
 
 const app = new cdk.App();
 
@@ -40,6 +41,13 @@ const databaseStack = new DatabaseStack(app, `ServerlessMicroservices-Database-$
   ...stackProps,
   environment,
   description: `DynamoDB infrastructure for ${environment} environment`,
+});
+
+// Cognito Stack - Phase 7.1
+const cognitoStack = new CognitoStack(app, `ServerlessMicroservices-Cognito-${environment}`, {
+  ...stackProps,
+  environment,
+  description: `Cognito authentication infrastructure for ${environment} environment`,
 });
 
 // Events Stack - Phase 5
