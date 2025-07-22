@@ -14,7 +14,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { createHmac } from 'crypto';
 import { createLogger } from '@shared/core';
-import { createPublicApiHandler } from '@shared/middleware';
+import { createPublicApiHandler, createRouterSuccessResponse, createRouterErrorResponse, HTTP_STATUS } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { z } from 'zod';
 
@@ -27,28 +27,9 @@ const REGION = process.env.AWS_REGION || 'ap-southeast-1';
 const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });
 const logger = createLogger('auth-service');
 
-// Constants
-const COMMON_HEADERS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-} as const;
+// Using shared HTTP_STATUS from @shared/middleware
 
-const HTTP_STATUS = {
-  OK: 200,
-  CREATED: 201,
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-} as const;
-
-// Types
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  code?: string;
-  message?: string;
-}
-
+// Types for auth-specific responses
 interface AuthTokens {
   accessToken: string;
   idToken: string;
@@ -101,37 +82,7 @@ function calculateSecretHash(email: string): string {
   return hmac.digest('base64');
 }
 
-function createSuccessResponse<T>(
-  data: T,
-  statusCode: number = HTTP_STATUS.OK,
-  message?: string
-): APIGatewayProxyResult {
-  return {
-    statusCode,
-    headers: COMMON_HEADERS,
-    body: JSON.stringify({
-      success: true,
-      data,
-      ...(message && { message }),
-    } as ApiResponse<T>),
-  };
-}
-
-function createErrorResponse(
-  error: string,
-  code?: string,
-  statusCode: number = HTTP_STATUS.BAD_REQUEST
-): APIGatewayProxyResult {
-  return {
-    statusCode,
-    headers: COMMON_HEADERS,
-    body: JSON.stringify({
-      success: false,
-      error,
-      code,
-    } as ApiResponse),
-  };
-}
+// Using shared response creators from @shared/middleware
 
 function parseRequestBody<T>(event: APIGatewayProxyEvent, schema: z.ZodSchema<T>): T {
   // Middy http-json-body-parser will parse JSON automatically
@@ -195,7 +146,7 @@ const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
         challengeParameters: result.ChallengeParameters || {},
       };
 
-      return createSuccessResponse(challengeResponse);
+      return createRouterSuccessResponse(challengeResponse);
     }
 
     if (result.AuthenticationResult) {
@@ -208,14 +159,14 @@ const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
         expiresIn: result.AuthenticationResult.ExpiresIn!,
       };
 
-      return createSuccessResponse({ tokens });
+      return createRouterSuccessResponse({ tokens });
     }
 
     throw new Error('Authentication failed - no result');
   } catch (error: any) {
     logger.error('Login failed', { error: error.message, errorName: error.name });
     const statusCode = getStatusCodeFromCognitoError(error.name);
-    return createErrorResponse(error.message || 'Login failed', error.name, statusCode);
+    return createRouterErrorResponse(error.message || 'Login failed', error.name || 'LOGIN_ERROR', statusCode);
   }
 };
 
@@ -252,14 +203,14 @@ const registerHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
       needsConfirmation: !result.UserConfirmed,
     };
 
-    return createSuccessResponse(
+    return createRouterSuccessResponse(
       registerResponse,
       HTTP_STATUS.CREATED,
       'User registered successfully'
     );
   } catch (error: any) {
     logger.error('Registration failed', { error: error.message, errorName: error.name });
-    return createErrorResponse(error.message || 'Registration failed', error.name);
+    return createRouterErrorResponse(error.message || 'Registration failed', error.name || 'REGISTRATION_ERROR');
   }
 };
 
@@ -283,10 +234,10 @@ const confirmSignUpHandler = async (
     await cognitoClient.send(command);
 
     logger.info('Sign-up confirmation successful', { email });
-    return createSuccessResponse(null, HTTP_STATUS.OK, 'Account confirmed successfully');
+    return createRouterSuccessResponse(null, HTTP_STATUS.OK, 'Account confirmed successfully');
   } catch (error: any) {
     logger.error('Sign-up confirmation failed', { error: error.message, errorName: error.name });
-    return createErrorResponse(error.message || 'Confirmation failed', error.name);
+    return createRouterErrorResponse(error.message || 'Confirmation failed', error.name || 'CONFIRMATION_ERROR');
   }
 };
 
@@ -313,14 +264,14 @@ const forgotPasswordHandler = async (
       deliveryMedium: result.CodeDeliveryDetails?.DeliveryMedium,
     });
 
-    return createSuccessResponse(
+    return createRouterSuccessResponse(
       { deliveryDetails: result.CodeDeliveryDetails },
       HTTP_STATUS.OK,
       'Password reset code sent'
     );
   } catch (error: any) {
     logger.error('Forgot password request failed', { error: error.message, errorName: error.name });
-    return createErrorResponse(error.message || 'Forgot password request failed', error.name);
+    return createRouterErrorResponse(error.message || 'Forgot password request failed', error.name || 'FORGOT_PASSWORD_ERROR');
   }
 };
 
@@ -345,10 +296,10 @@ const resetPasswordHandler = async (
     await cognitoClient.send(command);
 
     logger.info('Password reset successful', { email });
-    return createSuccessResponse(null, HTTP_STATUS.OK, 'Password reset successfully');
+    return createRouterSuccessResponse(null, HTTP_STATUS.OK, 'Password reset successfully');
   } catch (error: any) {
     logger.error('Password reset failed', { error: error.message, errorName: error.name });
-    return createErrorResponse(error.message || 'Password reset failed', error.name);
+    return createRouterErrorResponse(error.message || 'Password reset failed', error.name || 'RESET_PASSWORD_ERROR');
   }
 };
 

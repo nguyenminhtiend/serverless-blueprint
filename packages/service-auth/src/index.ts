@@ -1,8 +1,5 @@
-// Export main handler with internal routing (shared router version)
-export { handler } from './router-v2';
+// Export main handler using shared router
+export { handler } from './router';
 
-// Legacy router (custom implementation)
-export { handler as legacyHandler } from './router';
-
-// Export individual handlers for alternative deployments
+// Export individual handlers for alternative deployments (if needed)
 export { login, register, confirmSignUp, forgotPassword, resetPassword } from './handlers/auth';
