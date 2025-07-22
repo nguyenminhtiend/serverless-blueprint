@@ -76,135 +76,46 @@ serverless-blueprint/
 3. High-performance Pino logger and comprehensive error handling
 4. Type-safe Zod schema validation with TypeScript inference
 
-### Phase 7: AWS Cognito Infrastructure Setup
-1. **Create Cognito Stack** (`infrastructure/lib/cognito-stack.ts`)
-   - Cognito User Pool with password policies and MFA options
-   - User Pool App Client configuration for JWT token generation
-   - Custom domain setup for Cognito hosted UI
-   - User Pool triggers for custom business logic integration
+### Phase 7: Simple Cognito Authentication Setup
+1. **Create Basic Cognito Stack** (`infrastructure/lib/cognito-stack.ts`)
+   - Simple Cognito User Pool with email/password authentication
+   - User Pool App Client for JWT token generation
+   - Basic password policy (8+ chars, uppercase, lowercase, number)
 
-2. **Identity Providers Configuration**
-   - Google OAuth 2.0 provider setup for social login
-   - Facebook social login integration
-   - SAML provider configuration for enterprise authentication
-   - Apple Sign-In integration for iOS applications
+2. **API Gateway JWT Integration** (`infrastructure/lib/api-gateway-stack.ts`)
+   - Replace custom Lambda authorizer with native JWT authorizer
+   - Configure JWT authorizer to use Cognito User Pool
+   - Update protected routes to use JWT authorizer
 
-3. **Security Policies & Configuration**
-   - Password complexity requirements and rotation policies
-   - Account lockout and suspicious activity detection
-   - User verification workflows (email/phone)
-   - Device tracking and "remember device" functionality
+3. **Update Auth Service** (`packages/service-auth/`)
+   - Replace custom JWT with Cognito SDK operations
+   - Implement basic login/register using Cognito APIs
+   - Add password reset functionality
 
-### Phase 8: API Gateway JWT Authorizer Integration
-1. **Modify API Gateway Stack** (`infrastructure/lib/api-gateway-stack.ts`)
-   - Replace existing `HttpLambdaAuthorizer` with native `HttpJwtAuthorizer`
-   - Configure JWT authorizer with Cognito User Pool settings
-   - Update all protected routes to use new JWT authorizer
-   - Configure JWT claims mapping and authorization scopes
-
-2. **Remove Lambda Authorizer Dependencies**
-   - Remove `authorizerFunction` from API Gateway stack
-   - Clean up Lambda authorizer IAM policies and permissions
-   - Remove JWT secret from AWS Secrets Manager (no longer needed)
-   - Update CloudFormation outputs to reference Cognito resources
-
-3. **Performance & Caching Optimization**
-   - Configure JWT authorizer caching (5-minute TTL)
-   - Set up proper identity sources for token extraction
-   - Implement JWT validation error handling
-   - Add CloudWatch metrics for authorization performance
-
-### Phase 9: Authentication Service Modernization
-1. **Refactor Auth Service** (`packages/service-auth/`)
-   - Replace custom login/register handlers with Cognito SDK integration
-   - Implement Cognito token exchange and refresh token workflows
-   - Add social login integration endpoints (Google, Facebook, SAML)
-   - Create Cognito-based password reset and email verification flows
-
-2. **Update Authentication Middleware** (`packages/shared-middleware/`)
-   - Create new Cognito-aware middleware (`cognito-auth.ts`)
-   - Replace custom JWT validation with Cognito JWKS verification
-   - Update user context extraction from Cognito JWT claims
-   - Add Cognito group-based role and permission mapping
-
-3. **API Endpoint Migration**
-   - Update `/auth/login` to use Cognito authentication flow
-   - Modify `/auth/register` to create users in Cognito User Pool
-   - Implement `/auth/social` endpoints for federated authentication
-   - Add `/auth/mfa` endpoints for multi-factor authentication setup
-
-### Phase 10: User Management Integration
-1. **Cognito User Management** (`packages/service-users/`)
-   - Replace DynamoDB user storage with Cognito User Pool operations
-   - Implement Cognito Admin SDK for user administration
-   - Add user attribute management (custom attributes, groups)
-   - Create user group and role assignment functionality
-
-2. **Profile Management Enhancement**
-   - Extend user profiles with custom attributes in Cognito
-   - Implement user preferences storage in DynamoDB (supplementary data)
-   - Add profile picture management with S3 integration
-   - Create user activity tracking and audit logging
-
-3. **User Operations & Administration**
-   - Admin-initiated password reset functionality
-   - User account suspension and reactivation
-   - Bulk user import/export capabilities
-   - User analytics and reporting dashboard data
-
-### Phase 11: Security & Advanced Features
-1. **Enhanced Security Features**
-   - Multi-Factor Authentication (SMS, Time-based One-Time Password, hardware tokens)
-   - Advanced threat protection and risk-based authentication
-   - Account compromise recovery workflows
-   - Session management and concurrent session limits
-
-2. **Enterprise Authentication Features**
-   - Custom authentication challenges and flows
-   - Biometric authentication support (fingerprint, face recognition)
-   - Single Sign-On (SSO) integration with corporate directories
-   - Advanced user lifecycle management
-
-3. **Monitoring & Compliance**
-   - Authentication audit logging and compliance reporting
-   - User behavior analytics and anomaly detection
-   - GDPR compliance features (data export, deletion)
-   - Security monitoring and alerting integration
-
-### Phase 12: Core Microservices
+### Phase 8: Core Microservices
 1. **User Service**: CRUD operations with DynamoDB
 2. **Orders Service**: Business logic with event publishing
 3. Inter-service communication setup
 
-### Phase 13: Event-Driven Services
+### Phase 9: Event-Driven Services
 1. **Notifications Service**: Event-driven Lambda triggers
 2. Event processing and SQS integration
 3. Dead letter queue handling
 
-### Phase 14: Monitoring & Observability
+### Phase 10: Monitoring & Observability
 1. **Monitoring Stack**: CloudWatch dashboards + alarms
 2. CloudWatch + X-Ray tracing integration
 3. Custom metrics and alerts
 
-### Phase 15: Security Hardening
-1. IAM least privilege policies
-2. API authentication and authorization
-3. Secrets management and encryption
-
-### Phase 16: Testing & Quality Assurance
+### Phase 11: Testing & Quality Assurance
 1. Unit tests for all services
 2. Integration tests with AWS LocalStack
 3. End-to-end testing setup
 
-### Phase 17: CI/CD Pipeline
+### Phase 12: CI/CD Pipeline
 1. Configure GitHub Actions workflow
 2. Automated testing and deployment
 3. Environment-specific configurations
-
-### Phase 18: Documentation & Finalization
-1. API specifications and documentation
-2. Architecture diagrams and guides
-3. Deployment and maintenance documentation
 
 ## Phase 6 Enhancements: Pino + Zod Integration
 
@@ -297,9 +208,9 @@ export const webhook = createWebhookHandler(webhookHandler, {
 - Database: DynamoDB with single-table design
 - Events: EventBridge + SQS
 - Monitoring: CloudWatch + X-Ray
-- Authentication: AWS Cognito User Pools with Identity Providers
+- Authentication: AWS Cognito User Pools (basic setup)
 - Authorization: API Gateway JWT authorizers (native, non-Lambda)
-- Security: IAM + Cognito + MFA + Advanced Security Features
+- Security: IAM + Cognito basic authentication
 
 **Development Tools:**
 - Build: esbuild (fastest bundling)
