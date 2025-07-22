@@ -1,8 +1,8 @@
-import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
+import { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import jwt from 'jsonwebtoken';
 import { UnauthorizedError, ForbiddenError } from '@shared/core';
-import type { JwtPayload, AuthContext } from '@shared/types';
+import type { JwtPayload } from '@shared/types';
 
 // Extended interface for middleware
 export interface AuthenticatedUser {

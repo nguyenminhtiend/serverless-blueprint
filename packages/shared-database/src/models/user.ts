@@ -53,7 +53,6 @@ export class UserModel {
 
     if (!result.Item) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { PK, SK, GSI1PK, GSI1SK, ...userData } = result.Item;
     return userData as User;
   }
@@ -72,7 +71,6 @@ export class UserModel {
     );
 
     return (result.Items || []).map(item => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { PK, SK, GSI1PK, GSI1SK, ...userData } = item;
       return userData as User;
     });

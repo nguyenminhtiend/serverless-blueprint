@@ -29,12 +29,20 @@ export default [
     },
     rules: {
       ...typescript.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true
+      }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      'prefer-const': 'error',
+      '@typescript-eslint/no-unused-expressions': 'error',
       '@typescript-eslint/no-var-requires': 'error',
+      '@typescript-eslint/no-empty-function': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'warn',
+      'no-case-declarations': 'error',
+      'prefer-const': 'error',
     },
   },
   {

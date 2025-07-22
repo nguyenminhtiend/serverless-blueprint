@@ -1,4 +1,4 @@
-import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
+import { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   AppError,

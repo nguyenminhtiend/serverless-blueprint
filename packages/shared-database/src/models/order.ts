@@ -78,7 +78,6 @@ export class OrderModel {
 
     if (!result.Item) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { PK, SK, GSI1PK, GSI1SK, ...orderData } = result.Item;
     return orderData as Order;
   }
@@ -123,7 +122,6 @@ export class OrderModel {
     );
 
     return (result.Items || []).map(item => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { PK, SK, GSI1PK, GSI1SK, ...orderData } = item;
       return orderData as Order;
     });
