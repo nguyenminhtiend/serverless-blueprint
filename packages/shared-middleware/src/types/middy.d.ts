@@ -42,7 +42,9 @@ declare module '@middy/http-cors' {
     maxAge?: number;
   }
 
-  function httpCors(options?: CorsOptions): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult>;
+  function httpCors(
+    options?: CorsOptions
+  ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult>;
   export default httpCors;
 }
 

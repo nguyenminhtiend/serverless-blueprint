@@ -1,7 +1,7 @@
-import { 
-  APIGatewayRequestAuthorizerEventV2, 
-  APIGatewaySimpleAuthorizerResult, 
-  APIGatewayAuthorizerResult 
+import {
+  APIGatewayRequestAuthorizerEventV2,
+  APIGatewaySimpleAuthorizerResult,
+  APIGatewayAuthorizerResult,
 } from 'aws-lambda';
 import jwt from 'jsonwebtoken';
 import { createLogger } from '@shared/core';
@@ -34,7 +34,7 @@ export const handler = async (
   event: APIGatewayRequestAuthorizerEventV2
 ): Promise<APIGatewaySimpleAuthorizerResult> => {
   const correlationId = event.headers?.['x-correlation-id'] || `auth-${Date.now()}`;
-  
+
   logger.info('JWT Authorizer invoked', {
     correlationId,
     requestId: event.requestContext?.requestId,
@@ -48,10 +48,12 @@ export const handler = async (
 
     if (!authorizationToken) {
       if (config.allowUnauthenticated) {
-        logger.info('No authorization token provided, allowing unauthenticated access', { correlationId });
+        logger.info('No authorization token provided, allowing unauthenticated access', {
+          correlationId,
+        });
         return { isAuthorized: true };
       }
-      
+
       logger.warn('No authorization token provided', { correlationId });
       return { isAuthorized: false };
     }
@@ -78,10 +80,13 @@ export const handler = async (
     return {
       isAuthorized: true,
     };
-
   } catch (error) {
-    logger.error('JWT authorization failed', { correlationId, error: (error as Error).message }, error as Error);
-    
+    logger.error(
+      'JWT authorization failed',
+      { correlationId, error: (error as Error).message },
+      error as Error
+    );
+
     if (error instanceof jwt.JsonWebTokenError) {
       logger.warn('Invalid JWT token', { correlationId, error: error.message });
     } else if (error instanceof jwt.TokenExpiredError) {
@@ -89,7 +94,7 @@ export const handler = async (
     } else if (error instanceof jwt.NotBeforeError) {
       logger.warn('JWT token not active yet', { correlationId, error: error.message });
     }
-    
+
     return { isAuthorized: false };
   }
 };
@@ -99,7 +104,7 @@ export const policyHandler = async (
   event: APIGatewayRequestAuthorizerEventV2
 ): Promise<APIGatewayAuthorizerResult> => {
   const correlationId = event.headers?.['x-correlation-id'] || `auth-policy-${Date.now()}`;
-  
+
   logger.info('Policy-based JWT Authorizer invoked', {
     correlationId,
     requestId: event.requestContext?.requestId,
@@ -127,7 +132,7 @@ export const policyHandler = async (
 
     const principalId = decoded.sub || decoded.userId || 'unknown';
     const policy = generatePolicy(principalId, 'Allow', event.routeArn || '*');
-    
+
     // Add user context
     policy.context = {
       userId: principalId,
@@ -144,7 +149,6 @@ export const policyHandler = async (
     });
 
     return policy;
-
   } catch (error) {
     logger.error('Policy-based authorization failed', { correlationId }, error as Error);
     throw new Error('Unauthorized');

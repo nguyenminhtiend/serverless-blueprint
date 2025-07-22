@@ -1,6 +1,6 @@
 /**
  * Example: Using the Updated Shared Middleware with Pino and Zod
- * 
+ *
  * This file demonstrates how to use the enhanced middleware package
  * with Pino logging and Zod validation in your Lambda functions.
  */
@@ -34,17 +34,17 @@ const CreatePostSchema = z.object({
 type CreatePostInput = z.infer<typeof CreatePostSchema>;
 
 export const createPost = createPublicApiHandler(
-  async (event) => {
+  async event => {
     // Type-safe body parsing (already validated by middleware)
     const postData: CreatePostInput = JSON.parse(event.body!);
-    
+
     // Business logic
     const newPost = {
       id: `post_${Date.now()}`,
       ...postData,
       createdAt: new Date().toISOString(),
     };
-    
+
     return {
       statusCode: 201,
       body: JSON.stringify(newPost),
@@ -76,26 +76,28 @@ export const createPost = createPublicApiHandler(
 // 2. Protected API with Authentication and Role-Based Access
 // ============================================================================
 
-const UpdateUserSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  email: z.string().email().optional(),
-  bio: z.string().max(500).optional(),
-}).refine(data => Object.keys(data).length > 0, {
-  message: 'At least one field must be provided',
-});
+const UpdateUserSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    email: z.string().email().optional(),
+    bio: z.string().max(500).optional(),
+  })
+  .refine(data => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided',
+  });
 
 export const updateUser = createProtectedApiHandler(
-  async (event) => {
+  async event => {
     const userId = event.user!.id; // Type-safe user context
     const updateData = JSON.parse(event.body!);
-    
+
     // Simulate user update
     const updatedUser = {
       id: userId,
       ...updateData,
       updatedAt: new Date().toISOString(),
     };
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify(updatedUser),
@@ -125,17 +127,23 @@ export const updateUser = createProtectedApiHandler(
 // ============================================================================
 
 const AdminUserQuerySchema = z.object({
-  page: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).default(1)),
-  limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100).default(20)),
+  page: z
+    .string()
+    .transform(val => parseInt(val))
+    .pipe(z.number().min(1).default(1)),
+  limit: z
+    .string()
+    .transform(val => parseInt(val))
+    .pipe(z.number().min(1).max(100).default(20)),
   role: z.enum(['user', 'admin', 'moderator']).optional(),
   status: z.enum(['active', 'inactive', 'banned']).optional(),
   search: z.string().min(1).optional(),
 });
 
 export const adminListUsers = createProtectedApiHandler(
-  async (event) => {
+  async event => {
     const query = AdminUserQuerySchema.parse(event.queryStringParameters || {});
-    
+
     // Simulate user search
     const users = Array.from({ length: query.limit }, (_, i) => ({
       id: `user_${i + 1}`,
@@ -144,7 +152,7 @@ export const adminListUsers = createProtectedApiHandler(
       role: query.role || 'user',
       status: query.status || 'active',
     }));
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -182,10 +190,10 @@ const WebhookHeadersSchema = z.object({
 });
 
 export const handleWebhook = createWebhookHandler(
-  async (event) => {
+  async event => {
     const payload = JSON.parse(event.body!);
     const headers = event.headers;
-    
+
     // Verify webhook signature (simplified)
     const expectedSignature = calculateSignature(event.body!, process.env.WEBHOOK_SECRET!);
     if (headers['x-webhook-signature'] !== expectedSignature) {
@@ -194,10 +202,10 @@ export const handleWebhook = createWebhookHandler(
         body: JSON.stringify({ error: 'Invalid signature' }),
       };
     }
-    
+
     // Process webhook
     console.log('Processing webhook:', payload.event, payload.data.userId);
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify({ received: true }),
@@ -233,53 +241,63 @@ export const advancedHandler = middy(async (event, context) => {
     requestId: context.awsRequestId,
     operation: event.httpMethod,
   });
-  
+
   logger.info('Processing advanced request', {
     path: event.path,
     userId: event.user?.id,
   });
-  
+
   const businessData = JSON.parse(event.body!);
-  
+
   try {
     // Complex business logic here
     const result = await processBusinessLogic(businessData, event.user!);
-    
+
     logger.info('Business logic completed', {
       resultId: result.id,
       processingTime: result.processingTime,
     });
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify(result),
     };
   } catch (error) {
-    logger.error('Business logic failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }, error instanceof Error ? error : new Error('Unknown error'));
-    
+    logger.error(
+      'Business logic failed',
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      error instanceof Error ? error : new Error('Unknown error')
+    );
+
     throw error;
   }
 })
   // Custom middleware stack
-  .use(loggingMiddleware({
-    serviceName: 'advanced-service',
-    logLevel: LogLevel.DEBUG,
-    logEvent: true,
-    logResponse: true,
-  }))
-  .use(zodValidationMiddleware({
-    bodySchema: CustomBusinessLogicSchema,
-    pathParametersSchema: z.object({
-      resourceType: z.enum(['users', 'posts', 'comments']),
-      resourceId: z.string().uuid(),
-    }),
-  }))
-  .use(authMiddleware({
-    secret: process.env.JWT_SECRET!,
-    optional: false,
-  }))
+  .use(
+    loggingMiddleware({
+      serviceName: 'advanced-service',
+      logLevel: LogLevel.DEBUG,
+      logEvent: true,
+      logResponse: true,
+    })
+  )
+  .use(
+    zodValidationMiddleware({
+      bodySchema: CustomBusinessLogicSchema,
+      pathParametersSchema: z.object({
+        resourceType: z.enum(['users', 'posts', 'comments']),
+        resourceId: z.string().uuid(),
+      }),
+    })
+  )
+  .use(
+    authMiddleware({
+      secret: process.env.JWT_SECRET!,
+      optional: false,
+    })
+  )
   .use(requireRole(['admin', 'operator']));
 
 // ============================================================================
@@ -303,14 +321,18 @@ const UserSchema = BaseEntitySchema.extend({
   name: z.string().min(1).max(100),
   email: z.string().email(),
   role: z.enum(['user', 'admin', 'moderator']).default('user'),
-  profile: z.object({
-    bio: z.string().max(500).optional(),
-    avatar: z.string().url().optional(),
-    preferences: z.object({
-      notifications: z.boolean().default(true),
-      theme: z.enum(['light', 'dark']).default('light'),
-    }).default({}),
-  }).optional(),
+  profile: z
+    .object({
+      bio: z.string().max(500).optional(),
+      avatar: z.string().url().optional(),
+      preferences: z
+        .object({
+          notifications: z.boolean().default(true),
+          theme: z.enum(['light', 'dark']).default('light'),
+        })
+        .default({}),
+    })
+    .optional(),
 });
 
 const PostSchema = BaseEntitySchema.extend({
@@ -332,9 +354,9 @@ const UserResponseSchema = z.object({
 });
 
 export const getUser = createProtectedApiHandler(
-  async (event) => {
+  async event => {
     const { userId } = z.object({ userId: z.string().uuid() }).parse(event.pathParameters);
-    
+
     // Simulate user fetch
     const user = {
       id: userId,
@@ -344,7 +366,7 @@ export const getUser = createProtectedApiHandler(
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    
+
     const response = {
       success: true as const,
       data: user,
@@ -353,7 +375,7 @@ export const getUser = createProtectedApiHandler(
         requestId: event.requestContext.requestId,
       },
     };
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify(response),
@@ -379,7 +401,7 @@ function calculateSignature(payload: string, secret: string): string {
 async function processBusinessLogic(data: any, user: any): Promise<any> {
   // Simulate async business logic
   await new Promise(resolve => setTimeout(resolve, 100));
-  
+
   return {
     id: `result_${Date.now()}`,
     operation: data.operation,

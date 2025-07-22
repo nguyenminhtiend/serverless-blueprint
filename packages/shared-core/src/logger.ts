@@ -35,10 +35,10 @@ export class Logger {
   constructor(service: string, defaultContext: LogContext = {}, options: LoggerOptions = {}) {
     this.service = service;
     this.defaultContext = { service, ...defaultContext };
-    
+
     const logLevel = options.level || getLogLevel();
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     // Configure Pino logger
     this.pinoLogger = pino({
       level: logLevel,
@@ -49,16 +49,19 @@ export class Logger {
         ...this.defaultContext,
       },
       // Use pretty printing in development
-      transport: !isProduction && (options.prettyPrint !== false) ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        },
-      } : undefined,
+      transport:
+        !isProduction && options.prettyPrint !== false
+          ? {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+              },
+            }
+          : undefined,
       // AWS Lambda optimizations
-      timestamp: () => `,"timestamp":"${new Date().toISOString()}"`
+      timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
     });
   }
 
@@ -112,7 +115,11 @@ export class Logger {
   }
 }
 
-export const createLogger = (service: string, context?: LogContext, options?: LoggerOptions): Logger => {
+export const createLogger = (
+  service: string,
+  context?: LogContext,
+  options?: LoggerOptions
+): Logger => {
   return new Logger(service, context, options);
 };
 
@@ -135,7 +142,12 @@ export const logRequest = (logger: Logger, method: string, path: string, context
   logger.info(`${method} ${path}`, { httpMethod: method, path, ...context });
 };
 
-export const logResponse = (logger: Logger, statusCode: number, duration: number, context?: LogContext) => {
+export const logResponse = (
+  logger: Logger,
+  statusCode: number,
+  duration: number,
+  context?: LogContext
+) => {
   logger.info('Request completed', { statusCode, duration, ...context });
 };
 

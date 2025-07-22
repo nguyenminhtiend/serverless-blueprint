@@ -41,12 +41,16 @@ const DEFAULT_OPTIONS: Partial<AuthMiddlewareOptions> = {
   optional: false,
 };
 
-export const authMiddleware = (options: AuthMiddlewareOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const authMiddleware = (
+  options: AuthMiddlewareOptions = {}
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_OPTIONS, ...options };
 
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request as AuthMiddlewareRequest;
-    
+
     // Skip authentication for certain paths
     if (config.skipPaths?.some(path => event.path.match(new RegExp(path)))) {
       return;
@@ -84,9 +88,8 @@ export const authMiddleware = (options: AuthMiddlewareOptions = {}): MiddlewareO
         roles: decoded.roles || [],
         permissions: decoded.permissions || [],
       };
-      
-      event.jwt = decoded;
 
+      event.jwt = decoded;
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
         throw new UnauthorizedError('Invalid token');
@@ -106,12 +109,16 @@ export const authMiddleware = (options: AuthMiddlewareOptions = {}): MiddlewareO
   };
 };
 
-export const requireRole = (requiredRoles: string | string[]): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const requireRole = (
+  requiredRoles: string | string[]
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
 
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request as AuthMiddlewareRequest;
-    
+
     if (!event.user) {
       throw new UnauthorizedError('Authentication required');
     }
@@ -129,18 +136,26 @@ export const requireRole = (requiredRoles: string | string[]): MiddlewareObj<API
   };
 };
 
-export const requirePermission = (requiredPermissions: string | string[]): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+export const requirePermission = (
+  requiredPermissions: string | string[]
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const permissions = Array.isArray(requiredPermissions)
+    ? requiredPermissions
+    : [requiredPermissions];
 
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request as AuthMiddlewareRequest;
-    
+
     if (!event.user) {
       throw new UnauthorizedError('Authentication required');
     }
 
     const userPermissions = event.user.permissions || [];
-    const hasRequiredPermission = permissions.some(permission => userPermissions.includes(permission));
+    const hasRequiredPermission = permissions.some(permission =>
+      userPermissions.includes(permission)
+    );
 
     if (!hasRequiredPermission) {
       throw new ForbiddenError(`Required permission(s): ${permissions.join(', ')}`);
@@ -159,7 +174,10 @@ export const extractUserId = (event: AuthenticatedEvent): string => {
   return event.user.id;
 };
 
-export const generateJWT = (payload: Omit<JwtPayload, 'iat' | 'exp'>, options?: { expiresIn?: string }): string => {
+export const generateJWT = (
+  payload: Omit<JwtPayload, 'iat' | 'exp'>,
+  options?: { expiresIn?: string }
+): string => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new Error('JWT secret not configured');

@@ -1,10 +1,10 @@
 import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { 
-  AppError, 
-  ValidationErrorException, 
-  NotFoundError, 
-  UnauthorizedError, 
+import {
+  AppError,
+  ValidationErrorException,
+  NotFoundError,
+  UnauthorizedError,
   ForbiddenError,
   ConflictError,
   BusinessLogicError,
@@ -12,7 +12,7 @@ import {
   RateLimitError,
   isAppError,
   sanitizeError,
-  formatErrorForLogging 
+  formatErrorForLogging,
 } from '@shared/core';
 import type { HttpStatus } from '@shared/types';
 
@@ -41,12 +41,16 @@ const DEFAULT_OPTIONS: ErrorHandlerOptions = {
   corsOrigin: '*',
 };
 
-export const errorHandlerMiddleware = (options: ErrorHandlerOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const errorHandlerMiddleware = (
+  options: ErrorHandlerOptions = {}
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_OPTIONS, ...options };
 
-  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { error, internal } = request as ErrorMiddlewareRequest;
-    
+
     if (!error) return;
 
     // Log error if logger is enabled
@@ -57,10 +61,10 @@ export const errorHandlerMiddleware = (options: ErrorHandlerOptions = {}): Middl
 
     // Create error response
     const errorResponse = createErrorResponse(error, config);
-    
+
     // Set response
     request.response = errorResponse;
-    
+
     // Don't throw the error again
   };
 
@@ -69,9 +73,12 @@ export const errorHandlerMiddleware = (options: ErrorHandlerOptions = {}): Middl
   };
 };
 
-export const createErrorResponse = (error: Error, options: ErrorHandlerOptions = {}): APIGatewayProxyResult => {
+export const createErrorResponse = (
+  error: Error,
+  options: ErrorHandlerOptions = {}
+): APIGatewayProxyResult => {
   const config = { ...DEFAULT_OPTIONS, ...options };
-  
+
   let statusCode: HttpStatus = 500;
   let errorBody: any = {
     message: config.fallbackMessage,
@@ -130,10 +137,15 @@ export const createErrorResponse = (error: Error, options: ErrorHandlerOptions =
   };
 };
 
-export const validationErrorHandler = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const validationErrorHandler = (): MiddlewareObj<
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult
+> => {
+  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { error } = request as ErrorMiddlewareRequest;
-    
+
     if (!error) return;
 
     // Convert common validation errors to our ValidationErrorException
@@ -143,9 +155,9 @@ export const validationErrorHandler = (): MiddlewareObj<APIGatewayProxyEvent, AP
           field: 'unknown',
           message: error.message,
           code: 'VALIDATION_ERROR',
-        }
+        },
       ]);
-      
+
       request.error = validationError;
     }
   };
@@ -158,13 +170,12 @@ export const validationErrorHandler = (): MiddlewareObj<APIGatewayProxyEvent, AP
 export const notFoundHandler = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { response } = request as ErrorMiddlewareRequest;
-    
+
     // If no response was set, return 404
     if (!response) {
-      request.response = createErrorResponse(
-        new NotFoundError('Resource not found'),
-        { enableCors: true }
-      );
+      request.response = createErrorResponse(new NotFoundError('Resource not found'), {
+        enableCors: true,
+      });
     }
   };
 
@@ -173,8 +184,12 @@ export const notFoundHandler = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewa
   };
 };
 
-export const timeoutHandler = (timeoutMs: number = 25000): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const timeoutHandler = (
+  timeoutMs: number = 25000
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(new AppError('Request timeout', 408 as any));
@@ -200,11 +215,13 @@ const generateErrorId = (): string => {
 
 // Error factory functions for common scenarios
 export const createValidationError = (field: string, message: string, code?: string) => {
-  return new ValidationErrorException([{
-    field,
-    message,
-    code: code || 'VALIDATION_ERROR',
-  }]);
+  return new ValidationErrorException([
+    {
+      field,
+      message,
+      code: code || 'VALIDATION_ERROR',
+    },
+  ]);
 };
 
 export const createNotFoundError = (resource: string, id?: string) => {

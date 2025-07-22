@@ -22,8 +22,12 @@ export interface ValidationMiddlewareRequest {
 }
 
 // Zod validation middleware
-export const zodValidationMiddleware = (options: ZodValidationOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const zodValidationMiddleware = (
+  options: ZodValidationOptions = {}
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request;
     const validationErrors: ValidationError[] = [];
 
@@ -41,7 +45,7 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): Mid
           });
           throw new ValidationErrorException(validationErrors);
         }
-        
+
         const bodyResult = options.bodySchema.safeParse(parsedBody);
         if (!bodyResult.success) {
           validationErrors.push(...formatZodErrors(bodyResult.error, 'body'));
@@ -62,7 +66,9 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): Mid
 
       // Validate query string parameters
       if (options.queryStringParametersSchema && event.queryStringParameters) {
-        const queryResult = options.queryStringParametersSchema.safeParse(event.queryStringParameters);
+        const queryResult = options.queryStringParametersSchema.safeParse(
+          event.queryStringParameters
+        );
         if (!queryResult.success) {
           validationErrors.push(...formatZodErrors(queryResult.error, 'queryStringParameters'));
         } else {
@@ -93,11 +99,13 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): Mid
       if (error instanceof ValidationErrorException) {
         throw error;
       }
-      throw new ValidationErrorException([{
-        field: 'unknown',
-        message: 'Validation failed',
-        code: 'VALIDATION_ERROR',
-      }]);
+      throw new ValidationErrorException([
+        {
+          field: 'unknown',
+          message: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+        },
+      ]);
     }
   };
 
@@ -106,9 +114,10 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): Mid
       try {
         let responseBody;
         if (request.response.body) {
-          responseBody = typeof request.response.body === 'string' 
-            ? JSON.parse(request.response.body) 
-            : request.response.body;
+          responseBody =
+            typeof request.response.body === 'string'
+              ? JSON.parse(request.response.body)
+              : request.response.body;
         }
 
         const outputResult = options.outputSchema.safeParse(responseBody);
@@ -129,19 +138,27 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): Mid
 };
 
 // Convenience functions for specific validation types
-export const bodyValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const bodyValidationMiddleware = (
+  schema: ZodSchema
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ bodySchema: schema });
 };
 
-export const queryValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const queryValidationMiddleware = (
+  schema: ZodSchema
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ queryStringParametersSchema: schema });
 };
 
-export const pathValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const pathValidationMiddleware = (
+  schema: ZodSchema
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ pathParametersSchema: schema });
 };
 
-export const headersValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const headersValidationMiddleware = (
+  schema: ZodSchema
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ headersSchema: schema });
 };
 
@@ -149,11 +166,13 @@ export const headersValidationMiddleware = (schema: ZodSchema): MiddlewareObj<AP
 export const customValidationMiddleware = (
   validator: (event: APIGatewayProxyEvent) => ValidationError[]
 ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request;
-    
+
     const errors = validator(event);
-    
+
     if (errors.length > 0) {
       throw new ValidationErrorException(errors);
     }
@@ -177,15 +196,15 @@ const formatZodErrors = (zodError: ZodError, prefix?: string): ValidationError[]
 // Common Zod schemas for reuse
 export const schemas = {
   email: z.string().email('Invalid email format').max(254, 'Email too long'),
-  
+
   uuid: z.string().uuid('Invalid UUID format'),
-  
+
   positiveInteger: z.number().int().positive('Must be a positive integer'),
-  
+
   nonEmptyString: z.string().min(1, 'String cannot be empty').max(1000, 'String too long'),
-  
+
   timestamp: z.string().datetime('Invalid datetime format'),
-  
+
   pagination: z.object({
     limit: z.number().int().min(1).max(100).default(20),
     offset: z.number().int().min(0).default(0),
@@ -210,18 +229,23 @@ export const commonSchemas = {
   createUser: z.object({
     email: schemas.email,
     name: schemas.nonEmptyString,
-    password: z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password too long'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(128, 'Password too long'),
   }),
-  
-  updateUser: z.object({
-    name: schemas.nonEmptyString.optional(),
-    email: schemas.email.optional(),
-  }).refine(data => Object.keys(data).length > 0, {
-    message: 'At least one field must be provided',
-  }),
-  
+
+  updateUser: z
+    .object({
+      name: schemas.nonEmptyString.optional(),
+      email: schemas.email.optional(),
+    })
+    .refine(data => Object.keys(data).length > 0, {
+      message: 'At least one field must be provided',
+    }),
+
   paginationQuery: schemas.pagination,
-  
+
   idPath: schemas.id,
 
   // Generic CRUD schemas
@@ -242,11 +266,13 @@ export const commonSchemas = {
   successResponse: z.object({
     success: z.literal(true),
     data: z.unknown(),
-    metadata: z.object({
-      timestamp: schemas.timestamp,
-      requestId: z.string(),
-      version: z.string(),
-    }).optional(),
+    metadata: z
+      .object({
+        timestamp: schemas.timestamp,
+        requestId: z.string(),
+        version: z.string(),
+      })
+      .optional(),
   }),
 
   errorResponse: z.object({
@@ -256,11 +282,13 @@ export const commonSchemas = {
       message: z.string(),
       details: z.record(z.string(), z.unknown()).optional(),
     }),
-    metadata: z.object({
-      timestamp: schemas.timestamp,
-      requestId: z.string(),
-      version: z.string(),
-    }).optional(),
+    metadata: z
+      .object({
+        timestamp: schemas.timestamp,
+        requestId: z.string(),
+        version: z.string(),
+      })
+      .optional(),
   }),
 };
 
@@ -301,10 +329,10 @@ export const transformStringToNumber = z.string().transform((val, ctx) => {
   return parsed;
 });
 
-export const transformStringToBoolean = z.string().transform((val) => {
+export const transformStringToBoolean = z.string().transform(val => {
   return val.toLowerCase() === 'true';
 });
 
-export const transformEmptyStringToUndefined = z.string().transform((val) => {
+export const transformEmptyStringToUndefined = z.string().transform(val => {
   return val === '' ? undefined : val;
 });

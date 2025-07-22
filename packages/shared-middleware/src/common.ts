@@ -3,7 +3,12 @@ import httpEventNormalizer from '@middy/http-event-normalizer';
 import httpHeaderNormalizer from '@middy/http-header-normalizer';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authMiddleware, AuthMiddlewareOptions } from './auth';
-import { loggingMiddleware, correlationIdsMiddleware, performanceMiddleware, LoggingMiddlewareOptions } from './logging';
+import {
+  loggingMiddleware,
+  correlationIdsMiddleware,
+  performanceMiddleware,
+  LoggingMiddlewareOptions,
+} from './logging';
 import { errorHandlerMiddleware, ErrorHandlerOptions } from './error-handler';
 import { corsMiddleware, getEnvironmentCors, CorsOptions } from './cors';
 import { zodValidationMiddleware, ZodValidationOptions } from './validation';
@@ -11,25 +16,25 @@ import { zodValidationMiddleware, ZodValidationOptions } from './validation';
 export interface MiddlewareStackOptions {
   // Auth options
   auth?: AuthMiddlewareOptions | boolean;
-  
+
   // Logging options
   logging?: LoggingMiddlewareOptions | boolean;
-  
+
   // Error handling options
   errorHandler?: ErrorHandlerOptions | boolean;
-  
+
   // CORS options
   cors?: CorsOptions | boolean;
-  
+
   // Validation options
   validation?: ZodValidationOptions;
-  
+
   // Performance monitoring
   performance?: boolean;
-  
+
   // Correlation IDs
   correlationIds?: boolean;
-  
+
   // Event normalization
   normalization?: boolean;
 }
@@ -57,14 +62,12 @@ export const createMiddlewareStack = (
   options: MiddlewareStackOptions = {}
 ): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_STACK_OPTIONS, ...options };
-  
+
   let middlewareStack = middy(handler);
 
   // 1. Event normalization (should be first)
   if (config.normalization) {
-    middlewareStack = middlewareStack
-      .use(httpEventNormalizer())
-      .use(httpHeaderNormalizer());
+    middlewareStack = middlewareStack.use(httpEventNormalizer()).use(httpHeaderNormalizer());
   }
 
   // 2. Correlation IDs (early in the chain)
@@ -195,9 +198,11 @@ export const createInternalHandler = (
 
 // JSON body parsing middleware
 export const jsonBodyParser = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request;
-    
+
     if (event.body && typeof event.body === 'string') {
       try {
         event.body = JSON.parse(event.body);
@@ -214,7 +219,7 @@ export const jsonBodyParser = (): MiddlewareObj<APIGatewayProxyEvent, APIGateway
 export const responseFormatter = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { response } = request;
-    
+
     if (!response) return;
 
     // Ensure response has proper structure
@@ -246,15 +251,17 @@ export const responseFormatter = (): MiddlewareObj<APIGatewayProxyEvent, APIGate
 };
 
 // Rate limiting middleware (basic implementation)
-export const rateLimitMiddleware = (options: {
-  windowMs?: number;
-  maxRequests?: number;
-  keyGenerator?: (event: APIGatewayProxyEvent) => string;
-} = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const rateLimitMiddleware = (
+  options: {
+    windowMs?: number;
+    maxRequests?: number;
+    keyGenerator?: (event: APIGatewayProxyEvent) => string;
+  } = {}
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = {
     windowMs: 60000, // 1 minute
     maxRequests: 100,
-    keyGenerator: (event: APIGatewayProxyEvent) => 
+    keyGenerator: (event: APIGatewayProxyEvent) =>
       event.requestContext?.identity?.sourceIp || 'unknown',
     ...options,
   };
@@ -262,13 +269,15 @@ export const rateLimitMiddleware = (options: {
   // Simple in-memory store (use Redis in production)
   const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request;
     const key = config.keyGenerator(event);
     const now = Date.now();
-    
+
     const record = requestCounts.get(key);
-    
+
     if (!record || now > record.resetTime) {
       requestCounts.set(key, {
         count: 1,
@@ -276,12 +285,12 @@ export const rateLimitMiddleware = (options: {
       });
       return;
     }
-    
+
     record.count++;
-    
+
     if (record.count > config.maxRequests) {
       const retryAfter = Math.ceil((record.resetTime - now) / 1000);
-      
+
       request.response = {
         statusCode: 429,
         headers: {
@@ -301,13 +310,17 @@ export const rateLimitMiddleware = (options: {
 };
 
 // Request size limit middleware
-export const requestSizeLimitMiddleware = (maxSizeBytes: number = 1024 * 1024): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const requestSizeLimitMiddleware = (
+  maxSizeBytes: number = 1024 * 1024
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request;
-    
+
     if (event.body) {
       const bodySize = Buffer.byteLength(event.body, 'utf8');
-      
+
       if (bodySize > maxSizeBytes) {
         request.response = {
           statusCode: 413,

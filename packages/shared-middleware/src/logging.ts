@@ -34,12 +34,16 @@ const DEFAULT_OPTIONS: LoggingMiddlewareOptions = {
   prettyPrint: process.env.NODE_ENV !== 'production',
 };
 
-export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const loggingMiddleware = (
+  options: LoggingMiddlewareOptions = {}
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_OPTIONS, ...options };
-  
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event, context, internal } = request;
-    
+
     // Initialize logger
     const logContext: LogContext = {
       requestId: context.awsRequestId,
@@ -73,7 +77,7 @@ export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): Middl
   const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { response, internal } = request;
     const { logger, startTime } = internal;
-    
+
     if (!logger || !startTime) return;
 
     const duration = Date.now() - startTime;
@@ -83,25 +87,32 @@ export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): Middl
     logger.info('Request completed', {
       statusCode,
       duration,
-      ...(config.logResponse && response && { 
-        response: redactSensitiveData(response, config.redactPaths!) 
-      }),
+      ...(config.logResponse &&
+        response && {
+          response: redactSensitiveData(response, config.redactPaths!),
+        }),
     });
   };
 
-  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { error, internal } = request;
     const { logger, startTime } = internal;
-    
+
     if (!logger || !error || !startTime) return;
 
     const duration = Date.now() - startTime;
 
-    logger.error('Request failed', {
-      duration,
-      errorName: error.name,
-      errorMessage: error.message,
-    }, error);
+    logger.error(
+      'Request failed',
+      {
+        duration,
+        errorName: error.name,
+        errorMessage: error.message,
+      },
+      error
+    );
   };
 
   return {
@@ -111,10 +122,15 @@ export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): Middl
   };
 };
 
-export const correlationIdsMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const correlationIdsMiddleware = (): MiddlewareObj<
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult
+> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { event } = request;
-    
+
     // Generate correlation ID if not present
     if (!event.headers?.['x-correlation-id']) {
       const correlationId = generateCorrelationId();
@@ -125,7 +141,7 @@ export const correlationIdsMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, 
 
   const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event, response } = request;
-    
+
     if (response && event.headers?.['x-correlation-id']) {
       response.headers = response.headers || {};
       response.headers['X-Correlation-ID'] = event.headers['x-correlation-id'];
@@ -138,8 +154,13 @@ export const correlationIdsMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, 
   };
 };
 
-export const performanceMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const performanceMiddleware = (): MiddlewareObj<
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult
+> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
+    request: any
+  ) => {
     const { internal } = request;
     internal.startTime = Date.now();
   };
@@ -147,12 +168,12 @@ export const performanceMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, API
   const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { context, internal, response } = request;
     const { startTime } = internal;
-    
+
     if (!startTime) return;
 
     const duration = Date.now() - startTime;
     const memoryUsed = Math.round(Number(context.memoryLimitInMB) * 0.8); // Approximate memory usage
-    
+
     if (response) {
       response.headers = response.headers || {};
       response.headers['X-Response-Time'] = `${duration}ms`;
@@ -183,7 +204,7 @@ const redactSensitiveData = (obj: any, redactPaths: string[]): any => {
 
   for (const [key, value] of Object.entries(redacted)) {
     const lowerKey = key.toLowerCase();
-    
+
     if (redactPaths.some(path => lowerKey.includes(path.toLowerCase()))) {
       redacted[key] = '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
