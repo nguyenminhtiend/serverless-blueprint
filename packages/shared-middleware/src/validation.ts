@@ -1,16 +1,16 @@
-import { MiddlewareObj, MiddlewareFn } from '@middy/core';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { z, ZodSchema, ZodError } from 'zod';
+import { MiddlewareFn, MiddlewareObj } from '@middy/core';
 import { ValidationErrorException } from '@shared/core';
 import type { ValidationError } from '@shared/types';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { z, ZodError, ZodType } from 'zod';
 
 export interface ZodValidationOptions {
-  inputSchema?: ZodSchema;
-  outputSchema?: ZodSchema;
-  pathParametersSchema?: ZodSchema;
-  queryStringParametersSchema?: ZodSchema;
-  headersSchema?: ZodSchema;
-  bodySchema?: ZodSchema;
+  inputSchema?: ZodType;
+  outputSchema?: ZodType;
+  pathParametersSchema?: ZodType;
+  queryStringParametersSchema?: ZodType;
+  headersSchema?: ZodType;
+  bodySchema?: ZodType;
   strict?: boolean;
 }
 
@@ -139,25 +139,25 @@ export const zodValidationMiddleware = (
 
 // Convenience functions for specific validation types
 export const bodyValidationMiddleware = (
-  schema: ZodSchema
+  schema: ZodType
 ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ bodySchema: schema });
 };
 
 export const queryValidationMiddleware = (
-  schema: ZodSchema
+  schema: ZodType
 ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ queryStringParametersSchema: schema });
 };
 
 export const pathValidationMiddleware = (
-  schema: ZodSchema
+  schema: ZodType
 ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ pathParametersSchema: schema });
 };
 
 export const headersValidationMiddleware = (
-  schema: ZodSchema
+  schema: ZodType
 ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ headersSchema: schema });
 };
@@ -307,7 +307,7 @@ export const validateUUID = (uuid: string): boolean => {
   return schemas.uuid.safeParse(uuid).success;
 };
 
-export const parseAndValidate = <T>(schema: ZodSchema<T>, data: unknown): T => {
+export const parseAndValidate = <T>(schema: ZodType<T>, data: unknown): T => {
   const result = schema.safeParse(data);
   if (!result.success) {
     const errors = formatZodErrors(result.error);
