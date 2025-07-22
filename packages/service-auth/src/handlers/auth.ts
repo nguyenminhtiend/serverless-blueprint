@@ -1,21 +1,18 @@
 import {
+  AuthFlowType,
   CognitoIdentityProviderClient,
-  InitiateAuthCommand,
-  SignUpCommand,
+  ConfirmForgotPasswordCommand,
   ConfirmSignUpCommand,
   ForgotPasswordCommand,
-  ConfirmForgotPasswordCommand,
-  AuthFlowType,
-  ChallengeNameType,
-  RespondToAuthChallengeCommand,
+  InitiateAuthCommand,
+  SignUpCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { createLogger } from '@shared/core';
 import { createPublicApiHandler } from '@shared/middleware';
-import { z } from 'zod';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { z } from 'zod';
 
 // Environment variables
-const USER_POOL_ID = process.env.USER_POOL_ID!;
 const CLIENT_ID = process.env.CLIENT_ID!;
 const REGION = process.env.AWS_REGION || 'us-east-1';
 
