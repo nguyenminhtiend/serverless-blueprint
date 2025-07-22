@@ -1,4 +1,4 @@
-import * as middy from '@middy/core';
+import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { z, ZodSchema, ZodError } from 'zod';
 import { ValidationErrorException } from '@shared/core';
@@ -22,8 +22,8 @@ export interface ValidationMiddlewareRequest {
 }
 
 // Zod validation middleware
-export const zodValidationMiddleware = (options: ZodValidationOptions = {}): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: ValidationMiddlewareRequest) => {
+export const zodValidationMiddleware = (options: ZodValidationOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     const validationErrors: ValidationError[] = [];
 
@@ -46,7 +46,7 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): mid
         if (!bodyResult.success) {
           validationErrors.push(...formatZodErrors(bodyResult.error, 'body'));
         } else {
-          event.body = bodyResult.data;
+          event.body = JSON.stringify(bodyResult.data);
         }
       }
 
@@ -56,7 +56,7 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): mid
         if (!pathResult.success) {
           validationErrors.push(...formatZodErrors(pathResult.error, 'pathParameters'));
         } else {
-          event.pathParameters = pathResult.data;
+          event.pathParameters = pathResult.data as any;
         }
       }
 
@@ -66,7 +66,7 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): mid
         if (!queryResult.success) {
           validationErrors.push(...formatZodErrors(queryResult.error, 'queryStringParameters'));
         } else {
-          event.queryStringParameters = queryResult.data;
+          event.queryStringParameters = queryResult.data as any;
         }
       }
 
@@ -101,7 +101,7 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): mid
     }
   };
 
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: ValidationMiddlewareRequest) => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     if (options.outputSchema && request.response) {
       try {
         let responseBody;
@@ -129,27 +129,27 @@ export const zodValidationMiddleware = (options: ZodValidationOptions = {}): mid
 };
 
 // Convenience functions for specific validation types
-export const bodyValidationMiddleware = (schema: ZodSchema): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const bodyValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ bodySchema: schema });
 };
 
-export const queryValidationMiddleware = (schema: ZodSchema): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const queryValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ queryStringParametersSchema: schema });
 };
 
-export const pathValidationMiddleware = (schema: ZodSchema): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const pathValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ pathParametersSchema: schema });
 };
 
-export const headersValidationMiddleware = (schema: ZodSchema): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const headersValidationMiddleware = (schema: ZodSchema): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return zodValidationMiddleware({ headersSchema: schema });
 };
 
 // Custom validation middleware for complex scenarios
 export const customValidationMiddleware = (
   validator: (event: APIGatewayProxyEvent) => ValidationError[]
-): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: ValidationMiddlewareRequest) => {
+): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     
     const errors = validator(event);
@@ -166,7 +166,7 @@ export const customValidationMiddleware = (
 
 // Helper function to format Zod errors into our ValidationError format
 const formatZodErrors = (zodError: ZodError, prefix?: string): ValidationError[] => {
-  return zodError.errors.map(error => ({
+  return zodError.issues.map((error: any) => ({
     field: prefix ? `${prefix}.${error.path.join('.')}` : error.path.join('.'),
     message: error.message,
     code: error.code.toUpperCase(),
@@ -202,7 +202,7 @@ export const schemas = {
   }),
 
   // Flexible JSON object
-  jsonObject: z.record(z.unknown()),
+  jsonObject: z.record(z.string(), z.unknown()),
 };
 
 // Pre-built validation schemas for common use cases
@@ -226,11 +226,11 @@ export const commonSchemas = {
 
   // Generic CRUD schemas
   createRequest: z.object({
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
   }),
 
   updateRequest: z.object({
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
   }),
 
   deleteRequest: z.object({
@@ -254,7 +254,7 @@ export const commonSchemas = {
     error: z.object({
       code: z.string(),
       message: z.string(),
-      details: z.record(z.unknown()).optional(),
+      details: z.record(z.string(), z.unknown()).optional(),
     }),
     metadata: z.object({
       timestamp: schemas.timestamp,

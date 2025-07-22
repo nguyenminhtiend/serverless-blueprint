@@ -1,4 +1,4 @@
-import middy from '@middy/core';
+import middy, { MiddlewareObj, MiddlewareFn, MiddyfiedHandler } from '@middy/core';
 import httpEventNormalizer from '@middy/http-event-normalizer';
 import httpHeaderNormalizer from '@middy/http-header-normalizer';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
@@ -55,7 +55,7 @@ const DEFAULT_STACK_OPTIONS: MiddlewareStackOptions = {
 export const createMiddlewareStack = (
   handler: LambdaHandler,
   options: MiddlewareStackOptions = {}
-): middy.MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_STACK_OPTIONS, ...options };
   
   let middlewareStack = middy(handler);
@@ -120,7 +120,7 @@ export const createMiddlewareStack = (
 export const createPublicApiHandler = (
   handler: LambdaHandler,
   options: Partial<MiddlewareStackOptions> = {}
-): middy.MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: false,
     cors: true,
@@ -133,7 +133,7 @@ export const createProtectedApiHandler = (
   handler: LambdaHandler,
   authOptions: AuthMiddlewareOptions = {},
   options: Partial<MiddlewareStackOptions> = {}
-): middy.MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: authOptions,
     cors: true,
@@ -145,7 +145,7 @@ export const createProtectedApiHandler = (
 export const createAdminApiHandler = (
   handler: LambdaHandler,
   options: Partial<MiddlewareStackOptions> = {}
-): middy.MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: {
       secret: process.env.JWT_SECRET,
@@ -163,7 +163,7 @@ export const createWebhookHandler = (
   handler: LambdaHandler,
   validationSchema: ZodValidationOptions,
   options: Partial<MiddlewareStackOptions> = {}
-): middy.MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: false,
     cors: false,
@@ -180,7 +180,7 @@ export const createWebhookHandler = (
 export const createInternalHandler = (
   handler: LambdaHandler,
   options: Partial<MiddlewareStackOptions> = {}
-): middy.MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: false,
     cors: false,
@@ -194,8 +194,8 @@ export const createInternalHandler = (
  */
 
 // JSON body parsing middleware
-export const jsonBodyParser = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const jsonBodyParser = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     
     if (event.body && typeof event.body === 'string') {
@@ -211,8 +211,8 @@ export const jsonBodyParser = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIG
 };
 
 // Response formatting middleware
-export const responseFormatter = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const responseFormatter = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { response } = request;
     
     if (!response) return;
@@ -250,7 +250,7 @@ export const rateLimitMiddleware = (options: {
   windowMs?: number;
   maxRequests?: number;
   keyGenerator?: (event: APIGatewayProxyEvent) => string;
-} = {}): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+} = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = {
     windowMs: 60000, // 1 minute
     maxRequests: 100,
@@ -262,7 +262,7 @@ export const rateLimitMiddleware = (options: {
   // Simple in-memory store (use Redis in production)
   const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     const key = config.keyGenerator(event);
     const now = Date.now();
@@ -301,8 +301,8 @@ export const rateLimitMiddleware = (options: {
 };
 
 // Request size limit middleware
-export const requestSizeLimitMiddleware = (maxSizeBytes: number = 1024 * 1024): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const requestSizeLimitMiddleware = (maxSizeBytes: number = 1024 * 1024): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     
     if (event.body) {

@@ -1,4 +1,4 @@
-import middy from '@middy/core';
+import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { 
   AppError, 
@@ -41,10 +41,10 @@ const DEFAULT_OPTIONS: ErrorHandlerOptions = {
   corsOrigin: '*',
 };
 
-export const errorHandlerMiddleware = (options: ErrorHandlerOptions = {}): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const errorHandlerMiddleware = (options: ErrorHandlerOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_OPTIONS, ...options };
 
-  const onError: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { error, internal } = request as ErrorMiddlewareRequest;
     
     if (!error) return;
@@ -62,7 +62,6 @@ export const errorHandlerMiddleware = (options: ErrorHandlerOptions = {}): middy
     request.response = errorResponse;
     
     // Don't throw the error again
-    return errorResponse;
   };
 
   return {
@@ -131,8 +130,8 @@ export const createErrorResponse = (error: Error, options: ErrorHandlerOptions =
   };
 };
 
-export const validationErrorHandler = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const onError: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const validationErrorHandler = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { error } = request as ErrorMiddlewareRequest;
     
     if (!error) return;
@@ -156,8 +155,8 @@ export const validationErrorHandler = (): middy.MiddlewareObj<APIGatewayProxyEve
   };
 };
 
-export const notFoundHandler = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const notFoundHandler = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { response } = request as ErrorMiddlewareRequest;
     
     // If no response was set, return 404
@@ -174,8 +173,8 @@ export const notFoundHandler = (): middy.MiddlewareObj<APIGatewayProxyEvent, API
   };
 };
 
-export const timeoutHandler = (timeoutMs: number = 25000): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const timeoutHandler = (timeoutMs: number = 25000): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(new AppError('Request timeout', 408 as any));

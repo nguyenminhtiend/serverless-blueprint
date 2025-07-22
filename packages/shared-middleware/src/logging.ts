@@ -1,4 +1,4 @@
-import * as middy from '@middy/core';
+import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { createLogger, LogLevel, LogContext, Logger } from '@shared/core';
 import type { AuthenticatedEvent } from './auth';
@@ -34,10 +34,10 @@ const DEFAULT_OPTIONS: LoggingMiddlewareOptions = {
   prettyPrint: process.env.NODE_ENV !== 'production',
 };
 
-export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_OPTIONS, ...options };
   
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event, context, internal } = request;
     
     // Initialize logger
@@ -70,7 +70,7 @@ export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): middy
     }
   };
 
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { response, internal } = request;
     const { logger, startTime } = internal;
     
@@ -89,7 +89,7 @@ export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): middy
     });
   };
 
-  const onError: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+  const onError: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { error, internal } = request;
     const { logger, startTime } = internal;
     
@@ -111,8 +111,8 @@ export const loggingMiddleware = (options: LoggingMiddlewareOptions = {}): middy
   };
 };
 
-export const correlationIdsMiddleware = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+export const correlationIdsMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     
     // Generate correlation ID if not present
@@ -123,7 +123,7 @@ export const correlationIdsMiddleware = (): middy.MiddlewareObj<APIGatewayProxyE
     }
   };
 
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event, response } = request;
     
     if (response && event.headers?.['x-correlation-id']) {
@@ -138,13 +138,13 @@ export const correlationIdsMiddleware = (): middy.MiddlewareObj<APIGatewayProxyE
   };
 };
 
-export const performanceMiddleware = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+export const performanceMiddleware = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { internal } = request;
     internal.startTime = Date.now();
   };
 
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: LoggingRequest) => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { context, internal, response } = request;
     const { startTime } = internal;
     
@@ -199,6 +199,6 @@ const generateCorrelationId = (): string => {
 };
 
 // Export logger instance for use in handlers
-export const getLogger = (request: LoggingRequest): Logger | undefined => {
+export const getLogger = (request: any): Logger | undefined => {
   return request.internal.logger;
 };

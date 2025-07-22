@@ -1,4 +1,4 @@
-import * as middy from '@middy/core';
+import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import jwt from 'jsonwebtoken';
 import { UnauthorizedError, ForbiddenError } from '@shared/core';
@@ -41,10 +41,10 @@ const DEFAULT_OPTIONS: Partial<AuthMiddlewareOptions> = {
   optional: false,
 };
 
-export const authMiddleware = (options: AuthMiddlewareOptions = {}): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const authMiddleware = (options: AuthMiddlewareOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_OPTIONS, ...options };
 
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: AuthMiddlewareRequest) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request as AuthMiddlewareRequest;
     
     // Skip authentication for certain paths
@@ -106,10 +106,10 @@ export const authMiddleware = (options: AuthMiddlewareOptions = {}): middy.Middl
   };
 };
 
-export const requireRole = (requiredRoles: string | string[]): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const requireRole = (requiredRoles: string | string[]): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
 
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: AuthMiddlewareRequest) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request as AuthMiddlewareRequest;
     
     if (!event.user) {
@@ -129,10 +129,10 @@ export const requireRole = (requiredRoles: string | string[]): middy.MiddlewareO
   };
 };
 
-export const requirePermission = (requiredPermissions: string | string[]): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const requirePermission = (requiredPermissions: string | string[]): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
 
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: AuthMiddlewareRequest) => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request as AuthMiddlewareRequest;
     
     if (!event.user) {

@@ -1,4 +1,4 @@
-import middy from '@middy/core';
+import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import httpCors from '@middy/http-cors';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
@@ -34,7 +34,7 @@ const DEFAULT_CORS_OPTIONS: CorsOptions = {
   optionsSuccessStatus: 204,
 };
 
-export const corsMiddleware = (options: CorsOptions = {}): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const corsMiddleware = (options: CorsOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const config = { ...DEFAULT_CORS_OPTIONS, ...options };
   
   return httpCors({
@@ -47,29 +47,29 @@ export const corsMiddleware = (options: CorsOptions = {}): middy.MiddlewareObj<A
   });
 };
 
-export const developmentCors = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const developmentCors = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return corsMiddleware({
     origin: true, // Allow all origins in development
     credentials: true,
   });
 };
 
-export const productionCors = (allowedOrigins: string[]): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const productionCors = (allowedOrigins: string[]): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return corsMiddleware({
     origin: allowedOrigins,
     credentials: true,
   });
 };
 
-export const publicCors = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const publicCors = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return corsMiddleware({
     origin: '*',
     credentials: false,
   });
 };
 
-export const customCorsMiddleware = (options: CorsOptions): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
-  const before: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+export const customCorsMiddleware = (options: CorsOptions): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+  const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event } = request;
     
     // Handle preflight requests
@@ -96,7 +96,7 @@ export const customCorsMiddleware = (options: CorsOptions): middy.MiddlewareObj<
     }
   };
 
-  const after: middy.MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
+  const after: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (request: any) => {
     const { event, response } = request;
     
     if (!response) return;
@@ -129,7 +129,7 @@ export const customCorsMiddleware = (options: CorsOptions): middy.MiddlewareObj<
 };
 
 // Environment-based CORS configuration
-export const getEnvironmentCors = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const getEnvironmentCors = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const environment = process.env.ENVIRONMENT || 'development';
   
   switch (environment) {
@@ -179,7 +179,7 @@ const getAllowedOrigin = (requestOrigin: string | undefined, allowedOrigins: str
 };
 
 // Security-focused CORS for APIs
-export const apiCors = (trustedOrigins: string[] = []): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+export const apiCors = (trustedOrigins: string[] = []): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return corsMiddleware({
     origin: trustedOrigins.length > 0 ? trustedOrigins : false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
