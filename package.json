@@ -12,7 +12,6 @@
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r run clean && rm -rf node_modules",
-    
     "_comment_deploy": "=== DEPLOYMENT COMMANDS ===",
     "deploy:infra": "./scripts/deploy-infra.sh",
     "deploy:infra:dev": "./scripts/deploy-infra.sh dev",
@@ -20,19 +19,16 @@
     "deploy:services": "./scripts/deploy-services.sh",
     "deploy:services:dev": "./scripts/deploy-services.sh dev",
     "deploy:services:prod": "./scripts/deploy-services.sh prod",
-    
     "_comment_stack": "=== SPECIFIC STACK DEPLOYMENT ===",
     "deploy:db": "./scripts/deploy-infra.sh dev database",
     "deploy:auth": "./scripts/deploy-infra.sh dev cognito",
     "deploy:api": "./scripts/deploy-infra.sh dev apigateway",
     "deploy:lambda": "./scripts/deploy-infra.sh dev lambda",
-    
     "_comment_service": "=== SPECIFIC SERVICE DEPLOYMENT ===",
     "deploy:service:auth": "./scripts/deploy-services.sh dev auth",
     "deploy:service:users": "./scripts/deploy-services.sh dev users",
     "deploy:service:orders": "./scripts/deploy-services.sh dev orders",
     "deploy:service:notifications": "./scripts/deploy-services.sh dev notifications",
-    
     "_comment_utils": "=== UTILITY COMMANDS ===",
     "diff": "./scripts/deploy-infra.sh diff",
     "diff:dev": "cd infrastructure && pnpm run diff:dev",

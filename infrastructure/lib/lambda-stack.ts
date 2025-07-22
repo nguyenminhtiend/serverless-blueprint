@@ -3,11 +3,14 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { Construct } from 'constructs';
 
 export interface LambdaStackProps extends cdk.StackProps {
   readonly environment?: string;
   readonly table: dynamodb.Table;
+  readonly userPool?: cognito.UserPool;
+  readonly userPoolClient?: cognito.UserPoolClient;
 }
 
 export class LambdaStack extends cdk.Stack {
@@ -20,7 +23,7 @@ export class LambdaStack extends cdk.Stack {
     super(scope, id, props);
 
     const environment = props.environment || 'dev';
-    const { table } = props;
+    const { table, userPool, userPoolClient } = props;
 
     // Common Lambda configuration
     const commonLambdaProps = {
@@ -47,12 +50,13 @@ export class LambdaStack extends cdk.Stack {
       ...commonLambdaProps,
       functionName: `${environment}-auth-service`,
       entry: '../packages/service-auth/src/index.ts',
-      description: 'Authentication and authorization service',
+      description: 'Cognito-based authentication and authorization service',
       environment: {
         ...commonLambdaProps.environment,
-        JWT_SECRET_NAME: `${environment}/microservices/jwt-secret`,
-        COGNITO_USER_POOL_ID: '', // Will be set by Cognito stack
-        COGNITO_CLIENT_ID: '', // Will be set by Cognito stack
+        USER_POOL_ID: userPool?.userPoolId || '',
+        CLIENT_ID: userPoolClient?.userPoolClientId || '',
+        AWS_REGION: this.region,
+        // CLIENT_SECRET not needed for public clients
       },
     });
 
@@ -113,16 +117,25 @@ export class LambdaStack extends cdk.Stack {
       }
     );
 
-    // Secrets Manager permissions for auth function
-    this.authFunction.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [
-          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:${environment}/microservices/*`,
-        ],
-      })
-    );
+    // Cognito permissions for auth function
+    if (userPool) {
+      this.authFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'cognito-idp:AdminGetUser',
+            'cognito-idp:AdminUpdateUserAttributes',
+            'cognito-idp:AdminDeleteUser',
+            'cognito-idp:AdminSetUserPassword',
+            'cognito-idp:ListUsers',
+            'cognito-idp:AdminListGroupsForUser',
+            'cognito-idp:AdminAddUserToGroup',
+            'cognito-idp:AdminRemoveUserFromGroup',
+          ],
+          resources: [userPool.userPoolArn],
+        })
+      );
+    }
 
     // EventBridge permissions for order function
     this.orderFunction.addToRolePolicy(
