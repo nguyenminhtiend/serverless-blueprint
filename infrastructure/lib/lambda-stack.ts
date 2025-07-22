@@ -4,6 +4,7 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 export interface LambdaStackProps extends cdk.StackProps {
@@ -25,12 +26,20 @@ export class LambdaStack extends cdk.Stack {
     const environment = props.environment || 'dev';
     const { table, userPool, userPoolClient } = props;
 
+    // CloudWatch Logs retention based on environment
+    const logRetention = environment === 'prod' 
+      ? logs.RetentionDays.ONE_MONTH    // 30 days for prod (best practice)
+      : logs.RetentionDays.ONE_DAY;     // 1 day for dev (maximum cost optimization)
+
+    // Memory allocation based on environment
+    const memorySize = environment === 'prod' ? 512 : 256;  // 512MB prod, 256MB dev
+
     // Common Lambda configuration
     const commonLambdaProps = {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
+      memorySize: memorySize,
       environment: {
         TABLE_NAME: table.tableName,
         NODE_ENV: environment,
@@ -51,6 +60,11 @@ export class LambdaStack extends cdk.Stack {
       functionName: `${environment}-auth-service`,
       entry: '../packages/service-auth/src/index.ts',
       description: 'Cognito-based authentication and authorization service',
+      logGroup: new logs.LogGroup(this, 'AuthFunctionLogGroup', {
+        logGroupName: `/aws/lambda/${environment}-auth-service`,
+        retention: logRetention,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }),
       environment: {
         ...commonLambdaProps.environment,
         USER_POOL_ID: userPool?.userPoolId || '',
@@ -66,6 +80,11 @@ export class LambdaStack extends cdk.Stack {
       functionName: `${environment}-user-service`,
       entry: '../packages/service-users/src/index.ts',
       description: 'User management service',
+      logGroup: new logs.LogGroup(this, 'UserFunctionLogGroup', {
+        logGroupName: `/aws/lambda/${environment}-user-service`,
+        retention: logRetention,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }),
     });
 
     // Order Service Function
@@ -74,6 +93,11 @@ export class LambdaStack extends cdk.Stack {
       functionName: `${environment}-order-service`,
       entry: '../packages/service-orders/src/index.ts',
       description: 'Order management service',
+      logGroup: new logs.LogGroup(this, 'OrderFunctionLogGroup', {
+        logGroupName: `/aws/lambda/${environment}-order-service`,
+        retention: logRetention,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }),
       environment: {
         ...commonLambdaProps.environment,
         EVENT_BUS_NAME: `${environment}-microservices-bus`,
@@ -86,6 +110,11 @@ export class LambdaStack extends cdk.Stack {
       functionName: `${environment}-notification-service`,
       entry: '../packages/service-notifications/src/index.ts',
       description: 'Event-driven notification service',
+      logGroup: new logs.LogGroup(this, 'NotificationFunctionLogGroup', {
+        logGroupName: `/aws/lambda/${environment}-notification-service`,
+        retention: logRetention,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }),
       environment: {
         ...commonLambdaProps.environment,
         SQS_QUEUE_URL: '', // Will be set by Events stack
