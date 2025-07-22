@@ -75,6 +75,8 @@ const apiGatewayStack = new ApiGatewayStack(
     authFunction: lambdaStack.authFunction,
     userFunction: lambdaStack.userFunction,
     orderFunction: lambdaStack.orderFunction,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
     description: `API Gateway infrastructure for ${environment} environment`,
   }
 );
@@ -83,5 +85,6 @@ const apiGatewayStack = new ApiGatewayStack(
 lambdaStack.addDependency(databaseStack);
 lambdaStack.addDependency(eventsStack);
 apiGatewayStack.addDependency(lambdaStack);
+apiGatewayStack.addDependency(cognitoStack);
 
 // Stack naming convention is set in cdk.json context

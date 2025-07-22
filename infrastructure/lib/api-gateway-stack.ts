@@ -1,8 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
-import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as apigatewayv2Authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
@@ -12,45 +12,29 @@ export interface ApiGatewayStackProps extends cdk.StackProps {
   readonly authFunction: nodejs.NodejsFunction;
   readonly userFunction: nodejs.NodejsFunction;
   readonly orderFunction: nodejs.NodejsFunction;
+  readonly userPool: cognito.UserPool;
+  readonly userPoolClient: cognito.UserPoolClient;
 }
 
 export class ApiGatewayStack extends cdk.Stack {
   public readonly httpApi: apigatewayv2.HttpApi;
-  public readonly authorizerFunction: nodejs.NodejsFunction;
+  public readonly jwtAuthorizer: apigatewayv2Authorizers.HttpJwtAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiGatewayStackProps) {
     super(scope, id, props);
 
     const environment = props.environment || 'dev';
-    const { authFunction, userFunction, orderFunction } = props;
+    const { authFunction, userFunction, orderFunction, userPool, userPoolClient } = props;
 
-    // Create custom JWT authorizer function
-    this.authorizerFunction = new nodejs.NodejsFunction(this, 'AuthorizerFunction', {
-      functionName: `${environment}-jwt-authorizer`,
-      entry: '../packages/shared-middleware/src/authorizer.ts',
-      runtime: lambda.Runtime.NODEJS_22_X,
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(10),
-      memorySize: 256,
-      description: 'JWT Custom Authorizer for API Gateway',
-      environment: {
-        NODE_ENV: environment,
-        LOG_LEVEL: environment === 'prod' ? 'WARN' : 'INFO',
-        JWT_SECRET_NAME: `${environment}/microservices/jwt-secret`,
-      },
-      tracing: lambda.Tracing.ACTIVE,
-      depsLockFilePath: '../pnpm-lock.yaml',
-    });
-
-    // Grant secrets manager permissions to authorizer
-    this.authorizerFunction.addToRolePolicy(
-      new cdk.aws_iam.PolicyStatement({
-        effect: cdk.aws_iam.Effect.ALLOW,
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [
-          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:${environment}/microservices/*`,
-        ],
-      })
+    // Create native JWT authorizer using Cognito User Pool
+    this.jwtAuthorizer = new apigatewayv2Authorizers.HttpJwtAuthorizer(
+      'CognitoJwtAuthorizer',
+      `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
+      {
+        authorizerName: `${environment}-cognito-jwt-authorizer`,
+        jwtAudience: [userPoolClient.userPoolClientId],
+        identitySource: ['$request.header.Authorization'],
+      }
     );
 
     // Create CloudWatch Log Group for API Gateway
@@ -84,17 +68,7 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-    // Create JWT Authorizer
-    const jwtAuthorizer = new apigatewayv2Authorizers.HttpLambdaAuthorizer(
-      'JwtAuthorizer',
-      this.authorizerFunction,
-      {
-        authorizerName: `${environment}-jwt-authorizer`,
-        responseTypes: [apigatewayv2Authorizers.HttpLambdaResponseType.SIMPLE],
-        resultsCacheTtl: cdk.Duration.minutes(5),
-        identitySource: ['$request.header.Authorization'],
-      }
-    );
+    // JWT Authorizer is already created above as this.jwtAuthorizer
 
     // Create Lambda integrations
     const authIntegration = new apigatewayv2Integrations.HttpLambdaIntegration(
@@ -140,7 +114,7 @@ export class ApiGatewayStack extends cdk.Stack {
       path: '/users',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.POST],
       integration: userIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     this.httpApi.addRoutes({
@@ -152,14 +126,14 @@ export class ApiGatewayStack extends cdk.Stack {
         apigatewayv2.HttpMethod.PATCH,
       ],
       integration: userIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     this.httpApi.addRoutes({
       path: '/users/{id}/profile',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.PUT],
       integration: userIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     // Order routes (protected - requires JWT authorization)
@@ -167,7 +141,7 @@ export class ApiGatewayStack extends cdk.Stack {
       path: '/orders',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.POST],
       integration: orderIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     this.httpApi.addRoutes({
@@ -179,21 +153,21 @@ export class ApiGatewayStack extends cdk.Stack {
         apigatewayv2.HttpMethod.PATCH,
       ],
       integration: orderIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     this.httpApi.addRoutes({
       path: '/orders/{id}/status',
       methods: [apigatewayv2.HttpMethod.PUT],
       integration: orderIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     this.httpApi.addRoutes({
       path: '/users/{userId}/orders',
       methods: [apigatewayv2.HttpMethod.GET],
       integration: orderIntegration,
-      authorizer: jwtAuthorizer,
+      authorizer: this.jwtAuthorizer,
     });
 
     // Health check route (public)
@@ -238,10 +212,16 @@ export class ApiGatewayStack extends cdk.Stack {
       exportName: `${environment}-api-gateway-id`,
     });
 
-    new cdk.CfnOutput(this, 'AuthorizerFunctionArn', {
-      value: this.authorizerFunction.functionArn,
-      description: 'JWT Authorizer function ARN',
-      exportName: `${environment}-authorizer-function-arn`,
+    new cdk.CfnOutput(this, 'JwtAuthorizerId', {
+      value: this.jwtAuthorizer.authorizerId,
+      description: 'Cognito JWT Authorizer ID',
+      exportName: `${environment}-jwt-authorizer-id`,
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolId', {
+      value: userPool.userPoolId,
+      description: 'Cognito User Pool ID used by JWT Authorizer',
+      exportName: `${environment}-api-user-pool-id`,
     });
 
     // Tags
