@@ -84,7 +84,7 @@ pnpm deploy:services:prod  # Services second
 
 ### ⚡ **Speed**
 - **Infrastructure**: Only changed stacks deploy
-- **Services**: Hotswap deployment for Lambda (2-10x faster)
+- **Services**: Hot-swap deployment for Lambda (2-10x faster)
 - **Auto-detection**: No manual decisions needed
 
 ### 🛡️ **Safety**
@@ -96,6 +96,7 @@ pnpm deploy:services:prod  # Services second
 - **Git-aware**: Detects changes since last commit
 - **Shared package handling**: Rebuilds dependents automatically
 - **Conflict prevention**: Warns if infrastructure needs to deploy first
+- **Verbose dev logging**: Dev environment shows detailed output for better error debugging
 
 ## Error Prevention
 
@@ -104,7 +105,7 @@ The new scripts include the `synth` step before deployment, so you won't encount
 1. ✅ Synthesizes stacks (validates configuration)
 2. ✅ Checks dependencies
 3. ✅ Deploys in correct order
-4. ✅ Uses hotswap for dev environments (faster)
+4. ✅ Uses hot-swap for dev environments (faster)
 
 ## Command Reference
 

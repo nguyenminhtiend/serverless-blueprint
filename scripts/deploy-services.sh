@@ -67,13 +67,23 @@ build_services() {
     green "🔨 Building services: $services"
     
     # Build shared dependencies first
-    echo "Building shared dependencies..."
-    pnpm --filter "@shared/*" run build
+    if [ "$ENVIRONMENT" = "dev" ]; then
+        echo "🔍 Building shared dependencies with verbose output..."
+        pnpm --filter "@shared/*" run build --verbose
+    else
+        echo "Building shared dependencies..."
+        pnpm --filter "@shared/*" run build
+    fi
     
     # Build specific services
     for service in $services; do
-        echo "Building $service..."
-        pnpm --filter "@service/${service#service-}" run build
+        if [ "$ENVIRONMENT" = "dev" ]; then
+            echo "🔍 Building $service with verbose output..."
+            pnpm --filter "@service/${service#service-}" run build --verbose
+        else
+            echo "Building $service..."
+            pnpm --filter "@service/${service#service-}" run build
+        fi
     done
 }
 
@@ -94,20 +104,40 @@ deploy_lambda_functions() {
     for service in $services; do
         case $service in
             service-auth)
-                echo "Deploying auth functions..."
-                cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap
+                if [ "$ENVIRONMENT" = "dev" ]; then
+                    echo "🔍 Deploying auth functions with verbose output..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap --verbose
+                else
+                    echo "Deploying auth functions..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never
+                fi
                 ;;
             service-users)
-                echo "Deploying user functions..."
-                cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap
+                if [ "$ENVIRONMENT" = "dev" ]; then
+                    echo "🔍 Deploying user functions with verbose output..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap --verbose
+                else
+                    echo "Deploying user functions..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never
+                fi
                 ;;
             service-orders)
-                echo "Deploying order functions..."
-                cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap
+                if [ "$ENVIRONMENT" = "dev" ]; then
+                    echo "🔍 Deploying order functions with verbose output..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap --verbose
+                else
+                    echo "Deploying order functions..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never
+                fi
                 ;;
             service-notifications)
-                echo "Deploying notification functions..."
-                cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap
+                if [ "$ENVIRONMENT" = "dev" ]; then
+                    echo "🔍 Deploying notification functions with verbose output..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never --hotswap --verbose
+                else
+                    echo "Deploying notification functions..."
+                    cdk deploy ServerlessMicroservices-Lambda-$ENVIRONMENT --exclusively --require-approval never
+                fi
                 ;;
         esac
     done

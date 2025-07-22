@@ -105,7 +105,12 @@ deploy_stacks() {
     
     # First, always run synth to catch errors early
     echo "🔍 Synthesizing stacks..."
-    pnpm run synth:$ENVIRONMENT
+    if [ "$ENVIRONMENT" = "dev" ]; then
+        echo "🔍 Running verbose synthesis for dev environment..."
+        pnpm run synth:$ENVIRONMENT --verbose
+    else
+        pnpm run synth:$ENVIRONMENT
+    fi
     
     # Deploy in order
     for stack in $stacks; do
@@ -131,8 +136,9 @@ deploy_stacks() {
         if [ -n "$stack_name" ]; then
             echo "Deploying $stack_name..."
             if [ "$ENVIRONMENT" = "dev" ]; then
-                # Use hotswap for faster dev deployments
-                cdk deploy $stack_name --require-approval never --hotswap --context environment=$ENVIRONMENT
+                # Use hotswap and verbose for faster dev deployments with detailed logging
+                echo "🔍 Deploying with verbose output for better error visibility..."
+                cdk deploy $stack_name --require-approval never --hotswap --verbose --context environment=$ENVIRONMENT
             else
                 # Standard deployment for production
                 cdk deploy $stack_name --require-approval never --context environment=$ENVIRONMENT
