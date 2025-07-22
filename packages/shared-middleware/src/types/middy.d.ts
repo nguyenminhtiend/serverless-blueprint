@@ -1,30 +1,30 @@
 declare module '@middy/core' {
-  import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+  import { Context } from 'aws-lambda';
 
-  export interface Request<TEvent = any, TResult = any, TErr = Error, TContext = Context> {
+  export interface Request<TEvent = unknown, TResult = unknown, TErr = Error, TContext = Context> {
     event: TEvent;
     context: TContext;
     response?: TResult | null;
     error?: TErr;
-    internal: Record<string, any>;
+    internal: Record<string, unknown>;
   }
 
-  export interface MiddlewareFn<TEvent = any, TResult = any> {
+  export interface MiddlewareFn<TEvent = unknown, TResult = unknown> {
     (request: Request<TEvent, TResult>): void | Promise<void>;
   }
 
-  export interface MiddlewareObj<TEvent = any, TResult = any> {
+  export interface MiddlewareObj<TEvent = unknown, TResult = unknown> {
     before?: MiddlewareFn<TEvent, TResult>;
     after?: MiddlewareFn<TEvent, TResult>;
     onError?: MiddlewareFn<TEvent, TResult>;
   }
 
-  export interface MiddyfiedHandler<TEvent = any, TResult = any> {
+  export interface MiddyfiedHandler<TEvent = unknown, TResult = unknown> {
     (event: TEvent, context: Context): Promise<TResult>;
     use(middleware: MiddlewareObj<TEvent, TResult>): MiddyfiedHandler<TEvent, TResult>;
   }
 
-  function middy<TEvent = any, TResult = any>(
+  function middy<TEvent = unknown, TResult = unknown>(
     handler: (event: TEvent, context: Context) => Promise<TResult>
   ): MiddyfiedHandler<TEvent, TResult>;
 
