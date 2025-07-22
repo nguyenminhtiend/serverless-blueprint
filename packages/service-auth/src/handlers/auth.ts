@@ -6,7 +6,13 @@ import {
   ForgotPasswordCommand,
   InitiateAuthCommand,
   SignUpCommand,
+  SignUpCommandInput,
+  ConfirmSignUpCommandInput,
+  ForgotPasswordCommandInput,
+  ConfirmForgotPasswordCommandInput,
+  InitiateAuthCommandInput,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { createHmac } from 'crypto';
 import { createLogger } from '@shared/core';
 import { createPublicApiHandler } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
@@ -14,11 +20,48 @@ import { z } from 'zod';
 
 // Environment variables
 const CLIENT_ID = process.env.CLIENT_ID!;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REGION = process.env.AWS_REGION || 'ap-southeast-1';
 
 // Cognito client
 const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });
 const logger = createLogger('auth-service');
+
+// Constants
+const COMMON_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+} as const;
+
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+} as const;
+
+// Types
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  code?: string;
+  message?: string;
+}
+
+interface AuthTokens {
+  accessToken: string;
+  idToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+interface AuthChallenge {
+  challenge: boolean;
+  challengeName: string;
+  session: string;
+  challengeParameters: Record<string, string>;
+}
 
 // Validation schemas
 const loginSchema = z.object({
@@ -48,38 +91,86 @@ const resetPasswordSchema = z.object({
   newPassword: z.string().min(8),
 });
 
-// Helper function to create crypto secure client secret hash
+// Helper functions
 function calculateSecretHash(email: string): string {
-  // If CLIENT_SECRET is not provided, return empty string
-  // (for public clients without client secret)
-  const clientSecret = process.env.CLIENT_SECRET;
-  if (!clientSecret) return '';
+  if (!CLIENT_SECRET) return '';
 
-  const crypto = require('crypto');
   const message = email + CLIENT_ID;
-  const hmac = crypto.createHmac('SHA256', clientSecret);
+  const hmac = createHmac('SHA256', CLIENT_SECRET);
   hmac.update(message);
   return hmac.digest('base64');
+}
+
+function createSuccessResponse<T>(
+  data: T,
+  statusCode: number = HTTP_STATUS.OK,
+  message?: string
+): APIGatewayProxyResult {
+  return {
+    statusCode,
+    headers: COMMON_HEADERS,
+    body: JSON.stringify({
+      success: true,
+      data,
+      ...(message && { message }),
+    } as ApiResponse<T>),
+  };
+}
+
+function createErrorResponse(
+  error: string,
+  code?: string,
+  statusCode: number = HTTP_STATUS.BAD_REQUEST
+): APIGatewayProxyResult {
+  return {
+    statusCode,
+    headers: COMMON_HEADERS,
+    body: JSON.stringify({
+      success: false,
+      error,
+      code,
+    } as ApiResponse),
+  };
+}
+
+function parseRequestBody<T>(event: APIGatewayProxyEvent, schema: z.ZodSchema<T>): T {
+  const body = JSON.parse(event.body || '{}');
+  return schema.parse(body);
+}
+
+function addSecretHashIfNeeded(params: Record<string, any>, email: string): void {
+  const secretHash = calculateSecretHash(email);
+  if (secretHash) {
+    params.SecretHash = secretHash;
+  }
+}
+
+function getStatusCodeFromCognitoError(errorName: string): number {
+  switch (errorName) {
+    case 'NotAuthorizedException':
+    case 'UserNotConfirmedException':
+      return HTTP_STATUS.UNAUTHORIZED;
+    case 'UserNotFoundException':
+    case 'CodeMismatchException':
+    case 'ExpiredCodeException':
+      return HTTP_STATUS.BAD_REQUEST;
+    default:
+      return HTTP_STATUS.BAD_REQUEST;
+  }
 }
 
 // Login handler
 const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { email, password } = loginSchema.parse(body);
-
+    const { email, password } = parseRequestBody(event, loginSchema);
     logger.info('Processing login request', { email });
 
-    const secretHash = calculateSecretHash(email);
-    const authParameters: Record<string, string> = {
+    const authParameters: InitiateAuthCommandInput['AuthParameters'] = {
       USERNAME: email,
       PASSWORD: password,
     };
 
-    // Add SECRET_HASH only if CLIENT_SECRET exists
-    if (secretHash) {
-      authParameters.SECRET_HASH = secretHash;
-    }
+    addSecretHashIfNeeded(authParameters, email);
 
     const command = new InitiateAuthCommand({
       AuthFlow: AuthFlowType.USER_SRP_AUTH,
@@ -90,95 +181,60 @@ const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
     const result = await cognitoClient.send(command);
 
     if (result.ChallengeName) {
-      // Handle authentication challenges (MFA, password change, etc.)
       logger.info('Authentication challenge required', {
         challengeName: result.ChallengeName,
         email,
       });
 
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        body: JSON.stringify({
-          challenge: true,
-          challengeName: result.ChallengeName,
-          session: result.Session,
-          challengeParameters: result.ChallengeParameters,
-        }),
+      const challengeResponse: AuthChallenge = {
+        challenge: true,
+        challengeName: result.ChallengeName,
+        session: result.Session!,
+        challengeParameters: result.ChallengeParameters || {},
       };
+
+      return createSuccessResponse(challengeResponse);
     }
 
     if (result.AuthenticationResult) {
       logger.info('Login successful', { email });
 
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        body: JSON.stringify({
-          success: true,
-          tokens: {
-            accessToken: result.AuthenticationResult.AccessToken,
-            idToken: result.AuthenticationResult.IdToken,
-            refreshToken: result.AuthenticationResult.RefreshToken,
-            expiresIn: result.AuthenticationResult.ExpiresIn,
-          },
-        }),
+      const tokens: AuthTokens = {
+        accessToken: result.AuthenticationResult.AccessToken!,
+        idToken: result.AuthenticationResult.IdToken!,
+        refreshToken: result.AuthenticationResult.RefreshToken!,
+        expiresIn: result.AuthenticationResult.ExpiresIn!,
       };
+
+      return createSuccessResponse({ tokens });
     }
 
     throw new Error('Authentication failed - no result');
   } catch (error: any) {
-    logger.error('Login failed', { error: error.message });
-
-    // Handle specific Cognito errors
-    const statusCode = error.name === 'NotAuthorizedException' ? 401 : 400;
-
-    return {
-      statusCode,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message || 'Login failed',
-        code: error.name || 'LoginError',
-      }),
-    };
+    logger.error('Login failed', { error: error.message, errorName: error.name });
+    const statusCode = getStatusCodeFromCognitoError(error.name);
+    return createErrorResponse(error.message || 'Login failed', error.name, statusCode);
   }
 };
 
 // Register handler
 const registerHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { email, password, givenName, familyName } = registerSchema.parse(body);
-
+    const { email, password, givenName, familyName } = parseRequestBody(event, registerSchema);
     logger.info('Processing registration request', { email });
 
-    const secretHash = calculateSecretHash(email);
     const userAttributes = [{ Name: 'email', Value: email }];
-
     if (givenName) userAttributes.push({ Name: 'given_name', Value: givenName });
     if (familyName) userAttributes.push({ Name: 'family_name', Value: familyName });
 
-    const signUpParams: any = {
+    const signUpParams: SignUpCommandInput = {
       ClientId: CLIENT_ID,
       Username: email,
       Password: password,
       UserAttributes: userAttributes,
     };
 
-    // Add SECRET_HASH only if CLIENT_SECRET exists
-    if (secretHash) {
-      signUpParams.SecretHash = secretHash;
-    }
+    addSecretHashIfNeeded(signUpParams, email);
 
     const command = new SignUpCommand(signUpParams);
     const result = await cognitoClient.send(command);
@@ -188,35 +244,20 @@ const registerHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
       userConfirmed: result.UserConfirmed,
     });
 
-    return {
-      statusCode: 201,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'User registered successfully',
-        userSub: result.UserSub,
-        userConfirmed: result.UserConfirmed,
-        needsConfirmation: !result.UserConfirmed,
-      }),
+    const registerResponse = {
+      userSub: result.UserSub!,
+      userConfirmed: result.UserConfirmed!,
+      needsConfirmation: !result.UserConfirmed,
     };
-  } catch (error: any) {
-    logger.error('Registration failed', { error: error.message });
 
-    return {
-      statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message || 'Registration failed',
-        code: error.name || 'RegistrationError',
-      }),
-    };
+    return createSuccessResponse(
+      registerResponse,
+      HTTP_STATUS.CREATED,
+      'User registered successfully'
+    );
+  } catch (error: any) {
+    logger.error('Registration failed', { error: error.message, errorName: error.name });
+    return createErrorResponse(error.message || 'Registration failed', error.name);
   }
 };
 
@@ -225,54 +266,25 @@ const confirmSignUpHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { email, confirmationCode } = confirmSignUpSchema.parse(body);
-
+    const { email, confirmationCode } = parseRequestBody(event, confirmSignUpSchema);
     logger.info('Processing sign-up confirmation', { email });
 
-    const secretHash = calculateSecretHash(email);
-    const confirmParams: any = {
+    const confirmParams: ConfirmSignUpCommandInput = {
       ClientId: CLIENT_ID,
       Username: email,
       ConfirmationCode: confirmationCode,
     };
 
-    // Add SECRET_HASH only if CLIENT_SECRET exists
-    if (secretHash) {
-      confirmParams.SecretHash = secretHash;
-    }
+    addSecretHashIfNeeded(confirmParams, email);
 
     const command = new ConfirmSignUpCommand(confirmParams);
     await cognitoClient.send(command);
 
     logger.info('Sign-up confirmation successful', { email });
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Account confirmed successfully',
-      }),
-    };
+    return createSuccessResponse(null, HTTP_STATUS.OK, 'Account confirmed successfully');
   } catch (error: any) {
-    logger.error('Sign-up confirmation failed', { error: error.message });
-
-    return {
-      statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message || 'Confirmation failed',
-        code: error.name || 'ConfirmationError',
-      }),
-    };
+    logger.error('Sign-up confirmation failed', { error: error.message, errorName: error.name });
+    return createErrorResponse(error.message || 'Confirmation failed', error.name);
   }
 };
 
@@ -281,21 +293,15 @@ const forgotPasswordHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { email } = forgotPasswordSchema.parse(body);
-
+    const { email } = parseRequestBody(event, forgotPasswordSchema);
     logger.info('Processing forgot password request', { email });
 
-    const secretHash = calculateSecretHash(email);
-    const forgotParams: any = {
+    const forgotParams: ForgotPasswordCommandInput = {
       ClientId: CLIENT_ID,
       Username: email,
     };
 
-    // Add SECRET_HASH only if CLIENT_SECRET exists
-    if (secretHash) {
-      forgotParams.SecretHash = secretHash;
-    }
+    addSecretHashIfNeeded(forgotParams, email);
 
     const command = new ForgotPasswordCommand(forgotParams);
     const result = await cognitoClient.send(command);
@@ -305,33 +311,14 @@ const forgotPasswordHandler = async (
       deliveryMedium: result.CodeDeliveryDetails?.DeliveryMedium,
     });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Password reset code sent',
-        deliveryDetails: result.CodeDeliveryDetails,
-      }),
-    };
+    return createSuccessResponse(
+      { deliveryDetails: result.CodeDeliveryDetails },
+      HTTP_STATUS.OK,
+      'Password reset code sent'
+    );
   } catch (error: any) {
-    logger.error('Forgot password request failed', { error: error.message });
-
-    return {
-      statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message || 'Forgot password request failed',
-        code: error.name || 'ForgotPasswordError',
-      }),
-    };
+    logger.error('Forgot password request failed', { error: error.message, errorName: error.name });
+    return createErrorResponse(error.message || 'Forgot password request failed', error.name);
   }
 };
 
@@ -340,55 +327,26 @@ const resetPasswordHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { email, confirmationCode, newPassword } = resetPasswordSchema.parse(body);
-
+    const { email, confirmationCode, newPassword } = parseRequestBody(event, resetPasswordSchema);
     logger.info('Processing password reset', { email });
 
-    const secretHash = calculateSecretHash(email);
-    const resetParams: any = {
+    const resetParams: ConfirmForgotPasswordCommandInput = {
       ClientId: CLIENT_ID,
       Username: email,
       ConfirmationCode: confirmationCode,
       Password: newPassword,
     };
 
-    // Add SECRET_HASH only if CLIENT_SECRET exists
-    if (secretHash) {
-      resetParams.SecretHash = secretHash;
-    }
+    addSecretHashIfNeeded(resetParams, email);
 
     const command = new ConfirmForgotPasswordCommand(resetParams);
     await cognitoClient.send(command);
 
     logger.info('Password reset successful', { email });
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Password reset successfully',
-      }),
-    };
+    return createSuccessResponse(null, HTTP_STATUS.OK, 'Password reset successfully');
   } catch (error: any) {
-    logger.error('Password reset failed', { error: error.message });
-
-    return {
-      statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message || 'Password reset failed',
-        code: error.name || 'ResetPasswordError',
-      }),
-    };
+    logger.error('Password reset failed', { error: error.message, errorName: error.name });
+    return createErrorResponse(error.message || 'Password reset failed', error.name);
   }
 };
 
