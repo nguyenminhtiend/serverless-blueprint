@@ -10,7 +10,17 @@
     "test": "jest",
     "clean": "rimraf dist lib/*.js lib/*.d.ts",
     "cdk": "cdk",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth --all",
+    "synth:dev": "cdk synth --all -c environment=dev",
+    "synth:prod": "cdk synth --all -c environment=prod",
+    "deploy:infra": "cdk synth --all && cdk deploy --all --require-approval never",
+    "deploy:infra:dev": "cdk synth --all -c environment=dev && cdk deploy --all -c environment=dev --require-approval never",
+    "deploy:infra:prod": "cdk synth --all -c environment=prod && cdk deploy --all -c environment=prod --require-approval never",
+    "deploy:single": "cdk synth --all && cdk deploy --require-approval never",
+    "diff": "cdk diff --all",
+    "diff:dev": "cdk diff --all -c environment=dev",
+    "diff:prod": "cdk diff --all -c environment=prod"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.165.0",
