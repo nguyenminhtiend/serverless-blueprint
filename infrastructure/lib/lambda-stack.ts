@@ -34,6 +34,9 @@ export class LambdaStack extends cdk.Stack {
     // Memory allocation based on environment
     const memorySize = environment === 'prod' ? 512 : 256;  // 512MB prod, 256MB dev
 
+    // Tracing based on environment (off for dev, on for prod)
+    const tracingMode = environment === 'prod' ? lambda.Tracing.ACTIVE : lambda.Tracing.DISABLED;
+
     // Common Lambda configuration
     const commonLambdaProps = {
       runtime: lambda.Runtime.NODEJS_22_X,
@@ -50,7 +53,7 @@ export class LambdaStack extends cdk.Stack {
         POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
         POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
       },
-      tracing: lambda.Tracing.ACTIVE,
+      tracing: tracingMode,
       depsLockFilePath: '../pnpm-lock.yaml',
     };
 
