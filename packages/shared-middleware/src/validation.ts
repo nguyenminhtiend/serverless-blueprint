@@ -1,4 +1,4 @@
-import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
+import { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { z, ZodSchema, ZodError } from 'zod';
 import { ValidationErrorException } from '@shared/core';
@@ -37,7 +37,7 @@ export const zodValidationMiddleware = (
         let parsedBody;
         try {
           parsedBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-        } catch (error) {
+        } catch {
           validationErrors.push({
             field: 'body',
             message: 'Invalid JSON in request body',

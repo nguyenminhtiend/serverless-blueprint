@@ -1,4 +1,4 @@
-import middy, { MiddlewareObj, MiddlewareFn } from '@middy/core';
+import { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import httpCors from '@middy/http-cors';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
@@ -140,16 +140,18 @@ export const getEnvironmentCors = (): MiddlewareObj<
   const environment = process.env.ENVIRONMENT || 'development';
 
   switch (environment) {
-    case 'production':
+    case 'production': {
       const prodOrigins = process.env.CORS_ORIGIN?.split(',') || ['https://yourdomain.com'];
       return productionCors(prodOrigins);
+    }
 
-    case 'staging':
+    case 'staging': {
       const stagingOrigins = process.env.CORS_ORIGIN?.split(',') || [
         'https://staging.yourdomain.com',
         'https://yourdomain.com',
       ];
       return productionCors(stagingOrigins);
+    }
 
     case 'development':
     default:
