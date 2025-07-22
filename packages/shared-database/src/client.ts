@@ -8,7 +8,7 @@ export class DatabaseClient {
 
   private constructor() {
     const dynamoClient = new DynamoDBClient({
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: process.env.AWS_REGION || 'ap-southeast-1',
     });
 
     this.client = DynamoDBDocumentClient.from(dynamoClient, {

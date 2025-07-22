@@ -9,7 +9,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { createLogger } from '@shared/core';
 
-const REGION = process.env.AWS_REGION || 'us-east-1';
+const REGION = process.env.AWS_REGION || 'ap-southeast-1';
 const USER_POOL_ID = process.env.USER_POOL_ID!;
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });

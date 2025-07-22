@@ -7,7 +7,7 @@ export class EventPublisher {
 
   constructor(eventBusName?: string) {
     this.client = new EventBridgeClient({
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: process.env.AWS_REGION || 'ap-southeast-1',
     });
     this.eventBusName = eventBusName || process.env.EVENT_BUS_NAME || 'default';
   }

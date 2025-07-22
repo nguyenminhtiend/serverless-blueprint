@@ -71,7 +71,7 @@ npx cdk synth
 
 # Deploy using recommended approach
 pnpm deploy              # Deploy to dev (default)
-pnpm deploy:dev          # Deploy to dev explicitly  
+pnpm deploy:dev          # Deploy to dev explicitly
 pnpm deploy:prod         # Deploy to prod with PITR
 
 # Or use script directly
@@ -102,7 +102,7 @@ npx cdk deploy -c environment=prod
 
 Override region if needed:
 ```bash
-npx cdk deploy -c region=us-east-1
+npx cdk deploy -c region=ap-southeast-1
 ```
 
 ## Next Steps - Phase 4

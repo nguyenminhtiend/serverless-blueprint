@@ -14,7 +14,7 @@ import { z } from 'zod';
 
 // Environment variables
 const CLIENT_ID = process.env.CLIENT_ID!;
-const REGION = process.env.AWS_REGION || 'us-east-1';
+const REGION = process.env.AWS_REGION || 'ap-southeast-1';
 
 // Cognito client
 const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });

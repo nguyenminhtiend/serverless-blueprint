@@ -1,6 +1,6 @@
 // Global test setup
 process.env.NODE_ENV = 'test';
-process.env.AWS_REGION = 'us-east-1';
+process.env.AWS_REGION = 'ap-southeast-1';
 process.env.TABLE_NAME = 'test-table';
 
 // Mock AWS SDK

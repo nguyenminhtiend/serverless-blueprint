@@ -35,9 +35,9 @@ This service provides authentication functionality using AWS Cognito User Pools,
 Required environment variables for Lambda deployment:
 
 ```bash
-USER_POOL_ID=us-east-1_xxxxxxxxx    # Cognito User Pool ID
+USER_POOL_ID=ap-southeast-1_xxxxxxxxx    # Cognito User Pool ID
 CLIENT_ID=xxxxxxxxxxxxxxxxxx        # Cognito User Pool App Client ID
-AWS_REGION=us-east-1                # AWS region
+AWS_REGION=ap-southeast-1                # AWS region
 # CLIENT_SECRET not needed for public clients
 ```
 
