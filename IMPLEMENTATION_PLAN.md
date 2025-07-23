@@ -93,10 +93,188 @@ serverless-blueprint/
    - Implement basic login/register using Cognito APIs
    - Add password reset functionality
 
-### Phase 8: Core Microservices
-1. **User Service**: CRUD operations with DynamoDB
-2. **Orders Service**: Business logic with event publishing
-3. Inter-service communication setup
+### Phase 8: Core Microservices with Normalized Data Access
+
+1. **Update Database Stack for Normalized Order Access** (`infrastructure/lib/database-stack.ts`)
+   - Update DynamoDB table schema with normalized single-table design
+   - Add GSI1 for user order queries (eliminates data duplication)
+   - Store orders once with GSI projection for user access patterns
+   - Order storage: `PK=ORDER#{orderId}`, `SK=DETAILS` (single source of truth)
+   - User access: `GSI1PK=USER#{userId}`, `GSI1SK=ORDER#{timestamp}#{orderId}`
+
+2. **Create User Service Package** (`packages/service-users/`)
+   - Initialize package structure with proper TypeScript configuration
+   - Implement Cognito integration for user profile retrieval
+   - Create extended user profile management in DynamoDB
+   - Add Zod schemas for user profile validation
+   - Implement handlers: `get-profile.ts`, `update-profile.ts`, `manage-addresses.ts`
+
+3. **Create Orders Service Package** (`packages/service-orders/`)
+   - Initialize package structure with business logic architecture  
+   - Implement normalized DynamoDB access patterns (single-write operations)
+   - Create single-record write operations with GSI projections
+   - Add Zod schemas for order validation and type inference
+   - Implement handlers: `create-order.ts`, `get-order.ts`, `get-user-orders.ts`, `update-status.ts`
+
+4. **Implement Event Publishing System** (`packages/service-orders/src/events/`)
+   - Create EventBridge integration for order state changes
+   - Implement event schemas with Zod validation
+   - Add event publishing for: `ORDER_CREATED`, `ORDER_STATUS_CHANGED`, `ORDER_CANCELLED`
+   - Set up error handling and retry mechanisms for event publishing
+
+5. **Update Lambda Stack for New Services** (`infrastructure/lib/lambda-stack.ts`)
+   - Add User Service Lambda function configuration
+   - Add Orders Service Lambda functions (create, get, list, update)
+   - Configure proper IAM roles for DynamoDB and EventBridge access
+   - Set up environment variables for service configuration
+
+6. **Update API Gateway Stack with New Routes** (`infrastructure/lib/api-gateway-stack.ts`)
+   - Add User Service endpoints: `/users/profile` (GET, PUT), `/users/addresses` (POST, DELETE)
+   - Add Orders Service endpoints: `/orders` (GET, POST), `/orders/{id}` (GET, PUT)
+   - Configure JWT authorization for protected endpoints
+   - Set up proper request/response transformations
+
+## Phase 8 Normalized Database Design (No Data Duplication)
+
+### Simplified DynamoDB Table Structure
+
+```typescript
+// User Profile (Extended data only - basic info from Cognito)
+PK: USER#{cognitoSub}     SK: PROFILE
+Data: {
+  preferences: {...},
+  addresses: [...],
+  paymentMethods: [...],
+  businessRole: 'customer' | 'admin',
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+
+// Order Details (Single source of truth - no duplication)
+PK: ORDER#{orderId}       SK: DETAILS
+GSI1PK: USER#{userId}     GSI1SK: ORDER#{timestamp}#{orderId}
+Data: {
+  orderId,
+  userId,
+  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED',
+  total: number,
+  itemCount: number,
+  items: [OrderItem[]],
+  shipping: {...},
+  payment: {...},
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+```
+
+### Efficient Query Patterns (Single Queries, No Duplication)
+
+**1. Get User Orders (GSI1 Query)**:
+```typescript
+// Query via GSI1 for user's orders
+// Result: All user orders with pagination, latest first
+const getUserOrders = {
+  TableName: 'MainTable',
+  IndexName: 'GSI1',
+  KeyConditionExpression: 'GSI1PK = :pk',
+  ExpressionAttributeValues: {
+    ':pk': `USER#${userId}`
+  },
+  ScanIndexForward: false, // Latest first (by GSI1SK timestamp)
+  Limit: 20
+}
+```
+
+**2. Get Order Details (Direct Access)**:
+```typescript
+// Direct key access for full order data
+const getOrderDetails = {
+  TableName: 'MainTable',
+  Key: {
+    PK: `ORDER#${orderId}`,
+    SK: 'DETAILS'
+  }
+}
+```
+
+**3. Update Order Status (Single Write)**:
+```typescript
+// Single write operation - no duplication to manage
+const updateOrderStatus = {
+  TableName: 'MainTable',
+  Key: {
+    PK: `ORDER#${orderId}`,
+    SK: 'DETAILS'
+  },
+  UpdateExpression: 'SET #status = :status, updatedAt = :updated',
+  ExpressionAttributeNames: {
+    '#status': 'status'
+  },
+  ExpressionAttributeValues: {
+    ':status': newStatus,
+    ':updated': new Date().toISOString()
+  }
+}
+```
+
+### Phase 8 API Design
+
+**User Service Endpoints:**
+```typescript
+GET /users/profile        // Get current user (Cognito + DynamoDB extended)
+PUT /users/profile        // Update extended profile data  
+POST /users/addresses     // Add shipping address
+DELETE /users/addresses/{id} // Remove address
+```
+
+**Orders Service Endpoints:**
+```typescript
+POST /orders              // Create new order (with event publishing)
+GET /orders               // Get current user's orders (paginated, GSI1 query)
+GET /orders/{id}          // Get specific order details
+PUT /orders/{id}/status   // Update order status (single write + events)
+```
+
+### Event-Driven Architecture (EventBridge)
+
+**Order Events:**
+```typescript
+// ORDER_CREATED event
+{
+  eventType: 'ORDER_CREATED',
+  orderId: string,
+  userId: string,
+  timestamp: string,
+  data: {
+    total: number,
+    items: OrderItem[],
+    status: 'PENDING'
+  }
+}
+
+// ORDER_STATUS_CHANGED event  
+{
+  eventType: 'ORDER_STATUS_CHANGED',
+  orderId: string,
+  userId: string,
+  timestamp: string,
+  data: {
+    previousStatus: string,
+    newStatus: string,
+    updatedBy: string
+  }
+}
+```
+
+### Performance Benefits
+
+- **No Data Duplication**: Orders stored once, accessed via GSI1 projections
+- **Single Write Operations**: Order updates require only 1 DynamoDB write
+- **Guaranteed Consistency**: No risk of data sync issues between records
+- **Efficient Pagination**: GSI1 sort key design enables cursor-based pagination
+- **Reduced Latency**: No need to coordinate writes to multiple records
+- **Cost Optimization**: 50% fewer write operations and storage costs
+- **Simplified Code**: No complex dual-write synchronization logic
 
 ### Phase 9: Event-Driven Services
 1. **Notifications Service**: Event-driven Lambda triggers
@@ -225,19 +403,18 @@ export const webhook = createWebhookHandler(webhookHandler, {
 ## Database Design (DynamoDB Single-Table)
 
 ```typescript
-// Table: MainTable
-// PK (Partition Key) | SK (Sort Key) | GSI1PK | GSI1SK | Data
-// USER#123          | PROFILE       | USER   | 123    | {user profile}
-// USER#123          | ORDER#456     | ORDER  | 456    | {user's order}
-// ORDER#456         | DETAILS       | STATUS | PENDING| {order details}
-// PRODUCT#789       | INFO          | CATEGORY| TECH  | {product info}
+// Table: MainTable (Normalized Design)
+// PK (Partition Key) | SK (Sort Key) | GSI1PK      | GSI1SK                | Data
+// USER#123          | PROFILE       | -           | -                     | {user profile}
+// ORDER#456         | DETAILS       | USER#123    | ORDER#timestamp#456   | {order details}
+// PRODUCT#789       | INFO          | CATEGORY    | TECH                  | {product info}
 ```
 
 **Access Patterns:**
 1. Get user profile: PK=USER#123, SK=PROFILE
-2. Get user orders: PK=USER#123, SK begins_with ORDER#
-3. Get orders by status: GSI1PK=STATUS, GSI1SK=PENDING
-4. Get products by category: GSI1PK=CATEGORY, GSI1SK=TECH
+2. Get user orders: GSI1PK=USER#123, GSI1SK begins_with ORDER#
+3. Get order details: PK=ORDER#456, SK=DETAILS
+4. Update order: Single write to PK=ORDER#456, SK=DETAILS
 
 ## Lambda Function Structure (Middy)
 
