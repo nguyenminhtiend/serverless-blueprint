@@ -1,6 +1,11 @@
 import { createLogger } from '@shared/core';
+import { parseValidatedBody } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { OrderPathParamsSchema, UpdateOrderStatusRequestSchema } from '../schemas';
+import {
+  OrderPathParamsSchema,
+  UpdateOrderStatusRequest,
+  UpdateOrderStatusRequestSchema,
+} from '../schemas';
 import { createOrderService } from '../services';
 
 const logger = createLogger('update-order-status');
@@ -54,24 +59,16 @@ export const updateOrderStatusHandler = async (
       };
     }
 
-    let requestData;
-    try {
-      requestData = JSON.parse(event.body);
-    } catch {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid JSON format' }),
-      };
-    }
-
-    // Validate with Zod schema
-    const statusUpdate = UpdateOrderStatusRequestSchema.parse(requestData);
+    // Body is already parsed by middleware, just validate
+    const updateRequest = parseValidatedBody<UpdateOrderStatusRequest>(
+      event,
+      UpdateOrderStatusRequestSchema
+    );
 
     logger.info('Updating order status', {
       orderId,
       userId,
-      newStatus: statusUpdate.status,
+      newStatus: updateRequest.status,
     });
 
     // Create services
@@ -106,16 +103,16 @@ export const updateOrderStatusHandler = async (
     const previousStatus = currentOrder.status;
 
     // Update order status
-    const updatedOrder = await orderService.updateOrderStatus(orderId, statusUpdate, userEmail);
+    const updatedOrder = await orderService.updateOrderStatus(orderId, updateRequest, userEmail);
 
     // Log status change (event publishing for status changes will be implemented in Phase 9)
-    if (previousStatus !== statusUpdate.status) {
+    if (previousStatus !== updateRequest.status) {
       logger.info('Order status changed', {
         orderId,
         userId,
         previousStatus,
-        newStatus: statusUpdate.status,
-        notes: statusUpdate.notes,
+        newStatus: updateRequest.status,
+        notes: updateRequest.notes,
       });
 
       // TODO: Implement ORDER_STATUS_CHANGED and ORDER_CANCELLED events in Phase 9
@@ -125,7 +122,7 @@ export const updateOrderStatusHandler = async (
       orderId,
       userId,
       previousStatus,
-      newStatus: statusUpdate.status,
+      newStatus: updateRequest.status,
     });
 
     return {

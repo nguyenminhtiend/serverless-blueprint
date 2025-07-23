@@ -1,9 +1,9 @@
-import { createRouter, POST, GET } from '@shared/middleware';
+import { createRouter, POST } from '@shared/middleware';
 import {
-  loginHandler,
-  registerHandler,
   confirmSignUpHandler,
   forgotPasswordHandler,
+  loginHandler,
+  registerHandler,
   resetPasswordHandler,
 } from './handlers/auth';
 

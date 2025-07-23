@@ -1,8 +1,11 @@
 import { createLogger } from '@shared/core';
+import { parseValidatedBody } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
+  AddAddressRequest,
   addAddressRequestSchema,
   addressIdPathSchema,
+  UpdateAddressRequest,
   updateAddressRequestSchema,
 } from '../schemas';
 import { createUserProfileService } from '../services';
@@ -35,17 +38,8 @@ export const addAddressHandler = async (
       };
     }
 
-    // Parse and validate request body
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Request body is required' }),
-      };
-    }
-
-    const requestData = JSON.parse(event.body);
-    const validatedData = addAddressRequestSchema.parse(requestData);
+    // Body is already parsed by middleware, just validate
+    const validatedData = parseValidatedBody<AddAddressRequest>(event, addAddressRequestSchema);
 
     logger.info('Adding address for user', { cognitoSub });
 
@@ -128,17 +122,11 @@ export const updateAddressHandler = async (
     const pathParams = addressIdPathSchema.parse(event.pathParameters);
     const addressId = pathParams.addressId;
 
-    // Parse and validate request body
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Request body is required' }),
-      };
-    }
-
-    const requestData = JSON.parse(event.body);
-    const validatedData = updateAddressRequestSchema.parse(requestData);
+    // Body is already parsed by middleware, just validate
+    const validatedData = parseValidatedBody<UpdateAddressRequest>(
+      event,
+      updateAddressRequestSchema
+    );
 
     logger.info('Updating address for user', { cognitoSub, addressId });
 

@@ -1,6 +1,62 @@
-# Shared Middleware Package
+# Shared Middleware
 
-This package provides a comprehensive set of Middy middleware functions for AWS Lambda serverless applications, featuring modern logging with Pino and type-safe validation with Zod.
+Common middleware functions for Lambda handlers in the serverless blueprint.
+
+## Body Parsing
+
+### Centralized Approach
+
+All Lambda handlers should use the centralized body parsing middleware instead of manual `JSON.parse()` calls:
+
+```typescript
+import { parseValidatedBody } from '@shared/middleware';
+import { MyRequestSchema, MyRequest } from '../schemas';
+
+export const myHandler = async (event: APIGatewayProxyEvent) => {
+  // ✅ Use centralized body parsing + validation
+  const requestData = parseValidatedBody<MyRequest>(event, MyRequestSchema);
+
+  // ❌ Don't do manual parsing
+  // const requestData = JSON.parse(event.body);
+};
+```
+
+### Why This Approach?
+
+1. **Consistency**: All handlers use the same parsing logic
+2. **Error Handling**: Standardized error messages for malformed JSON
+3. **Middleware Integration**: Works seamlessly with `httpJsonBodyParser` middleware
+4. **Type Safety**: Validates and types the parsed body in one step
+5. **Performance**: Avoids duplicate parsing
+
+### Default Middleware Configuration
+
+The `createRouter` function enables JSON body parsing by default:
+
+```typescript
+const { router, handler } = createRouter(
+  { serviceName: 'my-service' },
+  {
+    jsonBodyParser: true,  // ✅ Default: enabled
+    multipartBodyParser: false,  // Default: disabled
+  }
+);
+```
+
+### Best Practices
+
+1. **Always enable `jsonBodyParser`** for REST APIs (default behavior)
+2. **Use `parseValidatedBody`** instead of manual JSON.parse
+3. **Trust the middleware** - body is already parsed when it reaches your handler
+4. **Handle validation errors** at the middleware level when possible
+
+## Error Handling
+
+The centralized approach provides better error messages:
+
+- **Middleware not configured**: Clear error when body is still a string
+- **Validation errors**: Zod validation errors with precise field information
+- **Malformed JSON**: Handled by the middleware before reaching your handler
 
 ## 🚀 Features
 
@@ -34,13 +90,13 @@ const userSchema = z.object({
 export const handler = createPublicApiHandler(
   async (event) => {
     const user = userSchema.parse(JSON.parse(event.body));
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify({ id: '123', ...user }),
     };
   },
-  { 
+  {
     validation: { bodySchema: userSchema },
     logging: { logLevel: 'info' }
   }
@@ -55,7 +111,7 @@ import { createProtectedApiHandler, requireRole } from '@shared/middleware';
 export const handler = createProtectedApiHandler(
   async (event) => {
     const userId = event.user.id; // Type-safe user context
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify({ message: `Hello ${userId}` }),
@@ -127,7 +183,7 @@ type User = z.infer<typeof customSchema>;
 
 **Pre-built Schemas:**
 - ✉️ Email validation
-- 🆔 UUID validation  
+- 🆔 UUID validation
 - 📄 Pagination parameters
 - 👤 User creation/update
 - 📊 CRUD operations
@@ -247,13 +303,13 @@ type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export const handler = createApiHandler(async (event) => {
   // Type-safe parsing
   const userData: CreateUserInput = parseAndValidate(
-    CreateUserSchema, 
+    CreateUserSchema,
     JSON.parse(event.body)
   );
-  
+
   // userData is fully typed with IntelliSense support
   console.log(userData.role); // 'user' | 'admin'
-  
+
   return { statusCode: 201, body: JSON.stringify(userData) };
 });
 ```
@@ -265,28 +321,28 @@ import { loggingMiddleware, getLogger } from '@shared/middleware';
 
 export const handler = middy(async (event, context) => {
   const logger = getLogger({ event, context, internal: {} });
-  
+
   logger.info('Processing request', {
     userId: event.user?.id,
     operation: 'user-update',
   });
-  
+
   try {
     // Business logic
     const result = await updateUser(data);
-    
+
     logger.info('User updated successfully', {
       userId: result.id,
       changes: Object.keys(data),
     });
-    
+
     return { statusCode: 200, body: JSON.stringify(result) };
   } catch (error) {
     logger.error('User update failed', {
       userId: event.user?.id,
       error: error.message,
     }, error);
-    
+
     throw error; // Will be handled by error middleware
   }
 }).use(loggingMiddleware({
@@ -310,7 +366,7 @@ const QuerySchema = z.object({
 export const handler = createApiHandler(async (event) => {
   // Query parameters automatically transformed from strings
   const { page, limit, search } = QuerySchema.parse(event.queryStringParameters);
-  
+
   const results = await searchUsers({ page, limit, search });
   return { statusCode: 200, body: JSON.stringify(results) };
 }, {
@@ -375,7 +431,7 @@ describe('Validation Utils', () => {
       limit: '10',
       offset: '0',
     });
-    
+
     expect(result.limit).toBe(10); // Transformed to number
     expect(result.order).toBe('asc'); // Default value
   });

@@ -1,18 +1,18 @@
-import middy, { MiddlewareObj, MiddlewareFn, MiddyfiedHandler } from '@middy/core';
+import middy, { MiddlewareFn, MiddlewareObj, MiddyfiedHandler } from '@middy/core';
 import httpEventNormalizer from '@middy/http-event-normalizer';
 import httpHeaderNormalizer from '@middy/http-header-normalizer';
 import httpJsonBodyParser from '@middy/http-json-body-parser';
 import httpMultipartBodyParser from '@middy/http-multipart-body-parser';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authMiddleware, AuthMiddlewareOptions } from './auth';
-import {
-  loggingMiddleware,
-  correlationIdsMiddleware,
-  performanceMiddleware,
-  LoggingMiddlewareOptions,
-} from './logging';
+import { corsMiddleware, CorsOptions, getEnvironmentCors } from './cors';
 import { errorHandlerMiddleware, ErrorHandlerOptions } from './error-handler';
-import { corsMiddleware, getEnvironmentCors, CorsOptions } from './cors';
+import {
+  correlationIdsMiddleware,
+  loggingMiddleware,
+  LoggingMiddlewareOptions,
+  performanceMiddleware,
+} from './logging';
 import { zodValidationMiddleware, ZodValidationOptions } from './validation';
 
 export interface MiddlewareStackOptions {
@@ -212,6 +212,19 @@ export const createInternalHandler = (
  * Utility functions for common middleware combinations
  */
 
+// Centralized body parser and validator - assumes body is already parsed by middleware
+export const parseValidatedBody = <T>(event: APIGatewayProxyEvent, schema: any): T => {
+  // Body should already be parsed by httpJsonBodyParser middleware
+  // This utility only handles validation
+  const body = event.body || {};
+
+  if (typeof body === 'string') {
+    throw new Error('Body parsing middleware not configured properly - body is still a string');
+  }
+
+  return schema.parse(body) as T;
+};
+
 // JSON body parsing middleware
 export const jsonBodyParser = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
@@ -222,6 +235,7 @@ export const jsonBodyParser = (): MiddlewareObj<APIGatewayProxyEvent, APIGateway
     if (event.body && typeof event.body === 'string') {
       try {
         event.body = JSON.parse(event.body);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         throw new Error('Invalid JSON in request body');
       }

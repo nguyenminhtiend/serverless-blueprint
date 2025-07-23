@@ -1,7 +1,8 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createLogger } from '@shared/core';
+import { parseValidatedBody } from '@shared/middleware';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { UpdateUserProfileRequest, updateUserProfileRequestSchema } from '../schemas';
 import { createUserProfileService } from '../services';
-import { updateUserProfileRequestSchema } from '../schemas';
 
 const logger = createLogger('update-user-profile');
 
@@ -40,27 +41,19 @@ export const updateUserProfileHandler = async (
       };
     }
 
-    let requestData;
-    try {
-      requestData = JSON.parse(event.body);
-    } catch {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid JSON in request body' }),
-      };
-    }
+    // Body is already parsed by middleware, just validate
+    const updateData = parseValidatedBody<UpdateUserProfileRequest>(
+      event,
+      updateUserProfileRequestSchema
+    );
 
-    // Validate using Zod schema
-    const validatedData = updateUserProfileRequestSchema.parse(requestData);
-
-    logger.info('Updating user profile', { cognitoSub, updates: Object.keys(validatedData) });
+    logger.info('Updating user profile', { cognitoSub, updates: Object.keys(updateData) });
 
     // Get user profile service
     const userProfileService = createUserProfileService();
 
     // Update profile
-    const updatedProfile = await userProfileService.updateUserProfile(cognitoSub, validatedData);
+    const updatedProfile = await userProfileService.updateUserProfile(cognitoSub, updateData);
 
     logger.info('User profile updated successfully', { cognitoSub });
 

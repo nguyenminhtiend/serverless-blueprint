@@ -1,8 +1,8 @@
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
-import { createHmac } from 'crypto';
 import { createLogger } from '@shared/core';
-import { createRouterErrorResponse, HTTP_STATUS } from '@shared/middleware';
+import { createRouterErrorResponse, HTTP_STATUS, parseValidatedBody } from '@shared/middleware';
 import { APIGatewayProxyEvent } from 'aws-lambda';
+import { createHmac } from 'crypto';
 import { z } from 'zod';
 
 export const CLIENT_ID = process.env.CLIENT_ID!;
@@ -21,9 +21,9 @@ export function calculateSecretHash(email: string): string {
   return hmac.digest('base64');
 }
 
-export function parseRequestBody<T>(event: APIGatewayProxyEvent, schema: z.ZodSchema<T>): T {
-  const body = typeof event.body === 'string' ? JSON.parse(event.body || '{}') : event.body || {};
-  return schema.parse(body);
+export function parseRequestBody<T>(event: APIGatewayProxyEvent, schema: z.ZodType<T>): T {
+  // Use centralized body parsing - body should already be parsed by middleware
+  return parseValidatedBody(event, schema);
 }
 
 export function addSecretHashIfNeeded(params: any, email: string): void {

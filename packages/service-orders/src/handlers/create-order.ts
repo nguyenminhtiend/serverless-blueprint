@@ -1,8 +1,9 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createLogger } from '@shared/core';
+import { parseValidatedBody } from '@shared/middleware';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { createOrderCreatedEvent, publishOrderCreatedEvent } from '../events';
+import { CreateOrderRequest, CreateOrderRequestSchema } from '../schemas';
 import { createOrderService } from '../services';
-import { publishOrderCreatedEvent, createOrderCreatedEvent } from '../events';
-import { CreateOrderRequestSchema } from '../schemas';
 
 const logger = createLogger('create-order');
 
@@ -41,11 +42,8 @@ export const createOrderHandler = async (
       };
     }
 
-    // Body is already parsed by middleware (jsonBodyParser: true)
-    const requestData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-
-    // Validate with Zod schema
-    const orderRequest = CreateOrderRequestSchema.parse(requestData);
+    // Body is already parsed by middleware, just validate
+    const orderRequest = parseValidatedBody<CreateOrderRequest>(event, CreateOrderRequestSchema);
 
     logger.info('Creating new order', {
       userId,
