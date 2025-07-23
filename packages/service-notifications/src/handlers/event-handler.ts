@@ -1,14 +1,14 @@
-import { SQSEvent, SQSRecord, Context } from 'aws-lambda';
-import { z } from 'zod';
 import { createLogger } from '@shared/core';
 import {
   DomainEvent,
+  OrderCancelledEvent,
   OrderCreatedEvent,
   OrderStatusChangedEvent,
-  OrderCancelledEvent,
   PaymentProcessedEvent,
   UserCreatedEvent,
 } from '@shared/types';
+import { Context, SQSEvent, SQSRecord } from 'aws-lambda';
+import { z } from 'zod';
 import { NotificationService } from '../services/notification-service';
 import { NotificationRequest } from '../types/notification';
 
@@ -26,8 +26,6 @@ const SQSEventBridgeMessageSchema = z.object({
   detail: z.record(z.unknown()), // The actual domain event
 });
 
-type SQSEventBridgeMessage = z.infer<typeof SQSEventBridgeMessageSchema>;
-
 /**
  * Event-driven notification handler
  * Processes domain events from SQS queues and triggers appropriate notifications
@@ -39,7 +37,7 @@ export class EventHandler {
   constructor() {
     // Initialize notification service with configuration from environment
     const mockMode = process.env.ENABLE_MOCK_NOTIFICATIONS === 'true';
-    
+
     this.notificationService = new NotificationService({
       email: {
         fromAddress: process.env.FROM_EMAIL_ADDRESS || 'noreply@example.com',

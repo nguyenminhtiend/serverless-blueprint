@@ -1,12 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 
 export interface LambdaStackProps extends cdk.StackProps {
@@ -39,9 +39,6 @@ export class LambdaStack extends cdk.Stack {
     // Memory allocation based on environment
     const memorySize = environment === 'prod' ? 512 : 256; // 512MB prod, 256MB dev
 
-    // Tracing based on environment (off for dev, on for prod)
-    const tracingMode = environment === 'prod' ? lambda.Tracing.ACTIVE : lambda.Tracing.DISABLED;
-
     // Common Lambda configuration
     const commonLambdaProps = {
       runtime: lambda.Runtime.NODEJS_22_X,
@@ -58,7 +55,7 @@ export class LambdaStack extends cdk.Stack {
         POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
         POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
       },
-      tracing: tracingMode,
+      tracing: lambda.Tracing.ACTIVE,
       depsLockFilePath: '../pnpm-lock.yaml',
     };
 
@@ -137,7 +134,8 @@ export class LambdaStack extends cdk.Stack {
         DEFAULT_USER_EMAIL: process.env.DEFAULT_USER_EMAIL || 'user@example.com',
         DEFAULT_USER_PHONE: process.env.DEFAULT_USER_PHONE || '',
         // Cost-saving: Enable mock notifications by default for dev, allow override
-        ENABLE_MOCK_NOTIFICATIONS: process.env.ENABLE_MOCK_NOTIFICATIONS || (environment === 'dev' ? 'true' : 'false'),
+        ENABLE_MOCK_NOTIFICATIONS:
+          process.env.ENABLE_MOCK_NOTIFICATIONS || (environment === 'dev' ? 'true' : 'false'),
       },
     });
 
