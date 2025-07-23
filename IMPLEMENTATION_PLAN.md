@@ -116,17 +116,291 @@ serverless-blueprint/
    - Add Zod schemas for order validation and type inference
    - Implement handlers: `create-order.ts`, `get-order.ts`, `get-user-orders.ts`, `update-status.ts`
 
-
-
 ### Phase 9: Event-Driven Services
 1. **Notifications Service**: Event-driven Lambda triggers
 2. Event processing and SQS integration
 3. Dead letter queue handling
 
 ### Phase 10: Monitoring & Observability
-1. **Monitoring Stack**: CloudWatch dashboards + alarms
-2. CloudWatch + X-Ray tracing integration
-3. Custom metrics and alerts
+
+#### 10.1: Infrastructure Monitoring Stack
+
+**Create Monitoring Stack** (`infrastructure/lib/monitoring-stack.ts`)
+```typescript
+// CloudWatch Dashboards for each service
+// Lambda function metrics (duration, errors, cold starts)
+// DynamoDB metrics (read/write capacity, throttles)
+// API Gateway metrics (4xx/5xx errors, latency)
+// EventBridge custom bus metrics
+```
+
+**Key Infrastructure Components:**
+- Multi-service CloudWatch dashboard with drill-down capabilities
+- CloudWatch Alarms with SNS notification integration
+- Custom metrics namespace: `ServerlessMicroservices/{ServiceName}`
+- Log Groups with retention policies (30 days dev, 90 days prod)
+
+#### 10.2: Application Performance Monitoring
+
+**Lambda Function Metrics:**
+- **Cold Start Tracking**: Duration and frequency analysis
+- **Memory Utilization**: Right-sizing recommendations
+- **Error Rate Monitoring**: By service and function
+- **Invocation Patterns**: Peak usage identification
+
+**API Performance Metrics:**
+- **Response Time P50/P95/P99**: Latency percentiles
+- **Throughput Monitoring**: Requests per second by endpoint
+- **Error Rate Tracking**: 4xx client errors vs 5xx server errors
+- **Cache Hit Rates**: API Gateway caching effectiveness
+
+**Database Performance:**
+- **DynamoDB Throttling**: Read/write capacity monitoring
+- **Query Performance**: GSI efficiency tracking
+- **Item Size Monitoring**: Single-table design optimization
+- **Hot Partition Detection**: Access pattern analysis
+
+#### 10.3: X-Ray Distributed Tracing
+
+**Tracing Integration Setup:**
+```typescript
+// Enable X-Ray for all Lambda functions
+// Trace API Gateway → Lambda → DynamoDB flows
+// EventBridge event processing traces
+// Cross-service communication visibility
+```
+
+**Tracing Strategies:**
+- **End-to-End Request Tracing**: Full user journey visibility
+- **Service Map Generation**: Automatic dependency mapping
+- **Performance Bottleneck Identification**: Slow component detection
+- **Error Root Cause Analysis**: Trace error propagation
+
+#### 10.4: Custom Business Metrics
+
+**Order Processing Metrics:**
+```typescript
+// Orders created per minute/hour
+// Order fulfillment time (creation → completion)
+// Revenue tracking and conversion rates
+// Failed payment processing rates
+```
+
+**User Engagement Metrics:**
+```typescript
+// User registration conversion rates
+// Authentication success/failure rates
+// Profile update frequency
+// Feature usage analytics
+```
+
+**System Health Metrics:**
+```typescript
+// Service availability percentages
+// Cross-service communication success rates
+// Event processing lag time
+// Queue depth monitoring (SQS)
+```
+
+#### 10.5: Alerting & Notification Strategy
+
+**Critical Alerts (PagerDuty/SMS):**
+- Lambda error rate > 1% over 5 minutes
+- API Gateway 5xx errors > 0.5% over 3 minutes
+- DynamoDB throttling events
+- System-wide availability < 99.9%
+
+**Warning Alerts (Email/Slack):**
+- Lambda duration approaching timeout (> 80% of limit)
+- Memory utilization > 80%
+- Cold start rate > 10%
+- Queue depth > 100 messages
+
+**Business Alerts:**
+- Order processing failures > 0.1%
+- Revenue drop > 20% compared to previous period
+- User registration failures > 5%
+
+#### 10.6: Log Aggregation & Analysis
+
+**Pino Structured Logging Enhancement:**
+```typescript
+// Enhanced log structure for CloudWatch Insights
+// Correlation ID tracking across services
+// Business context injection (userId, orderId)
+// Performance timing injection
+```
+
+**CloudWatch Insights Queries:**
+```sql
+-- Top 10 slowest API endpoints
+fields @timestamp, @message, @duration
+| filter @message like /API Response/
+| sort @duration desc
+| limit 10
+
+-- Error rate by service
+fields @timestamp, service, errorType
+| filter level = "ERROR"
+| stats count() by service, errorType
+```
+
+**Log-Based Metrics:**
+- Extract custom metrics from Pino structured logs
+- Business KPI derivation from log patterns
+- Error categorization and trending
+
+#### 10.7: Cost Monitoring & Optimization
+
+**Resource Cost Tracking:**
+- Lambda execution cost by service
+- DynamoDB read/write unit consumption
+- API Gateway request cost breakdown
+- Data transfer costs between services
+
+**Cost Optimization Alerts:**
+- Monthly spend > budget threshold (20% warning, 30% critical)
+- Unusual resource usage spikes
+- Inefficient Lambda memory allocation detection
+
+#### 10.8: Implementation Steps
+
+**Step 1: Create Monitoring CDK Stack**
+```bash
+# Create infrastructure/lib/monitoring-stack.ts
+# Define CloudWatch dashboards with service-specific widgets
+# Set up SNS topics for alert notifications
+# Configure log groups with proper retention
+```
+
+**Step 2: Enhanced Lambda Instrumentation**
+```typescript
+// Update shared-middleware to inject monitoring
+// Add X-Ray tracing to all Lambda functions
+// Implement custom metric emission in Pino logger
+// Add performance timing to all handlers
+```
+
+**Step 3: Dashboard Configuration**
+```typescript
+// Service Overview Dashboard (high-level KPIs)
+// Deep Dive Dashboards (per-service detailed metrics)
+// Business Metrics Dashboard (revenue, orders, users)
+// Infrastructure Health Dashboard (AWS service status)
+```
+
+**Step 4: Alerting Setup**
+```typescript
+// Configure CloudWatch Alarms with proper thresholds
+// Set up SNS topics with email/SMS/Slack integration
+// Implement escalation policies (warning → critical)
+// Test alert delivery and response procedures
+```
+
+**Step 5: Custom Metrics Implementation**
+```typescript
+// Business metrics in order service (order creation rate)
+// User metrics in auth service (login success rate)
+// Performance metrics in shared middleware
+// System health metrics across all services
+```
+
+#### 10.9: Monitoring Code Examples
+
+**Enhanced Pino Logger with Metrics:**
+```typescript
+// packages/shared-core/src/logger.ts
+import { createLogger, LogLevel } from 'pino'
+import { CloudWatchMetrics } from '@aws-sdk/client-cloudwatch'
+
+class MetricsLogger {
+  private logger: pino.Logger
+  private metrics: CloudWatchMetrics
+
+  emit(metricName: string, value: number, unit: string = 'Count') {
+    // Emit to CloudWatch Custom Metrics
+    // Log structured metric for CloudWatch Insights
+    this.logger.info('Metric', {
+      metricName,
+      value,
+      unit,
+      timestamp: new Date().toISOString(),
+      namespace: 'ServerlessMicroservices'
+    })
+  }
+
+  timing(operation: string, duration: number) {
+    this.emit(`${operation}.Duration`, duration, 'Milliseconds')
+    this.logger.info('Performance', {
+      operation,
+      duration,
+      type: 'timing'
+    })
+  }
+}
+```
+
+**Lambda Function with Monitoring:**
+```typescript
+// Enhanced handler with comprehensive monitoring
+export const handler = createProtectedApiHandler(
+  async (event) => {
+    const startTime = Date.now()
+    const logger = createLogger('order-service', {
+      requestId: event.requestContext.requestId,
+      userId: event.user?.id,
+    })
+
+    try {
+      logger.info('Order creation started')
+
+      const result = await orderService.createOrder(orderData)
+
+      const duration = Date.now() - startTime
+      logger.timing('CreateOrder', duration)
+      logger.emit('OrderCreated', 1)
+
+      logger.info('Order created successfully', {
+        orderId: result.id,
+        duration
+      })
+
+      return {
+        statusCode: 201,
+        body: JSON.stringify(result)
+      }
+    } catch (error) {
+      logger.error('Order creation failed', { error })
+      logger.emit('OrderCreationError', 1)
+      throw error
+    }
+  },
+  { secret: process.env.JWT_SECRET! },
+  {
+    validation: { bodySchema: CreateOrderSchema },
+    tracing: true, // Enable X-Ray
+    monitoring: true // Enable custom metrics
+  }
+)
+```
+
+#### 10.10: Success Metrics
+
+**Phase 10 Complete When:**
+- [ ] All services have comprehensive CloudWatch dashboards
+- [ ] Critical and warning alerts are configured and tested
+- [ ] X-Ray tracing provides end-to-end visibility
+- [ ] Custom business metrics are tracked and displayed
+- [ ] Log aggregation enables rapid troubleshooting
+- [ ] Cost monitoring prevents budget overruns
+- [ ] Monitoring documentation is complete
+
+**Expected Outcomes:**
+- **MTTR (Mean Time To Recovery)**: < 15 minutes
+- **Visibility**: 100% of user requests traceable
+- **Proactive Alerting**: Issues detected before user impact
+- **Cost Control**: Resource usage within 5% of budget
+- **Performance Optimization**: Data-driven scaling decisions
 
 ### Phase 11: Testing & Quality Assurance
 1. Unit tests for all services

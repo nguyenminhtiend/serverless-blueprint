@@ -214,13 +214,14 @@ export class EventHandler {
     }
   }
 
-
   /**
    * Handle ORDER_CREATED event
    */
-  private async handleOrderCreated(eventData: OrderEventData | { data: OrderEventData }): Promise<void> {
+  private async handleOrderCreated(
+    eventData: OrderEventData | { data: OrderEventData }
+  ): Promise<void> {
     const data = this.normalizeEventData(eventData);
-    
+
     this.logger.info('Handling ORDER_CREATED event', {
       orderId: data.orderId,
       userId: data.userId,
@@ -267,13 +268,14 @@ export class EventHandler {
     }
   }
 
-
   /**
    * Handle ORDER_STATUS_CHANGED event
    */
-  private async handleOrderStatusChanged(eventData: OrderStatusEventData | { data: OrderStatusEventData }): Promise<void> {
+  private async handleOrderStatusChanged(
+    eventData: OrderStatusEventData | { data: OrderStatusEventData }
+  ): Promise<void> {
     const data = this.normalizeEventData(eventData);
-    
+
     this.logger.info('Handling ORDER_STATUS_CHANGED event', {
       orderId: data.orderId,
       previousStatus: data.previousStatus,
@@ -308,9 +310,11 @@ export class EventHandler {
   /**
    * Handle ORDER_CANCELLED event
    */
-  private async handleOrderCancelled(eventData: OrderCancelledEventData | { data: OrderCancelledEventData }): Promise<void> {
+  private async handleOrderCancelled(
+    eventData: OrderCancelledEventData | { data: OrderCancelledEventData }
+  ): Promise<void> {
     const data = this.normalizeEventData(eventData);
-    
+
     this.logger.info('Handling ORDER_CANCELLED event', {
       orderId: data.orderId,
       reason: data.reason,
@@ -342,9 +346,11 @@ export class EventHandler {
   /**
    * Handle PAYMENT_PROCESSED event
    */
-  private async handlePaymentProcessed(eventData: PaymentEventData | { data: PaymentEventData }): Promise<void> {
+  private async handlePaymentProcessed(
+    eventData: PaymentEventData | { data: PaymentEventData }
+  ): Promise<void> {
     const data = this.normalizeEventData(eventData);
-    
+
     this.logger.info('Handling PAYMENT_PROCESSED event', {
       orderId: data.orderId,
       paymentId: data.paymentId,
@@ -380,9 +386,11 @@ export class EventHandler {
   /**
    * Handle USER_CREATED event
    */
-  private async handleUserCreated(eventData: UserEventData | { data: UserEventData }): Promise<void> {
+  private async handleUserCreated(
+    eventData: UserEventData | { data: UserEventData }
+  ): Promise<void> {
     const data = this.normalizeEventData(eventData);
-    
+
     this.logger.info('Handling USER_CREATED event', {
       userId: data.userId,
       email: data.email,
