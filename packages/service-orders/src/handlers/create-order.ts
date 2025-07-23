@@ -1,5 +1,5 @@
 import { createLogger } from '@shared/core';
-import { parseValidatedBody } from '@shared/middleware';
+import { extractUserOrError, parseValidatedBody, UserContext } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createOrderCreatedEvent, publishOrderCreatedEvent } from '../events';
 import { CreateOrderRequest, CreateOrderRequestSchema } from '../schemas';
@@ -14,24 +14,12 @@ export const createOrderHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT (added by API Gateway JWT authorizer)
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const userId = userContext.jwt.claims.sub;
-    if (!userId) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId } = userResult as UserContext;
 
     // Parse and validate request body
     if (!event.body) {

@@ -1,4 +1,5 @@
 import { createLogger } from '@shared/core';
+import { extractUserOrError, UserContext } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getUserProfileResponseSchema } from '../schemas';
 import { createCognitoService, createUserProfileService } from '../services';
@@ -6,30 +7,18 @@ import { createCognitoService, createUserProfileService } from '../services';
 const logger = createLogger('get-user-profile');
 
 /**
- * Get user profile handler - combines Cognito data with extended DynamoDB profile
+ * Get User Profile Handler - Retrieves user profile from both Cognito and DynamoDB
  */
 export const getUserProfileHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT (added by API Gateway JWT authorizer)
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const cognitoSub = userContext.jwt.claims.sub;
-    if (!cognitoSub) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId: cognitoSub } = userResult as UserContext;
 
     logger.info('Getting user profile', { cognitoSub });
 

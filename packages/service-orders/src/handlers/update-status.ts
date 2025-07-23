@@ -1,5 +1,5 @@
 import { createLogger } from '@shared/core';
-import { parseValidatedBody } from '@shared/middleware';
+import { extractUserOrError, parseValidatedBody, UserContext } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   OrderPathParamsSchema,
@@ -11,32 +11,19 @@ import { createOrderService } from '../services';
 const logger = createLogger('update-order-status');
 
 /**
- * Update Order Status Handler - Updates order status with event publishing
+ * Update Order Status Handler - Updates order status with validation
  */
 export const updateOrderStatusHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT (added by API Gateway JWT authorizer)
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const userId = userContext.jwt.claims.sub;
-    const userEmail = userContext.jwt.claims.email || userId; // Fallback to userId if email not available
-
-    if (!userId) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId, email } = userResult as UserContext;
+    const userEmail = email || userId; // Fallback to userId if email not available
 
     // Validate path parameters
     if (!event.pathParameters) {

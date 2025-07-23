@@ -225,6 +225,68 @@ export const parseValidatedBody = <T>(event: APIGatewayProxyEvent, schema: any):
   return schema.parse(body) as T;
 };
 
+// Centralized user context extraction from JWT authorizer
+export interface UserContext {
+  userId: string;
+  email?: string;
+  claims: Record<string, any>;
+}
+
+export const extractUserContext = (event: APIGatewayProxyEvent): UserContext => {
+  const userContext = event.requestContext.authorizer;
+
+  if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
+    throw new Error('UNAUTHORIZED');
+  }
+
+  const userId = userContext.jwt.claims.sub;
+  if (!userId) {
+    throw new Error('MISSING_USER_ID');
+  }
+
+  return {
+    userId,
+    email: userContext.jwt.claims.email,
+    claims: userContext.jwt.claims,
+  };
+};
+
+// Helper to create authorization error responses
+export const createAuthErrorResponse = (error: string): APIGatewayProxyResult => {
+  if (error === 'UNAUTHORIZED') {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Unauthorized' }),
+    };
+  }
+
+  if (error === 'MISSING_USER_ID') {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Missing user identifier' }),
+    };
+  }
+
+  return {
+    statusCode: 500,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error: 'Authentication error' }),
+  };
+};
+
+// Combined utility for most common use case - extract user or return error response
+export const extractUserOrError = (
+  event: APIGatewayProxyEvent
+): UserContext | APIGatewayProxyResult => {
+  try {
+    return extractUserContext(event);
+  } catch (error) {
+    return createAuthErrorResponse(error instanceof Error ? error.message : 'UNKNOWN');
+  }
+};
+
 // JSON body parsing middleware
 export const jsonBodyParser = (): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   const before: MiddlewareFn<APIGatewayProxyEvent, APIGatewayProxyResult> = async (

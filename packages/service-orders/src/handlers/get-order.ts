@@ -1,35 +1,24 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createLogger } from '@shared/core';
-import { createOrderService } from '../services';
+import { extractUserOrError, UserContext } from '@shared/middleware';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { OrderPathParamsSchema } from '../schemas';
+import { createOrderService } from '../services';
 
 const logger = createLogger('get-order');
 
 /**
- * Get Order Handler - Retrieves specific order details with ownership validation
+ * Get Order Handler - Retrieves a specific order by ID
  */
 export const getOrderHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT (added by API Gateway JWT authorizer)
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const userId = userContext.jwt.claims.sub;
-    if (!userId) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId } = userResult as UserContext;
 
     // Validate path parameters
     if (!event.pathParameters) {

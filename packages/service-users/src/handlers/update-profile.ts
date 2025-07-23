@@ -1,5 +1,5 @@
 import { createLogger } from '@shared/core';
-import { parseValidatedBody } from '@shared/middleware';
+import { extractUserOrError, parseValidatedBody, UserContext } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { UpdateUserProfileRequest, updateUserProfileRequestSchema } from '../schemas';
 import { createUserProfileService } from '../services';
@@ -7,30 +7,18 @@ import { createUserProfileService } from '../services';
 const logger = createLogger('update-user-profile');
 
 /**
- * Update user profile handler - updates extended profile data in DynamoDB
+ * Update User Profile Handler - Updates user's extended profile in DynamoDB
  */
 export const updateUserProfileHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT (added by API Gateway JWT authorizer)
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const cognitoSub = userContext.jwt.claims.sub;
-    if (!cognitoSub) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId: cognitoSub } = userResult as UserContext;
 
     // Parse and validate request body
     if (!event.body) {

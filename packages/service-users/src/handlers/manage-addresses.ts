@@ -1,5 +1,5 @@
 import { createLogger } from '@shared/core';
-import { parseValidatedBody } from '@shared/middleware';
+import { extractUserOrError, parseValidatedBody, UserContext } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   AddAddressRequest,
@@ -13,30 +13,18 @@ import { createUserProfileService } from '../services';
 const logger = createLogger('manage-addresses');
 
 /**
- * Add address handler - adds new address to user's profile
+ * Add Address Handler - Adds new address to user's profile
  */
 export const addAddressHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const cognitoSub = userContext.jwt.claims.sub;
-    if (!cognitoSub) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId: cognitoSub } = userResult as UserContext;
 
     // Body is already parsed by middleware, just validate
     const validatedData = parseValidatedBody<AddAddressRequest>(event, addAddressRequestSchema);
@@ -93,30 +81,18 @@ export const addAddressHandler = async (
 };
 
 /**
- * Update address handler - updates existing address
+ * Update Address Handler - Updates existing address
  */
 export const updateAddressHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const cognitoSub = userContext.jwt.claims.sub;
-    if (!cognitoSub) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId: cognitoSub } = userResult as UserContext;
 
     // Validate path parameters
     const pathParams = addressIdPathSchema.parse(event.pathParameters);
@@ -175,30 +151,18 @@ export const updateAddressHandler = async (
 };
 
 /**
- * Delete address handler - removes address from user's profile
+ * Delete Address Handler - Removes address from user's profile
  */
 export const deleteAddressHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Extract user from JWT
-    const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      };
+    // Extract user context or return error
+    const userResult = extractUserOrError(event);
+    if ('statusCode' in userResult) {
+      return userResult; // Return error response
     }
-
-    const cognitoSub = userContext.jwt.claims.sub;
-    if (!cognitoSub) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing user identifier' }),
-      };
-    }
+    const { userId: cognitoSub } = userResult as UserContext;
 
     // Validate path parameters
     const pathParams = addressIdPathSchema.parse(event.pathParameters);

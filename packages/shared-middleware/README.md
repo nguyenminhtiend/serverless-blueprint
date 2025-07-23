@@ -29,6 +29,53 @@ export const myHandler = async (event: APIGatewayProxyEvent) => {
 4. **Type Safety**: Validates and types the parsed body in one step
 5. **Performance**: Avoids duplicate parsing
 
+## User Authentication
+
+### Centralized User Context Extraction
+
+All protected handlers should use the centralized auth utilities instead of manual JWT parsing:
+
+```typescript
+import { extractUserOrError, UserContext } from '@shared/middleware';
+
+export const myHandler = async (event: APIGatewayProxyEvent) => {
+  // ✅ Use centralized auth extraction
+  const userResult = extractUserOrError(event);
+  if ('statusCode' in userResult) {
+    return userResult; // Return error response
+  }
+  const { userId, email } = userResult as UserContext;
+
+  // ❌ Don't do manual auth parsing
+  // const userContext = event.requestContext.authorizer;
+  // if (!userContext || !userContext.jwt || !userContext.jwt.claims) { ... }
+};
+```
+
+### Auth Utilities Available
+
+1. **`extractUserOrError`**: Returns `UserContext` or error response (most common)
+2. **`extractUserContext`**: Throws error on failure (for middleware use)
+3. **`createAuthErrorResponse`**: Creates standardized auth error responses
+
+### UserContext Interface
+
+```typescript
+interface UserContext {
+  userId: string;      // Cognito sub
+  email?: string;      // User email (if available)
+  claims: Record<string, any>; // Full JWT claims
+}
+```
+
+### Why This Approach?
+
+1. **Consistency**: All handlers use same auth logic
+2. **Error Handling**: Standardized 401/400 responses
+3. **Type Safety**: Typed user context with proper validation
+4. **Maintainability**: Single source of truth for auth extraction
+5. **Performance**: Eliminates code duplication
+
 ### Default Middleware Configuration
 
 The `createRouter` function enables JSON body parsing by default:
@@ -47,8 +94,9 @@ const { router, handler } = createRouter(
 
 1. **Always enable `jsonBodyParser`** for REST APIs (default behavior)
 2. **Use `parseValidatedBody`** instead of manual JSON.parse
-3. **Trust the middleware** - body is already parsed when it reaches your handler
-4. **Handle validation errors** at the middleware level when possible
+3. **Use `extractUserOrError`** instead of manual auth parsing
+4. **Trust the middleware** - body is already parsed when it reaches your handler
+5. **Handle validation errors** at the middleware level when possible
 
 ## Error Handling
 
@@ -57,6 +105,7 @@ The centralized approach provides better error messages:
 - **Middleware not configured**: Clear error when body is still a string
 - **Validation errors**: Zod validation errors with precise field information
 - **Malformed JSON**: Handled by the middleware before reaching your handler
+- **Auth errors**: Standardized 401/400 responses with clear messages
 
 ## 🚀 Features
 
