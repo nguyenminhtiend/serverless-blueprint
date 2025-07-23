@@ -5,6 +5,8 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 
 export interface LambdaStackProps extends cdk.StackProps {
@@ -12,6 +14,8 @@ export interface LambdaStackProps extends cdk.StackProps {
   readonly table: dynamodb.Table;
   readonly userPool?: cognito.UserPool;
   readonly userPoolClient?: cognito.UserPoolClient;
+  readonly notificationQueue?: sqs.Queue;
+  readonly eventBusName?: string;
 }
 
 export class LambdaStack extends cdk.Stack {
@@ -24,7 +28,7 @@ export class LambdaStack extends cdk.Stack {
     super(scope, id, props);
 
     const environment = props.environment || 'dev';
-    const { table, userPool, userPoolClient } = props;
+    const { table, userPool, userPoolClient, notificationQueue, eventBusName } = props;
 
     // CloudWatch Logs retention based on environment
     const logRetention =
@@ -108,7 +112,7 @@ export class LambdaStack extends cdk.Stack {
       }),
       environment: {
         ...commonLambdaProps.environment,
-        EVENT_BUS_NAME: `${environment}-microservices-bus`,
+        EVENT_BUS_NAME: eventBusName || `serverless-events-${environment}`,
       },
     });
 
@@ -116,8 +120,10 @@ export class LambdaStack extends cdk.Stack {
     this.notificationFunction = new nodejs.NodejsFunction(this, 'NotificationFunction', {
       ...commonLambdaProps,
       functionName: `${environment}-notification-service`,
-      entry: '../packages/service-notifications/src/index.ts',
+      entry: '../packages/service-notifications/src/handlers/event-handler.ts',
+      handler: 'handleNotificationEvents',
       description: 'Event-driven notification service',
+      timeout: cdk.Duration.seconds(60), // Longer timeout for notification processing
       logGroup: new logs.LogGroup(this, 'NotificationFunctionLogGroup', {
         logGroupName: `/aws/lambda/${environment}-notification-service`,
         retention: logRetention,
@@ -125,9 +131,26 @@ export class LambdaStack extends cdk.Stack {
       }),
       environment: {
         ...commonLambdaProps.environment,
-        SQS_QUEUE_URL: '', // Will be set by Events stack
+        FROM_EMAIL_ADDRESS: process.env.FROM_EMAIL_ADDRESS || 'noreply@example.com',
+        REPLY_TO_ADDRESSES: process.env.REPLY_TO_ADDRESSES || '',
+        SMS_SENDER_ID: process.env.SMS_SENDER_ID || 'ServerlessApp',
+        DEFAULT_USER_EMAIL: process.env.DEFAULT_USER_EMAIL || 'user@example.com',
+        DEFAULT_USER_PHONE: process.env.DEFAULT_USER_PHONE || '',
+        // Cost-saving: Enable mock notifications by default for dev, allow override
+        ENABLE_MOCK_NOTIFICATIONS: process.env.ENABLE_MOCK_NOTIFICATIONS || (environment === 'dev' ? 'true' : 'false'),
       },
     });
+
+    // Add SQS event source to notification function if queue is provided
+    if (notificationQueue) {
+      this.notificationFunction.addEventSource(
+        new lambdaEventSources.SqsEventSource(notificationQueue, {
+          batchSize: 10, // Process up to 10 messages at once
+          maxBatchingWindow: cdk.Duration.seconds(5), // Wait up to 5 seconds to batch messages
+          reportBatchItemFailures: true, // Enable partial batch failure reporting
+        })
+      );
+    }
 
     // IAM Policies and Roles
 
@@ -183,17 +206,41 @@ export class LambdaStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ['events:PutEvents'],
         resources: [
-          `arn:aws:events:${this.region}:${this.account}:event-bus/${environment}-microservices-bus`,
+          `arn:aws:events:${this.region}:${this.account}:event-bus/${eventBusName || `serverless-events-${environment}`}`,
         ],
       })
     );
 
-    // SQS permissions for notification function
+    // SQS permissions for notification function (automatically granted by SqsEventSource)
+    // But we can add additional SQS permissions if needed
     this.notificationFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
-        resources: [`arn:aws:sqs:${this.region}:${this.account}:${environment}-*`],
+        resources: [`arn:aws:sqs:${this.region}:${this.account}:*${environment}*`],
+      })
+    );
+
+    // SES permissions for notification function (email sending)
+    this.notificationFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'ses:SendEmail',
+          'ses:SendRawEmail',
+          'ses:SendBulkTemplatedEmail',
+          'ses:SendTemplatedEmail',
+        ],
+        resources: ['*'], // SES resources are region-specific, * is commonly used
+      })
+    );
+
+    // SNS permissions for notification function (SMS sending)
+    this.notificationFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sns:Publish', 'sns:GetSMSAttributes', 'sns:SetSMSAttributes'],
+        resources: ['*'], // SNS SMS doesn't use specific topic ARNs
       })
     );
 

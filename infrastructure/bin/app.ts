@@ -64,6 +64,8 @@ const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${envir
   table: databaseStack.table,
   userPool: cognitoStack.userPool,
   userPoolClient: cognitoStack.userPoolClient,
+  notificationQueue: eventsStack.notificationQueue,
+  eventBusName: eventsStack.eventBus.eventBusName,
   description: `Lambda functions for ${environment} environment`,
 });
 

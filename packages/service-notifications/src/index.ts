@@ -1,18 +1,13 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+// Export handlers
+export { handleNotificationEvents } from './handlers/event-handler';
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  console.log('Notification service - event:', JSON.stringify(event, null, 2));
+// Export services
+export { NotificationService } from './services/notification-service';
+export { EmailService } from './services/email-service';
+export { SMSService } from './services/sms-service';
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-    body: JSON.stringify({
-      message: 'Notification service placeholder',
-      path: event.path,
-      method: event.httpMethod,
-    }),
-  };
-};
+// Export types
+export * from './types/notification';
+
+// Export utilities
+export { EventHandler } from './handlers/event-handler';
