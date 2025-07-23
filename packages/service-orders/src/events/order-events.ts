@@ -76,7 +76,7 @@ export class OrderEventPublisher {
   constructor(
     eventBridgeClient: EventBridgeClient,
     eventBusName: string,
-    source = 'orders.service'
+    source = 'orders-service'
   ) {
     this.eventBridgeClient = eventBridgeClient;
     this.eventBusName = eventBusName;
