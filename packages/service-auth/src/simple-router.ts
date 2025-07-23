@@ -35,11 +35,11 @@ function transformEventToV1(event: any): APIGatewayProxyEvent {
           apiKey: null,
           apiKeyId: null,
           principalOrgId: null,
-        }
+        },
       },
       resource: event.rawPath,
       isBase64Encoded: event.isBase64Encoded || false,
-      body: event.body
+      body: event.body,
     } as APIGatewayProxyEvent;
   }
   return event as APIGatewayProxyEvent;
@@ -56,27 +56,27 @@ export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
   // Transform event to v1.0 format for handler compatibility
   const transformedEvent = transformEventToV1(event);
   const { httpMethod, path } = transformedEvent;
-  
+
   // Simple routing based on path and method
   const route = `${httpMethod} ${path}`;
-  
+
   try {
     switch (route) {
       case 'POST /auth/login':
         return await loginHandler(transformedEvent);
-      
+
       case 'POST /auth/register':
         return await registerHandler(transformedEvent);
-      
+
       case 'POST /auth/confirm-signup':
         return await confirmSignUpHandler(transformedEvent);
-      
+
       case 'POST /auth/forgot-password':
         return await forgotPasswordHandler(transformedEvent);
-      
+
       case 'POST /auth/reset-password':
         return await resetPasswordHandler(transformedEvent);
-      
+
       case 'GET /health':
         return {
           statusCode: 200,
@@ -87,14 +87,14 @@ export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
             timestamp: new Date().toISOString(),
             availableRoutes: [
               'POST /auth/login',
-              'POST /auth/register', 
+              'POST /auth/register',
               'POST /auth/confirm-signup',
               'POST /auth/forgot-password',
-              'POST /auth/reset-password'
-            ]
-          })
+              'POST /auth/reset-password',
+            ],
+          }),
         };
-      
+
       default:
         return {
           statusCode: 404,
@@ -106,11 +106,11 @@ export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
             availableRoutes: [
               'POST /auth/login',
               'POST /auth/register',
-              'POST /auth/confirm-signup', 
+              'POST /auth/confirm-signup',
               'POST /auth/forgot-password',
-              'POST /auth/reset-password'
-            ]
-          })
+              'POST /auth/reset-password',
+            ],
+          }),
         };
     }
   } catch (error) {
@@ -121,8 +121,8 @@ export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
       body: JSON.stringify({
         success: false,
         error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      })
+        message: error instanceof Error ? error.message : 'Unknown error',
+      }),
     };
   }
 };

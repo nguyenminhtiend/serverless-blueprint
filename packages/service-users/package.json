@@ -19,7 +19,11 @@
     "@shared/types": "workspace:*",
     "@shared/core": "workspace:*",
     "@shared/middleware": "workspace:*",
-    "@shared/database": "workspace:*"
+    "@shared/database": "workspace:*",
+    "@aws-sdk/client-cognito-identity-provider": "^3.0.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/util-dynamodb": "^3.0.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

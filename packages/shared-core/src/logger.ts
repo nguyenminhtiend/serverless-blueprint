@@ -57,7 +57,7 @@ export class Logger {
     if (!isProduction && !isLambda && options.prettyPrint !== false) {
       try {
         // Only use pino-pretty if available
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        // eslint-disable-next-line no-undef
         require.resolve('pino-pretty');
         pinoConfig.transport = {
           target: 'pino-pretty',

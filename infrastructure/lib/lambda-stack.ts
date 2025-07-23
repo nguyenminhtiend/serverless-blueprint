@@ -27,12 +27,13 @@ export class LambdaStack extends cdk.Stack {
     const { table, userPool, userPoolClient } = props;
 
     // CloudWatch Logs retention based on environment
-    const logRetention = environment === 'prod' 
-      ? logs.RetentionDays.ONE_MONTH    // 30 days for prod (best practice)
-      : logs.RetentionDays.ONE_DAY;     // 1 day for dev (maximum cost optimization)
+    const logRetention =
+      environment === 'prod'
+        ? logs.RetentionDays.ONE_MONTH // 30 days for prod (best practice)
+        : logs.RetentionDays.ONE_DAY; // 1 day for dev (maximum cost optimization)
 
     // Memory allocation based on environment
-    const memorySize = environment === 'prod' ? 512 : 256;  // 512MB prod, 256MB dev
+    const memorySize = environment === 'prod' ? 512 : 256; // 512MB prod, 256MB dev
 
     // Tracing based on environment (off for dev, on for prod)
     const tracingMode = environment === 'prod' ? lambda.Tracing.ACTIVE : lambda.Tracing.DISABLED;
