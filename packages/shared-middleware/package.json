@@ -17,11 +17,11 @@
     "dist"
   ],
   "dependencies": {
-    "@middy/core": "^5.5.1",
-    "@middy/http-cors": "^5.5.1",
-    "@middy/http-error-handler": "^5.5.1",
-    "@middy/http-event-normalizer": "^5.5.1",
-    "@middy/http-header-normalizer": "^5.5.1",
+    "@middy/core": "^6.4.1",
+    "@middy/http-cors": "^6.4.1",
+    "@middy/http-error-handler": "^6.4.1",
+    "@middy/http-event-normalizer": "^6.4.1",
+    "@middy/http-header-normalizer": "^6.4.1",
     "@middy/http-json-body-parser": "^6.4.1",
     "@middy/http-multipart-body-parser": "^6.4.1",
     "@shared/core": "workspace:*",
@@ -31,10 +31,10 @@
     "zod": "4.0.5"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.145",
-    "@types/jest": "^29.5.0",
+    "@types/aws-lambda": "^8.10.152",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.7",
-    "jest": "^29.7.0",
+    "jest": "^30.0.5",
     "rimraf": "^6.0.0",
     "ts-jest": "^29.2.0",
     "typescript": "^5.6.0"

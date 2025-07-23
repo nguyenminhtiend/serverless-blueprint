@@ -79,7 +79,7 @@ export class MonitoringStack extends cdk.Stack {
       new logs.LogGroup(this, `${service}ServiceLogGroup`, {
         logGroupName: `/aws/lambda/serverless-${service}-${environment}`,
         retention:
-          environment === 'prod' ? logs.RetentionDays.NINETY_DAYS : logs.RetentionDays.THIRTY_DAYS,
+          environment === 'prod' ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_MONTH,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       });
     });
@@ -94,18 +94,13 @@ export class MonitoringStack extends cdk.Stack {
       const errorRateAlarm = new cloudwatch.Alarm(this, `${name}ErrorRateAlarm`, {
         alarmName: `Lambda-${name}-ErrorRate-${environment}`,
         alarmDescription: `Error rate > 1% for ${name} function`,
-        metric: func
-          .metricErrors({
-            period: cdk.Duration.minutes(5),
-            statistic: 'Sum',
-          })
-          .createMathExpression({
-            expression: '(errors / invocations) * 100',
-            usingMetrics: {
-              errors: func.metricErrors({ period: cdk.Duration.minutes(5) }),
-              invocations: func.metricInvocations({ period: cdk.Duration.minutes(5) }),
-            },
-          }),
+        metric: new cloudwatch.MathExpression({
+          expression: '(errors / invocations) * 100',
+          usingMetrics: {
+            errors: func.metricErrors({ period: cdk.Duration.minutes(5) }),
+            invocations: func.metricInvocations({ period: cdk.Duration.minutes(5) }),
+          },
+        }),
         threshold: 1,
         evaluationPeriods: 1,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,

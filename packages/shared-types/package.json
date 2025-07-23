@@ -15,7 +15,7 @@
     "dist"
   ],
   "dependencies": {
-    "@types/aws-lambda": "^8.10.145"
+    "@types/aws-lambda": "^8.10.152"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

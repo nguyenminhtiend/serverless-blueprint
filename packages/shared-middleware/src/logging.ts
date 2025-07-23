@@ -1,6 +1,6 @@
 import { MiddlewareObj, MiddlewareFn } from '@middy/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { createLogger, LogLevel, LogContext, Logger } from '@shared/core';
+import { createLogger, LogLevel, PinoLogContext as LogContext, PinoLogger as Logger } from '@shared/core';
 import type { AuthenticatedEvent } from './auth';
 
 export interface LoggingMiddlewareOptions {

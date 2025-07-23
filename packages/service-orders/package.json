@@ -15,12 +15,12 @@
     "dist"
   ],
   "dependencies": {
-    "@types/aws-lambda": "^8.10.145",
-    "@aws-sdk/client-dynamodb": "^3.700.0",
-    "@aws-sdk/client-eventbridge": "^3.700.0",
-    "@aws-sdk/util-dynamodb": "^3.700.0",
-    "uuid": "^11.0.2",
-    "zod": "^3.24.1",
+    "@types/aws-lambda": "^8.10.152",
+    "@aws-sdk/client-dynamodb": "^3.848.0",
+    "@aws-sdk/client-eventbridge": "^3.848.0",
+    "@aws-sdk/util-dynamodb": "^3.848.0",
+    "uuid": "^11.1.0",
+    "zod": "^4.0.5",
     "@shared/types": "workspace:*",
     "@shared/core": "workspace:*",
     "@shared/middleware": "workspace:*",

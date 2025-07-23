@@ -15,15 +15,15 @@
     "dist"
   ],
   "dependencies": {
-    "@types/aws-lambda": "^8.10.145",
+    "@types/aws-lambda": "^8.10.152",
     "@shared/types": "workspace:*",
     "@shared/core": "workspace:*",
     "@shared/middleware": "workspace:*",
     "@shared/database": "workspace:*",
-    "@aws-sdk/client-cognito-identity-provider": "^3.0.0",
-    "@aws-sdk/client-dynamodb": "^3.0.0",
-    "@aws-sdk/util-dynamodb": "^3.0.0",
-    "zod": "^3.22.0"
+    "@aws-sdk/client-cognito-identity-provider": "^3.848.0",
+    "@aws-sdk/client-dynamodb": "^3.848.0",
+    "@aws-sdk/util-dynamodb": "^3.848.0",
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

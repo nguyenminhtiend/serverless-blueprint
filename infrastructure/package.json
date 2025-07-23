@@ -25,12 +25,12 @@
     "diff:prod": "cdk diff --all -c environment=prod"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.165.0",
+    "aws-cdk-lib": "^2.172.0",
     "constructs": "^10.3.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "aws-cdk": "^2.165.0",
+    "@types/node": "^22.16.5",
+    "aws-cdk": "^2.172.0",
     "esbuild": "^0.25.8",
     "rimraf": "^6.0.0",
     "typescript": "^5.6.0"
