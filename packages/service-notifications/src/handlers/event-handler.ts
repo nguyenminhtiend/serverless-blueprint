@@ -1,12 +1,4 @@
 import { createLogger } from '@shared/core';
-import {
-  DomainEvent,
-  OrderCancelledEvent,
-  OrderCreatedEvent,
-  OrderStatusChangedEvent,
-  PaymentProcessedEvent,
-  UserCreatedEvent,
-} from '@shared/types';
 import { Context, SQSEvent, SQSRecord } from 'aws-lambda';
 import { z } from 'zod';
 import { NotificationService } from '../services/notification-service';
@@ -25,6 +17,46 @@ const SQSEventBridgeMessageSchema = z.object({
   region: z.string(),
   detail: z.record(z.unknown()), // The actual domain event
 });
+
+/**
+ * Common event data structure
+ */
+interface BaseEventData {
+  userId: string;
+  orderId?: string;
+}
+
+interface OrderEventData extends BaseEventData {
+  orderId: string;
+  total: number;
+  items?: any[];
+  itemCount?: number;
+}
+
+interface OrderStatusEventData extends OrderEventData {
+  previousStatus: string;
+  newStatus: string;
+  reason?: string;
+}
+
+interface OrderCancelledEventData extends OrderEventData {
+  reason: string;
+  refundAmount?: number;
+}
+
+interface PaymentEventData extends BaseEventData {
+  orderId: string;
+  paymentId: string;
+  status: string;
+  amount: number;
+  method: string;
+}
+
+interface UserEventData extends BaseEventData {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
 
 /**
  * Event-driven notification handler
@@ -107,14 +139,14 @@ export class EventHandler {
       const validatedMessage = SQSEventBridgeMessageSchema.parse(eventBridgeMessage);
 
       // Extract domain event from EventBridge detail
-      const domainEvent = validatedMessage.detail as unknown as DomainEvent;
-      
+      const domainEvent = validatedMessage.detail;
+
       // Use detail-type from EventBridge wrapper as eventType
       const eventType = validatedMessage['detail-type'];
 
       this.logger.info('Processing domain event', {
         eventType: eventType,
-        eventId: domainEvent.eventId || 'unknown',
+        eventId: (domainEvent as any).eventId || 'unknown',
         source: validatedMessage.source,
         messageId: record.messageId,
         eventData: JSON.stringify(domainEvent),
@@ -125,7 +157,7 @@ export class EventHandler {
 
       this.logger.info('Domain event processed successfully', {
         eventType: eventType,
-        eventId: domainEvent.eventId || 'unknown',
+        eventId: (domainEvent as any).eventId || 'unknown',
         messageId: record.messageId,
       });
     } catch (error) {
@@ -143,28 +175,35 @@ export class EventHandler {
   }
 
   /**
-   * Route domain event to appropriate notification handler using EventBridge detail-type
+   * Normalize event data format (handles both direct events and wrapped events)
+   */
+  private normalizeEventData<T>(eventData: T | { data: T }): T {
+    return 'data' in (eventData as any) ? (eventData as { data: T }).data : (eventData as T);
+  }
+
+  /**
+   * Route domain event to appropriate notification handler
    */
   private async routeDomainEventByType(eventType: string, eventData: any): Promise<void> {
     switch (eventType) {
       case 'ORDER_CREATED':
-        await this.handleOrderCreatedFromEventBridge(eventData);
+        await this.handleOrderCreated(eventData);
         break;
 
       case 'ORDER_STATUS_CHANGED':
-        await this.handleOrderStatusChangedFromEventBridge(eventData);
+        await this.handleOrderStatusChanged(eventData);
         break;
 
       case 'ORDER_CANCELLED':
-        await this.handleOrderCancelledFromEventBridge(eventData);
+        await this.handleOrderCancelled(eventData);
         break;
 
       case 'PAYMENT_PROCESSED':
-        await this.handlePaymentProcessedFromEventBridge(eventData);
+        await this.handlePaymentProcessed(eventData);
         break;
 
       case 'USER_CREATED':
-        await this.handleUserCreatedFromEventBridge(eventData);
+        await this.handleUserCreated(eventData);
         break;
 
       default:
@@ -175,76 +214,46 @@ export class EventHandler {
     }
   }
 
-  /**
-   * Route domain event to appropriate notification handler (legacy method)
-   */
-  private async routeDomainEvent(event: DomainEvent): Promise<void> {
-    switch (event.eventType) {
-      case 'ORDER_CREATED':
-        await this.handleOrderCreated(event as OrderCreatedEvent);
-        break;
-
-      case 'ORDER_STATUS_CHANGED':
-        await this.handleOrderStatusChanged(event as OrderStatusChangedEvent);
-        break;
-
-      case 'ORDER_CANCELLED':
-        await this.handleOrderCancelled(event as OrderCancelledEvent);
-        break;
-
-      case 'PAYMENT_PROCESSED':
-        await this.handlePaymentProcessed(event as PaymentProcessedEvent);
-        break;
-
-      case 'USER_CREATED':
-        await this.handleUserCreated(event as UserCreatedEvent);
-        break;
-
-      default:
-        this.logger.warn('Unhandled event type', {
-          eventType: event.eventType,
-          eventId: event.eventId,
-        });
-    }
-  }
 
   /**
    * Handle ORDER_CREATED event
    */
-  private async handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
+  private async handleOrderCreated(eventData: OrderEventData | { data: OrderEventData }): Promise<void> {
+    const data = this.normalizeEventData(eventData);
+    
     this.logger.info('Handling ORDER_CREATED event', {
-      orderId: event.data.orderId,
-      userId: event.data.userId,
+      orderId: data.orderId,
+      userId: data.userId,
     });
 
     // Create notification requests for the order creation
     const notifications: NotificationRequest[] = [
       // Email confirmation
       {
-        userId: event.data.userId,
+        userId: data.userId,
         type: 'ORDER_CREATED',
         channel: 'EMAIL',
-        recipient: await this.getUserEmail(event.data.userId),
+        recipient: await this.getUserEmail(data.userId),
         template: 'order-created',
-        subject: `Order Confirmation - #${event.data.orderId}`,
+        subject: `Order Confirmation - #${data.orderId}`,
         payload: {
-          orderId: event.data.orderId,
-          total: event.data.total,
-          itemCount: event.data.items.length,
-          items: event.data.items,
+          orderId: data.orderId,
+          total: data.total,
+          itemCount: data.itemCount || data.items?.length || 0,
+          items: data.items || [],
         },
         priority: 'HIGH',
       },
       // SMS confirmation (if user has phone number)
       {
-        userId: event.data.userId,
+        userId: data.userId,
         type: 'ORDER_CREATED',
         channel: 'SMS',
-        recipient: await this.getUserPhone(event.data.userId),
+        recipient: await this.getUserPhone(data.userId),
         template: 'order-created',
         payload: {
-          orderId: event.data.orderId,
-          total: event.data.total,
+          orderId: data.orderId,
+          total: data.total,
         },
         priority: 'MEDIUM',
       },
@@ -258,97 +267,33 @@ export class EventHandler {
     }
   }
 
-  /**
-   * Handle ORDER_CREATED event from EventBridge
-   */
-  private async handleOrderCreatedFromEventBridge(eventData: any): Promise<void> {
-    this.logger.info('Handling ORDER_CREATED event from EventBridge', {
-      orderId: eventData.orderId,
-      userId: eventData.userId,
-    });
-
-    // Create notification requests for the order creation
-    const notifications: NotificationRequest[] = [
-      // Email confirmation
-      {
-        userId: eventData.userId,
-        type: 'ORDER_CREATED',
-        channel: 'EMAIL',
-        recipient: await this.getUserEmail(eventData.userId),
-        template: 'order-created',
-        subject: `Order Confirmation - #${eventData.orderId}`,
-        payload: {
-          orderId: eventData.orderId,
-          total: eventData.total,
-          itemCount: eventData.itemCount || eventData.items?.length || 0,
-          items: eventData.items || [],
-        },
-        priority: 'HIGH',
-      },
-      // SMS confirmation (if user has phone number)
-      {
-        userId: eventData.userId,
-        type: 'ORDER_CREATED',
-        channel: 'SMS',
-        recipient: await this.getUserPhone(eventData.userId),
-        template: 'order-created',
-        payload: {
-          orderId: eventData.orderId,
-          total: eventData.total,
-        },
-        priority: 'MEDIUM',
-      },
-    ];
-
-    // Filter out notifications where recipient is not available
-    const validNotifications = notifications.filter(n => n.recipient);
-
-    if (validNotifications.length > 0) {
-      await this.notificationService.processBatchNotifications(validNotifications);
-    }
-  }
-
-  // Add stubs for other EventBridge handlers to fix compilation errors
-  private async handleOrderStatusChangedFromEventBridge(_eventData: any): Promise<void> {
-    this.logger.info('ORDER_STATUS_CHANGED from EventBridge - not implemented yet');
-  }
-
-  private async handleOrderCancelledFromEventBridge(_eventData: any): Promise<void> {
-    this.logger.info('ORDER_CANCELLED from EventBridge - not implemented yet');
-  }
-
-  private async handlePaymentProcessedFromEventBridge(_eventData: any): Promise<void> {
-    this.logger.info('PAYMENT_PROCESSED from EventBridge - not implemented yet');
-  }
-
-  private async handleUserCreatedFromEventBridge(_eventData: any): Promise<void> {
-    this.logger.info('USER_CREATED from EventBridge - not implemented yet');
-  }
 
   /**
    * Handle ORDER_STATUS_CHANGED event
    */
-  private async handleOrderStatusChanged(event: OrderStatusChangedEvent): Promise<void> {
+  private async handleOrderStatusChanged(eventData: OrderStatusEventData | { data: OrderStatusEventData }): Promise<void> {
+    const data = this.normalizeEventData(eventData);
+    
     this.logger.info('Handling ORDER_STATUS_CHANGED event', {
-      orderId: event.data.orderId,
-      previousStatus: event.data.previousStatus,
-      newStatus: event.data.newStatus,
+      orderId: data.orderId,
+      previousStatus: data.previousStatus,
+      newStatus: data.newStatus,
     });
 
     const notifications: NotificationRequest[] = [
       {
-        userId: event.data.userId,
+        userId: data.userId,
         type: 'ORDER_STATUS_CHANGED',
         channel: 'EMAIL',
-        recipient: await this.getUserEmail(event.data.userId),
+        recipient: await this.getUserEmail(data.userId),
         template: 'order-status-changed',
-        subject: `Order Update - #${event.data.orderId}`,
+        subject: `Order Update - #${data.orderId}`,
         payload: {
-          orderId: event.data.orderId,
-          previousStatus: event.data.previousStatus,
-          newStatus: event.data.newStatus,
-          reason: event.data.reason,
-          trackingUrl: `https://example.com/track/${event.data.orderId}`,
+          orderId: data.orderId,
+          previousStatus: data.previousStatus,
+          newStatus: data.newStatus,
+          reason: data.reason,
+          trackingUrl: `https://example.com/track/${data.orderId}`,
         },
         priority: 'MEDIUM',
       },
@@ -363,24 +308,26 @@ export class EventHandler {
   /**
    * Handle ORDER_CANCELLED event
    */
-  private async handleOrderCancelled(event: OrderCancelledEvent): Promise<void> {
+  private async handleOrderCancelled(eventData: OrderCancelledEventData | { data: OrderCancelledEventData }): Promise<void> {
+    const data = this.normalizeEventData(eventData);
+    
     this.logger.info('Handling ORDER_CANCELLED event', {
-      orderId: event.data.orderId,
-      reason: event.data.reason,
+      orderId: data.orderId,
+      reason: data.reason,
     });
 
     const notifications: NotificationRequest[] = [
       {
-        userId: event.data.userId,
+        userId: data.userId,
         type: 'ORDER_CANCELLED',
         channel: 'EMAIL',
-        recipient: await this.getUserEmail(event.data.userId),
+        recipient: await this.getUserEmail(data.userId),
         template: 'order-cancelled',
-        subject: `Order Cancelled - #${event.data.orderId}`,
+        subject: `Order Cancelled - #${data.orderId}`,
         payload: {
-          orderId: event.data.orderId,
-          reason: event.data.reason,
-          refundAmount: event.data.refundAmount,
+          orderId: data.orderId,
+          reason: data.reason,
+          refundAmount: data.refundAmount,
         },
         priority: 'HIGH',
       },
@@ -395,27 +342,29 @@ export class EventHandler {
   /**
    * Handle PAYMENT_PROCESSED event
    */
-  private async handlePaymentProcessed(event: PaymentProcessedEvent): Promise<void> {
+  private async handlePaymentProcessed(eventData: PaymentEventData | { data: PaymentEventData }): Promise<void> {
+    const data = this.normalizeEventData(eventData);
+    
     this.logger.info('Handling PAYMENT_PROCESSED event', {
-      orderId: event.data.orderId,
-      paymentId: event.data.paymentId,
-      status: event.data.status,
+      orderId: data.orderId,
+      paymentId: data.paymentId,
+      status: data.status,
     });
 
-    if (event.data.status === 'SUCCESS') {
+    if (data.status === 'SUCCESS') {
       const notifications: NotificationRequest[] = [
         {
-          userId: event.data.userId,
+          userId: data.userId,
           type: 'PAYMENT_PROCESSED',
           channel: 'EMAIL',
-          recipient: await this.getUserEmail(event.data.userId),
+          recipient: await this.getUserEmail(data.userId),
           template: 'payment-processed',
-          subject: `Payment Confirmation - #${event.data.orderId}`,
+          subject: `Payment Confirmation - #${data.orderId}`,
           payload: {
-            orderId: event.data.orderId,
-            paymentId: event.data.paymentId,
-            amount: event.data.amount,
-            method: event.data.method,
+            orderId: data.orderId,
+            paymentId: data.paymentId,
+            amount: data.amount,
+            method: data.method,
           },
           priority: 'HIGH',
         },
@@ -431,24 +380,26 @@ export class EventHandler {
   /**
    * Handle USER_CREATED event
    */
-  private async handleUserCreated(event: UserCreatedEvent): Promise<void> {
+  private async handleUserCreated(eventData: UserEventData | { data: UserEventData }): Promise<void> {
+    const data = this.normalizeEventData(eventData);
+    
     this.logger.info('Handling USER_CREATED event', {
-      userId: event.data.userId,
-      email: event.data.email,
+      userId: data.userId,
+      email: data.email,
     });
 
     const notifications: NotificationRequest[] = [
       {
-        userId: event.data.userId,
+        userId: data.userId,
         type: 'USER_WELCOME',
         channel: 'EMAIL',
-        recipient: event.data.email,
+        recipient: data.email,
         template: 'user-welcome',
         subject: 'Welcome to Our Service!',
         payload: {
-          firstName: event.data.firstName,
-          lastName: event.data.lastName,
-          email: event.data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
         },
         priority: 'MEDIUM',
       },
@@ -460,7 +411,7 @@ export class EventHandler {
   /**
    * Get user email address (placeholder - would query user service/database)
    */
-  private async getUserEmail(userId: string): Promise<string> {
+  private async getUserEmail(_userId: string): Promise<string> {
     // In a real implementation, this would query the user service or database
     // For now, return a placeholder
     return process.env.DEFAULT_USER_EMAIL || 'user@example.com';
@@ -469,7 +420,7 @@ export class EventHandler {
   /**
    * Get user phone number (placeholder - would query user service/database)
    */
-  private async getUserPhone(userId: string): Promise<string> {
+  private async getUserPhone(_userId: string): Promise<string> {
     // In a real implementation, this would query the user service or database
     // For now, return a placeholder if SMS is enabled
     return process.env.DEFAULT_USER_PHONE || '';

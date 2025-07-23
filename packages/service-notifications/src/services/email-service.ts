@@ -21,7 +21,10 @@ export class EmailService {
   constructor(config: EmailServiceConfig) {
     this.config = {
       region: config.region || process.env.AWS_REGION || 'ap-southeast-1',
-      mockMode: config.mockMode ?? (process.env.NODE_ENV === 'development' || process.env.ENABLE_MOCK_NOTIFICATIONS === 'true'),
+      mockMode:
+        config.mockMode ??
+        (process.env.NODE_ENV === 'development' ||
+          process.env.ENABLE_MOCK_NOTIFICATIONS === 'true'),
       ...config,
     };
 

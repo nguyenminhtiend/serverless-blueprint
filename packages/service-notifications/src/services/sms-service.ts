@@ -21,7 +21,10 @@ export class SMSService {
     this.config = {
       region: config.region || process.env.AWS_REGION || 'ap-southeast-1',
       senderId: config.senderId || process.env.SMS_SENDER_ID || 'YourApp',
-      mockMode: config.mockMode ?? (process.env.NODE_ENV === 'development' || process.env.ENABLE_MOCK_NOTIFICATIONS === 'true'),
+      mockMode:
+        config.mockMode ??
+        (process.env.NODE_ENV === 'development' ||
+          process.env.ENABLE_MOCK_NOTIFICATIONS === 'true'),
     };
 
     this.snsClient = new SNSClient({

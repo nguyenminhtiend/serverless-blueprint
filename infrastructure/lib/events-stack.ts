@@ -56,9 +56,7 @@ export class EventsStack extends cdk.Stack {
         source: ['orders-service'],
         detailType: ['ORDER_CREATED'],
       },
-      targets: [
-        new eventsTargets.SqsQueue(this.notificationQueue),
-      ],
+      targets: [new eventsTargets.SqsQueue(this.notificationQueue)],
     });
 
     new events.Rule(this, 'OrderStatusChangedRule', {
@@ -67,9 +65,7 @@ export class EventsStack extends cdk.Stack {
         source: ['orders-service'],
         detailType: ['ORDER_STATUS_CHANGED'],
       },
-      targets: [
-        new eventsTargets.SqsQueue(this.notificationQueue),
-      ],
+      targets: [new eventsTargets.SqsQueue(this.notificationQueue)],
     });
 
     new events.Rule(this, 'OrderCancelledRule', {
@@ -78,9 +74,7 @@ export class EventsStack extends cdk.Stack {
         source: ['orders-service'],
         detailType: ['ORDER_CANCELLED'],
       },
-      targets: [
-        new eventsTargets.SqsQueue(this.notificationQueue),
-      ],
+      targets: [new eventsTargets.SqsQueue(this.notificationQueue)],
     });
 
     // EventBridge Rules for Payment Events
@@ -90,9 +84,7 @@ export class EventsStack extends cdk.Stack {
         source: ['payment-service'],
         detailType: ['PAYMENT_PROCESSED'],
       },
-      targets: [
-        new eventsTargets.SqsQueue(this.notificationQueue),
-      ],
+      targets: [new eventsTargets.SqsQueue(this.notificationQueue)],
     });
 
     // EventBridge Rules for User Events
@@ -102,9 +94,7 @@ export class EventsStack extends cdk.Stack {
         source: ['users-service'],
         detailType: ['USER_CREATED'],
       },
-      targets: [
-        new eventsTargets.SqsQueue(this.notificationQueue),
-      ],
+      targets: [new eventsTargets.SqsQueue(this.notificationQueue)],
     });
 
     new events.Rule(this, 'UserUpdatedRule', {
@@ -113,9 +103,7 @@ export class EventsStack extends cdk.Stack {
         source: ['users-service'],
         detailType: ['USER_UPDATED'],
       },
-      targets: [
-        new eventsTargets.SqsQueue(this.notificationQueue),
-      ],
+      targets: [new eventsTargets.SqsQueue(this.notificationQueue)],
     });
 
     // Catch-all rule for debugging and monitoring

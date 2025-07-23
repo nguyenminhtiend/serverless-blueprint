@@ -82,7 +82,7 @@ export const createOrderHandler = async (
       // Publish event synchronously to ensure it completes before Lambda ends
       try {
         const publishResult = await publishOrderCreatedEvent(orderCreatedEvent);
-        
+
         logger.info('ORDER_CREATED event published successfully', {
           orderId: order.orderId,
           eventId: orderCreatedEvent.eventId,
