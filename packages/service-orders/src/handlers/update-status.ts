@@ -14,7 +14,7 @@ export const updateOrderStatusHandler = async (
   try {
     // Extract user from JWT (added by API Gateway JWT authorizer)
     const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.claims) {
+    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -22,8 +22,8 @@ export const updateOrderStatusHandler = async (
       };
     }
 
-    const userId = userContext.claims.sub;
-    const userEmail = userContext.claims.email || userId; // Fallback to userId if email not available
+    const userId = userContext.jwt.claims.sub;
+    const userEmail = userContext.jwt.claims.email || userId; // Fallback to userId if email not available
 
     if (!userId) {
       return {

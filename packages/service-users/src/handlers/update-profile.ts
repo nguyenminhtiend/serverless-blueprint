@@ -14,7 +14,7 @@ export const updateUserProfileHandler = async (
   try {
     // Extract user from JWT (added by API Gateway JWT authorizer)
     const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.claims) {
+    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -22,7 +22,7 @@ export const updateUserProfileHandler = async (
       };
     }
 
-    const cognitoSub = userContext.claims.sub;
+    const cognitoSub = userContext.jwt.claims.sub;
     if (!cognitoSub) {
       return {
         statusCode: 400,

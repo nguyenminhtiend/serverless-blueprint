@@ -15,7 +15,7 @@ export const createOrderHandler = async (
   try {
     // Extract user from JWT (added by API Gateway JWT authorizer)
     const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.claims) {
+    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -23,7 +23,7 @@ export const createOrderHandler = async (
       };
     }
 
-    const userId = userContext.claims.sub;
+    const userId = userContext.jwt.claims.sub;
     if (!userId) {
       return {
         statusCode: 400,
@@ -41,16 +41,8 @@ export const createOrderHandler = async (
       };
     }
 
-    let requestData;
-    try {
-      requestData = JSON.parse(event.body);
-    } catch {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid JSON format' }),
-      };
-    }
+    // Body is already parsed by middleware (jsonBodyParser: true)
+    const requestData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
     // Validate with Zod schema
     const orderRequest = CreateOrderRequestSchema.parse(requestData);

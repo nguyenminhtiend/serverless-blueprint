@@ -1,11 +1,11 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createLogger } from '@shared/core';
-import { createUserProfileService } from '../services';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import {
   addAddressRequestSchema,
-  updateAddressRequestSchema,
   addressIdPathSchema,
+  updateAddressRequestSchema,
 } from '../schemas';
+import { createUserProfileService } from '../services';
 
 const logger = createLogger('manage-addresses');
 
@@ -18,7 +18,7 @@ export const addAddressHandler = async (
   try {
     // Extract user from JWT
     const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.claims) {
+    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -26,7 +26,7 @@ export const addAddressHandler = async (
       };
     }
 
-    const cognitoSub = userContext.claims.sub;
+    const cognitoSub = userContext.jwt.claims.sub;
     if (!cognitoSub) {
       return {
         statusCode: 400,
@@ -107,7 +107,7 @@ export const updateAddressHandler = async (
   try {
     // Extract user from JWT
     const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.claims) {
+    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +115,7 @@ export const updateAddressHandler = async (
       };
     }
 
-    const cognitoSub = userContext.claims.sub;
+    const cognitoSub = userContext.jwt.claims.sub;
     if (!cognitoSub) {
       return {
         statusCode: 400,
@@ -195,7 +195,7 @@ export const deleteAddressHandler = async (
   try {
     // Extract user from JWT
     const userContext = event.requestContext.authorizer;
-    if (!userContext || !userContext.claims) {
+    if (!userContext || !userContext.jwt || !userContext.jwt.claims) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -203,7 +203,7 @@ export const deleteAddressHandler = async (
       };
     }
 
-    const cognitoSub = userContext.claims.sub;
+    const cognitoSub = userContext.jwt.claims.sub;
     if (!cognitoSub) {
       return {
         statusCode: 400,
