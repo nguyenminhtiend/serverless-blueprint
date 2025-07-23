@@ -40,7 +40,7 @@ export const userProfileSchema = z.object({
 
 // Extended user profile schema for DynamoDB storage
 export const extendedUserProfileSchema = z.object({
-  preferences: userPreferencesSchema.deepPartial().optional(),
+  preferences: userPreferencesSchema.partial().optional(),
   addresses: z
     .array(
       addressSchema.extend({
@@ -74,7 +74,7 @@ export const getUserProfileResponseSchema = z.object({
 });
 
 export const updateUserProfileRequestSchema = z.object({
-  preferences: userPreferencesSchema.deepPartial().optional(),
+  preferences: userPreferencesSchema.partial().optional(),
   businessRole: z.enum(['customer', 'admin']).optional(),
 });
 

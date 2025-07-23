@@ -38,7 +38,7 @@ export const validateSchema = <T>(
     return { success: true, data: result.data };
   }
 
-  const errors = result.error.errors.map(err =>
+  const errors = result.error.issues.map(err =>
     createValidationError(err.path.join('.'), err.message, err.code)
   );
 

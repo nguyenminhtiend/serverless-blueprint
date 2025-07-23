@@ -15,7 +15,7 @@ const SQSEventBridgeMessageSchema = z.object({
   account: z.string(),
   time: z.string(),
   region: z.string(),
-  detail: z.record(z.unknown()), // The actual domain event
+  detail: z.record(z.string(), z.unknown()), // The actual domain event
 });
 
 /**

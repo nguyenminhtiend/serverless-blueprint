@@ -29,9 +29,9 @@ export const NotificationRequestSchema = z.object({
   recipient: z.string().min(1, 'Recipient is required'),
   template: z.string().min(1, 'Template is required'),
   subject: z.string().optional(),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
   priority: NotificationPrioritySchema.default('MEDIUM'),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type NotificationRequest = z.infer<typeof NotificationRequestSchema>;

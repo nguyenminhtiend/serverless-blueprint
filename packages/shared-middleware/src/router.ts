@@ -1,4 +1,4 @@
-import { createLogger, Logger } from '@shared/core';
+import { createLogger, MetricsLogger } from '@shared/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { createPublicApiHandler, MiddlewareStackOptions } from './common';
 
@@ -183,7 +183,7 @@ export function getRequestId(event: any): string {
  */
 export class ApiRouter {
   private routes: Routes = {};
-  private logger: Logger;
+  private logger: MetricsLogger;
   private config: RouterConfig;
 
   constructor(config: RouterConfig) {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 /**
  * Order Item Schema
@@ -63,7 +64,7 @@ export const OrderCreatedEventSchema = BaseEventSchema.extend({
       method: z.enum(['CREDIT_CARD', 'DEBIT_CARD', 'PAYPAL', 'BANK_TRANSFER']),
       currency: z.string().default('USD'),
     }),
-    metadata: z.record(z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   }),
 });
 
@@ -100,7 +101,7 @@ export const createOrderCreatedEvent = (
     eventId?: string;
   }
 ): OrderCreatedEvent => {
-  const eventId = options?.eventId || globalThis.crypto.randomUUID();
+  const eventId = options?.eventId || randomUUID();
   const timestamp = new Date().toISOString();
 
   const event: OrderCreatedEvent = {
