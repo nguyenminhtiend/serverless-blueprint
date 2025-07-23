@@ -79,16 +79,26 @@ export const createOrderHandler = async (
         }
       );
 
-      // Publish event asynchronously
-      publishOrderCreatedEvent(orderCreatedEvent).catch(error => {
-        logger.error('Failed to publish ORDER_CREATED event', {
-          error: error instanceof Error ? error.message : error,
+      // Publish event synchronously to ensure it completes before Lambda ends
+      try {
+        const publishResult = await publishOrderCreatedEvent(orderCreatedEvent);
+        
+        logger.info('ORDER_CREATED event published successfully', {
           orderId: order.orderId,
           eventId: orderCreatedEvent.eventId,
+          success: publishResult.success,
+          eventBridgeEventId: publishResult.eventId,
+        });
+      } catch (error) {
+        logger.error('Failed to publish ORDER_CREATED event', {
+          error: error instanceof Error ? error.message : String(error),
+          orderId: order.orderId,
+          eventId: orderCreatedEvent.eventId,
+          stack: error instanceof Error ? error.stack : undefined,
         });
         // Event publishing failure shouldn't fail the order creation
         // In production, you might want to retry or use DLQ
-      });
+      }
 
       logger.info('ORDER_CREATED event initiated', {
         orderId: order.orderId,

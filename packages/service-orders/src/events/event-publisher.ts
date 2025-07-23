@@ -58,13 +58,15 @@ export class OrderEventPublisher {
       eventId: event.eventId,
       orderId: event.orderId,
       userId: event.userId,
+      eventBusName: this.config.eventBusName,
+      region: this.config.region,
     });
 
     try {
       const eventEntry: PutEventsRequestEntry = {
         Source: event.source,
         DetailType: event.eventType,
-        Detail: JSON.stringify(event),
+        Detail: JSON.stringify(event.data),
         EventBusName: this.config.eventBusName,
         Resources: [`order:${event.orderId}`],
         Time: new Date(event.timestamp),
@@ -130,6 +132,13 @@ export class OrderEventPublisher {
       try {
         const command = new PutEventsCommand({
           Entries: [eventEntry],
+        });
+
+        this.logger.info('Sending event to EventBridge', {
+          attempt,
+          eventBusName: eventEntry.EventBusName,
+          source: eventEntry.Source,
+          detailType: eventEntry.DetailType,
         });
 
         const response = await this.eventBridgeClient.send(command);
