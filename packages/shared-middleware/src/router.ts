@@ -1,5 +1,5 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { createLogger, Logger } from '@shared/core';
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { createPublicApiHandler, MiddlewareStackOptions } from './common';
 
 // Types for route handling
@@ -165,19 +165,14 @@ export function createCorsOptionsHandler(allowedMethods: string[] = []): RouteHa
 }
 
 /**
- * Extract route key from event (supports both HTTP API v1.0 and v2.0)
+ * Extract route key from HTTP API v2.0 event
  */
 export function getRouteKey(event: any): RouteKey {
-  // HTTP API v2.0 format
-  if (event.version === '2.0') {
-    return `${event.requestContext.http.method as RouteMethod} ${event.rawPath}`;
-  }
-  // HTTP API v1.0 format (fallback)
-  return `${event.httpMethod as RouteMethod} ${event.path}`;
+  return `${event.requestContext.http.method as RouteMethod} ${event.rawPath}`;
 }
 
 /**
- * Extract request ID from event (supports both HTTP API v1.0 and v2.0)
+ * Extract request ID from HTTP API v2.0 event
  */
 export function getRequestId(event: any): string {
   return event.requestContext.requestId;
@@ -271,13 +266,13 @@ export class ApiRouter {
   }
 
   /**
-   * Main routing handler (supports both HTTP API v1.0 and v2.0)
+   * Main routing handler (HTTP API v2.0 only)
    */
   async route(event: any, _context: Context): Promise<APIGatewayProxyResult> {
-    // Extract method and path based on event version
-    const httpMethod = event.version === '2.0' ? event.requestContext.http.method : event.httpMethod;
-    const path = event.version === '2.0' ? event.rawPath : event.path;
-    
+    // Extract method and path from HTTP API v2.0 event
+    const httpMethod = event.requestContext.http.method;
+    const path = event.rawPath;
+
     const routeKey = getRouteKey(event);
     const requestId = getRequestId(event);
 
