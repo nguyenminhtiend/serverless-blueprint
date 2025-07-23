@@ -165,16 +165,21 @@ export function createCorsOptionsHandler(allowedMethods: string[] = []): RouteHa
 }
 
 /**
- * Extract route key from event
+ * Extract route key from event (supports both HTTP API v1.0 and v2.0)
  */
-export function getRouteKey(event: APIGatewayProxyEvent): RouteKey {
+export function getRouteKey(event: any): RouteKey {
+  // HTTP API v2.0 format
+  if (event.version === '2.0') {
+    return `${event.requestContext.http.method as RouteMethod} ${event.rawPath}`;
+  }
+  // HTTP API v1.0 format (fallback)
   return `${event.httpMethod as RouteMethod} ${event.path}`;
 }
 
 /**
- * Extract request ID from event
+ * Extract request ID from event (supports both HTTP API v1.0 and v2.0)
  */
-export function getRequestId(event: APIGatewayProxyEvent): string {
+export function getRequestId(event: any): string {
   return event.requestContext.requestId;
 }
 
@@ -266,10 +271,13 @@ export class ApiRouter {
   }
 
   /**
-   * Main routing handler
+   * Main routing handler (supports both HTTP API v1.0 and v2.0)
    */
-  async route(event: APIGatewayProxyEvent, _context: Context): Promise<APIGatewayProxyResult> {
-    const { httpMethod, path } = event;
+  async route(event: any, _context: Context): Promise<APIGatewayProxyResult> {
+    // Extract method and path based on event version
+    const httpMethod = event.version === '2.0' ? event.requestContext.http.method : event.httpMethod;
+    const path = event.version === '2.0' ? event.rawPath : event.path;
+    
     const routeKey = getRouteKey(event);
     const requestId = getRequestId(event);
 
@@ -346,7 +354,7 @@ export function createRouter(
   const router = new ApiRouter(config);
 
   // Create the main handler with middleware
-  const routerHandler = async (event: APIGatewayProxyEvent, context: Context) => {
+  const routerHandler = async (event: any, context: Context) => {
     return await router.route(event, context);
   };
 
