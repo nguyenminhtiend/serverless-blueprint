@@ -59,7 +59,12 @@ pnpm deploy:services:prod  # Deploy to prod
 # Specific deployments
 pnpm deploy:db             # Database stack only
 pnpm deploy:auth           # Cognito authentication stack
+pnpm deploy:lambda         # Lambda stack only
 pnpm deploy:service:auth   # Auth service only
+
+# No-hotswap deployments (for infrastructure property changes)
+pnpm deploy:lambda:no-hotswap      # Lambda stack without hotswap (dev)
+pnpm deploy:lambda:no-hotswap:prod # Lambda stack without hotswap (prod)
 
 # Utilities
 pnpm diff                  # Show infrastructure changes
@@ -89,6 +94,8 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed project stru
 | `pnpm deploy:services` | Smart service deployment | dev |
 | `pnpm deploy:db` | Database stack only | dev |
 | `pnpm deploy:auth` | Cognito stack only | dev |
+| `pnpm deploy:lambda` | Lambda stack only | dev |
+| `pnpm deploy:lambda:no-hotswap` | Lambda stack without hotswap | dev |
 | `pnpm deploy:service:auth` | Auth service only | dev |
 | `pnpm diff` | Show infrastructure changes | dev |
 | `pnpm synth` | Validate stacks | dev |
@@ -101,6 +108,17 @@ Add `:prod` suffix for production (e.g., `pnpm deploy:infra:prod`).
 - ✅ **Fast service updates**: Uses hot-swap deployment for 2-10x faster Lambda deployments
 - ✅ **Verbose dev logging**: Dev environment shows detailed output for better error debugging
 - ✅ **Production safety**: Asks for confirmation on prod deployments
+- ✅ **No-hotswap options**: Available for infrastructure property changes that require CloudFormation
+
+### When to Use No-Hotswap Deployment
+
+Use `pnpm deploy:lambda:no-hotswap` when:
+- Changing Lambda configuration properties (memory, timeout, environment variables)
+- Enabling/disabling X-Ray tracing (`TracingConfig`)
+- Modifying IAM permissions or security groups
+- Adding/removing event sources or triggers
+
+Regular `pnpm deploy:lambda` uses hotswap for faster code-only updates.
 
 ### Deployment Flow
 ```bash
