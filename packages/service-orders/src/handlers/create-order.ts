@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createLogger } from '@shared/core';
 import { createOrderService } from '../services';
-import { createOrderEventPublisher } from '../events';
+import { publishOrderCreatedEvent, createOrderCreatedEvent } from '../events';
 import { CreateOrderRequestSchema } from '../schemas';
 
 const logger = createLogger('create-order');
@@ -60,22 +60,69 @@ export const createOrderHandler = async (
       itemCount: orderRequest.items.length,
     });
 
-    // Create services
+    // Create order service
     const orderService = createOrderService();
-    const eventPublisher = createOrderEventPublisher();
 
     // Create order
     const order = await orderService.createOrder(userId, orderRequest);
 
-    // Publish ORDER_CREATED event (async, don't block response)
-    eventPublisher.publishOrderCreated(order).catch(error => {
-      logger.error('Failed to publish ORDER_CREATED event', {
-        error,
+    // Create and publish ORDER_CREATED event (async, don't block response)
+    try {
+      const orderCreatedEvent = createOrderCreatedEvent(
+        order.orderId,
+        order.userId,
+        {
+          orderId: order.orderId,
+          userId: order.userId,
+          status: 'PENDING',
+          total: order.total,
+          itemCount: order.itemCount || order.items.length,
+          items: order.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+            totalPrice: item.subtotal, // Use subtotal from existing schema
+          })),
+          shipping: {
+            address: `${order.shippingAddress.street}`,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            zipCode: order.shippingAddress.zipCode,
+            country: order.shippingAddress.country,
+          },
+          payment: {
+            method: order.paymentInfo.method.toUpperCase() as any, // Convert to uppercase enum
+            currency: 'USD', // Default currency
+          },
+        },
+        {
+          correlationId: event.requestContext.requestId, // Use request ID for correlation
+        }
+      );
+
+      // Publish event asynchronously
+      publishOrderCreatedEvent(orderCreatedEvent).catch(error => {
+        logger.error('Failed to publish ORDER_CREATED event', {
+          error: error instanceof Error ? error.message : error,
+          orderId: order.orderId,
+          eventId: orderCreatedEvent.eventId,
+        });
+        // Event publishing failure shouldn't fail the order creation
+        // In production, you might want to retry or use DLQ
+      });
+
+      logger.info('ORDER_CREATED event initiated', {
+        orderId: order.orderId,
+        eventId: orderCreatedEvent.eventId,
+      });
+    } catch (eventError) {
+      logger.error('Failed to create ORDER_CREATED event', {
+        error: eventError instanceof Error ? eventError.message : eventError,
         orderId: order.orderId,
       });
-      // Event publishing failure shouldn't fail the order creation
-      // In production, you might want to retry or use DLQ
-    });
+      // Continue even if event creation fails
+    }
 
     logger.info('Order created successfully', {
       orderId: order.orderId,

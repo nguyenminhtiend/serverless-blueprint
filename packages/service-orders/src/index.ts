@@ -1,18 +1,20 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { routeRequest } from './router';
-
-/**
- * Orders Service Lambda Handler
- *
- * Main entry point for the orders microservice.
- * Routes requests to appropriate handlers based on HTTP method and path.
- */
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  return await routeRequest(event);
-};
+// Export the configured handler from router
+export { handler } from './router';
 
 // Export all handlers and services for testing
 export * from './handlers';
 export * from './services';
-export * from './events';
+
+// Export schemas (avoiding conflicts with events)
 export * from './schemas';
+
+// Export specific event items to avoid naming conflicts
+export {
+  OrderEventPublisher,
+  publishOrderCreatedEvent,
+  EventPublishResult,
+  EventPublisherConfig,
+  createOrderCreatedEvent,
+  validateOrderCreatedEvent,
+  EVENT_TYPES,
+} from './events';

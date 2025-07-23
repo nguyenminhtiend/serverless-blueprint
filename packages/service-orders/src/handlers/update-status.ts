@@ -1,8 +1,7 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createLogger } from '@shared/core';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { OrderPathParamsSchema, UpdateOrderStatusRequestSchema } from '../schemas';
 import { createOrderService } from '../services';
-import { createOrderEventPublisher } from '../events';
-import { OrderPathParamsSchema, UpdateOrderStatusRequestSchema, OrderStatus } from '../schemas';
 
 const logger = createLogger('update-order-status');
 
@@ -77,7 +76,6 @@ export const updateOrderStatusHandler = async (
 
     // Create services
     const orderService = createOrderService();
-    const eventPublisher = createOrderEventPublisher();
 
     // First, get current order to check ownership and capture previous status
     const currentOrder = await orderService.getOrderById(orderId);
@@ -110,43 +108,17 @@ export const updateOrderStatusHandler = async (
     // Update order status
     const updatedOrder = await orderService.updateOrderStatus(orderId, statusUpdate, userEmail);
 
-    // Publish ORDER_STATUS_CHANGED event (async, don't block response)
+    // Log status change (event publishing for status changes will be implemented in Phase 9)
     if (previousStatus !== statusUpdate.status) {
-      eventPublisher
-        .publishOrderStatusChanged(
-          orderId,
-          userId,
-          previousStatus as OrderStatus,
-          statusUpdate.status,
-          userEmail,
-          statusUpdate.notes
-        )
-        .catch(error => {
-          logger.error('Failed to publish ORDER_STATUS_CHANGED event', {
-            error,
-            orderId,
-            previousStatus,
-            newStatus: statusUpdate.status,
-          });
-          // Event publishing failure shouldn't fail the status update
-        });
+      logger.info('Order status changed', {
+        orderId,
+        userId,
+        previousStatus,
+        newStatus: statusUpdate.status,
+        notes: statusUpdate.notes,
+      });
 
-      // Special handling for cancelled orders
-      if (statusUpdate.status === 'CANCELLED') {
-        eventPublisher
-          .publishOrderCancelled(
-            orderId,
-            userId,
-            statusUpdate.notes || 'Order cancelled by customer',
-            userEmail
-          )
-          .catch(error => {
-            logger.error('Failed to publish ORDER_CANCELLED event', {
-              error,
-              orderId,
-            });
-          });
-      }
+      // TODO: Implement ORDER_STATUS_CHANGED and ORDER_CANCELLED events in Phase 9
     }
 
     logger.info('Order status updated successfully', {
