@@ -50,7 +50,9 @@ export const getUserFromToken = async (accessToken: string): Promise<CognitoUser
     logger.info('Retrieved user from token', { email: user.email });
     return user;
   } catch (error: unknown) {
-    logger.error('Failed to get user from token', { error: error.message });
+    logger.error('Failed to get user from token', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };
@@ -82,7 +84,10 @@ export const getUserByEmail = async (email: string): Promise<CognitoUser> => {
     logger.info('Retrieved user by email', { email });
     return user;
   } catch (error: unknown) {
-    logger.error('Failed to get user by email', { email, error: error.message });
+    logger.error('Failed to get user by email', {
+      email,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };
@@ -109,7 +114,10 @@ export const updateUserAttributes = async (
     await cognitoClient.send(command);
     logger.info('Updated user attributes', { email, attributes: Object.keys(attributes) });
   } catch (error: unknown) {
-    logger.error('Failed to update user attributes', { email, error: error.message });
+    logger.error('Failed to update user attributes', {
+      email,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };
@@ -133,7 +141,10 @@ export const setUserPassword = async (
     await cognitoClient.send(command);
     logger.info('Set user password', { email, permanent });
   } catch (error: unknown) {
-    logger.error('Failed to set user password', { email, error: error.message });
+    logger.error('Failed to set user password', {
+      email,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };
@@ -151,7 +162,10 @@ export const deleteUser = async (email: string): Promise<void> => {
     await cognitoClient.send(command);
     logger.info('Deleted user', { email });
   } catch (error: unknown) {
-    logger.error('Failed to delete user', { email, error: error.message });
+    logger.error('Failed to delete user', {
+      email,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };
@@ -196,7 +210,9 @@ export const listUsers = async (options?: {
       nextToken: result.PaginationToken,
     };
   } catch (error: unknown) {
-    logger.error('Failed to list users', { error: error.message });
+    logger.error('Failed to list users', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };

@@ -26,7 +26,7 @@ export function parseRequestBody<T>(event: APIGatewayProxyEvent, schema: z.ZodSc
   return schema.parse(body);
 }
 
-export function addSecretHashIfNeeded(params: Record<string, unknown>, email: string): void {
+export function addSecretHashIfNeeded(params: any, email: string): void {
   const secretHash = calculateSecretHash(email);
   if (secretHash) {
     params.SecretHash = secretHash;

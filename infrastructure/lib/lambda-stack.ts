@@ -89,6 +89,10 @@ export class LambdaStack extends cdk.Stack {
         retention: logRetention,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }),
+      environment: {
+        ...commonLambdaProps.environment,
+        COGNITO_USER_POOL_ID: userPool?.userPoolId || '',
+      },
     });
 
     // Order Service Function
@@ -150,24 +154,27 @@ export class LambdaStack extends cdk.Stack {
       }
     );
 
-    // Cognito permissions for auth function
+    // Cognito permissions for auth and user functions
     if (userPool) {
-      this.authFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          actions: [
-            'cognito-idp:AdminGetUser',
-            'cognito-idp:AdminUpdateUserAttributes',
-            'cognito-idp:AdminDeleteUser',
-            'cognito-idp:AdminSetUserPassword',
-            'cognito-idp:ListUsers',
-            'cognito-idp:AdminListGroupsForUser',
-            'cognito-idp:AdminAddUserToGroup',
-            'cognito-idp:AdminRemoveUserFromGroup',
-          ],
-          resources: [userPool.userPoolArn],
-        })
-      );
+      const cognitoPolicy = new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'cognito-idp:AdminGetUser',
+          'cognito-idp:AdminUpdateUserAttributes',
+          'cognito-idp:AdminDeleteUser',
+          'cognito-idp:AdminSetUserPassword',
+          'cognito-idp:ListUsers',
+          'cognito-idp:AdminListGroupsForUser',
+          'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:AdminRemoveUserFromGroup',
+          'cognito-idp:GetUser',
+        ],
+        resources: [userPool.userPoolArn],
+      });
+
+      // Add Cognito permissions to auth and user functions
+      this.authFunction.addToRolePolicy(cognitoPolicy);
+      this.userFunction.addToRolePolicy(cognitoPolicy);
     }
 
     // EventBridge permissions for order function

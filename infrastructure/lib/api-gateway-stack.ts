@@ -121,29 +121,26 @@ export class ApiGatewayStack extends cdk.Stack {
       integration: authIntegration,
     });
 
-    // User routes (protected - requires JWT authorization)
+    // User Service routes (protected - requires JWT authorization)
+    // Get and update current user's profile
     this.httpApi.addRoutes({
-      path: '/users',
-      methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.POST],
-      integration: userIntegration,
-      authorizer: this.jwtAuthorizer,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/users/{id}',
-      methods: [
-        apigatewayv2.HttpMethod.GET,
-        apigatewayv2.HttpMethod.PUT,
-        apigatewayv2.HttpMethod.DELETE,
-        apigatewayv2.HttpMethod.PATCH,
-      ],
-      integration: userIntegration,
-      authorizer: this.jwtAuthorizer,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/users/{id}/profile',
+      path: '/users/profile',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.PUT],
+      integration: userIntegration,
+      authorizer: this.jwtAuthorizer,
+    });
+
+    // User address management
+    this.httpApi.addRoutes({
+      path: '/users/addresses',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: userIntegration,
+      authorizer: this.jwtAuthorizer,
+    });
+
+    this.httpApi.addRoutes({
+      path: '/users/addresses/{addressId}',
+      methods: [apigatewayv2.HttpMethod.PUT, apigatewayv2.HttpMethod.DELETE],
       integration: userIntegration,
       authorizer: this.jwtAuthorizer,
     });
