@@ -4,7 +4,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as logs from 'aws-cdk-lib/aws-logs';
+// import * as logs from 'aws-cdk-lib/aws-logs'; // Not needed - Lambda auto-creates log groups
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
@@ -15,75 +15,87 @@ export interface MonitoringStackProps extends cdk.StackProps {
   apiGateway: apigateway.HttpApi;
   dynamoTable: dynamodb.Table;
   alertEmail?: string;
+  enableDashboards?: boolean;
+  enableAlarms?: boolean;
 }
 
 export class MonitoringStack extends cdk.Stack {
-  public readonly criticalAlarmTopic: sns.Topic;
-  public readonly warningAlarmTopic: sns.Topic;
-  public readonly serviceOverviewDashboard: cloudwatch.Dashboard;
-  public readonly businessMetricsDashboard: cloudwatch.Dashboard;
+  public readonly criticalAlarmTopic?: sns.Topic;
+  public readonly warningAlarmTopic?: sns.Topic;
+  public readonly serviceOverviewDashboard?: cloudwatch.Dashboard;
+  public readonly businessMetricsDashboard?: cloudwatch.Dashboard;
 
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    // SNS Topics for Alerting
-    this.criticalAlarmTopic = new sns.Topic(this, 'CriticalAlarms', {
-      displayName: `Critical Alarms - ${props.environment}`,
-      topicName: `serverless-critical-${props.environment}`,
-    });
+    // Determine if we should enable expensive monitoring features
+    const enableAlarms = props.enableAlarms ?? (props.environment === 'prod');
+    const enableDashboards = props.enableDashboards ?? (props.environment === 'prod');
 
-    this.warningAlarmTopic = new sns.Topic(this, 'WarningAlarms', {
-      displayName: `Warning Alarms - ${props.environment}`,
-      topicName: `serverless-warning-${props.environment}`,
-    });
+    // Log Groups are automatically created by Lambda functions
+    // No need to create them explicitly here
 
-    // Email subscription if provided
-    if (props.alertEmail) {
-      this.criticalAlarmTopic.addSubscription(
-        new subscriptions.EmailSubscription(props.alertEmail)
-      );
-      this.warningAlarmTopic.addSubscription(new subscriptions.EmailSubscription(props.alertEmail));
+    // SNS Topics for Alerting (only if alarms are enabled)
+    if (enableAlarms) {
+      this.criticalAlarmTopic = new sns.Topic(this, 'CriticalAlarms', {
+        displayName: `Critical Alarms - ${props.environment}`,
+        topicName: `serverless-critical-${props.environment}`,
+      });
+
+      this.warningAlarmTopic = new sns.Topic(this, 'WarningAlarms', {
+        displayName: `Warning Alarms - ${props.environment}`,
+        topicName: `serverless-warning-${props.environment}`,
+      });
+
+      // Email subscription if provided
+      if (props.alertEmail) {
+        this.criticalAlarmTopic.addSubscription(
+          new subscriptions.EmailSubscription(props.alertEmail)
+        );
+        this.warningAlarmTopic.addSubscription(new subscriptions.EmailSubscription(props.alertEmail));
+      }
+
+      // Lambda Function Monitoring
+      this.createLambdaMonitoring(props.lambdaFunctions, props.environment);
+
+      // API Gateway Monitoring
+      this.createApiGatewayMonitoring(props.apiGateway, props.environment);
+
+      // DynamoDB Monitoring
+      this.createDynamoDBMonitoring(props.dynamoTable, props.environment);
+
+      // Custom Metrics Namespace
+      this.createCustomMetricsAlarms(props.environment);
     }
 
-    // Log Groups with retention policies
-    this.createLogGroups(props.environment);
+    // Dashboards (only if enabled)
+    if (enableDashboards) {
+      // Service Overview Dashboard
+      this.serviceOverviewDashboard = this.createServiceOverviewDashboard(
+        props.lambdaFunctions,
+        props.apiGateway,
+        props.dynamoTable,
+        props.environment
+      );
 
-    // Lambda Function Monitoring
-    this.createLambdaMonitoring(props.lambdaFunctions, props.environment);
+      // Business Metrics Dashboard
+      this.businessMetricsDashboard = this.createBusinessMetricsDashboard(props.environment);
+    }
 
-    // API Gateway Monitoring
-    this.createApiGatewayMonitoring(props.apiGateway, props.environment);
-
-    // DynamoDB Monitoring
-    this.createDynamoDBMonitoring(props.dynamoTable, props.environment);
-
-    // Service Overview Dashboard
-    this.serviceOverviewDashboard = this.createServiceOverviewDashboard(
-      props.lambdaFunctions,
-      props.apiGateway,
-      props.dynamoTable,
-      props.environment
-    );
-
-    // Business Metrics Dashboard
-    this.businessMetricsDashboard = this.createBusinessMetricsDashboard(props.environment);
-
-    // Custom Metrics Namespace
-    this.createCustomMetricsAlarms(props.environment);
-  }
-
-  private createLogGroups(environment: string) {
-    const services = ['auth', 'users', 'orders', 'notifications'];
-
-    services.forEach(service => {
-      new logs.LogGroup(this, `${service}ServiceLogGroup`, {
-        logGroupName: `/aws/lambda/serverless-${service}-${environment}`,
-        retention:
-          environment === 'prod' ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_MONTH,
-        removalPolicy: cdk.RemovalPolicy.DESTROY,
-      });
+    // Output monitoring configuration for transparency
+    new cdk.CfnOutput(this, 'MonitoringConfig', {
+      value: JSON.stringify({
+        environment: props.environment,
+        alarmsEnabled: enableAlarms,
+        dashboardsEnabled: enableDashboards,
+        estimatedMonthlyCost: enableDashboards ? '$6-8' : '$0-1'
+      }),
+      description: 'Monitoring configuration and estimated costs'
     });
   }
+
+  // Log groups are automatically created by Lambda functions
+  // Retention can be managed via Lambda function configuration
 
   private createLambdaMonitoring(
     functions: { [key: string]: lambda.Function },
@@ -105,7 +117,9 @@ export class MonitoringStack extends cdk.Stack {
         evaluationPeriods: 1,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
-      errorRateAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+      if (this.criticalAlarmTopic) {
+        errorRateAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+      }
 
       // Duration Alarm (Warning)
       const durationAlarm = new cloudwatch.Alarm(this, `${name}DurationAlarm`, {
@@ -119,7 +133,9 @@ export class MonitoringStack extends cdk.Stack {
         evaluationPeriods: 2,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
-      durationAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+      if (this.warningAlarmTopic) {
+        durationAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+      }
 
       // Memory Utilization (Warning) - requires custom metric from Lambda
       const memoryAlarm = new cloudwatch.Alarm(this, `${name}MemoryAlarm`, {
@@ -138,7 +154,9 @@ export class MonitoringStack extends cdk.Stack {
         evaluationPeriods: 2,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
-      memoryAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+      if (this.warningAlarmTopic) {
+        memoryAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+      }
     });
   }
 
@@ -170,7 +188,9 @@ export class MonitoringStack extends cdk.Stack {
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    serverErrorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+    if (this.criticalAlarmTopic) {
+      serverErrorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+    }
 
     // High Latency (Warning)
     const latencyAlarm = new cloudwatch.Alarm(this, 'ApiGatewayLatencyAlarm', {
@@ -187,7 +207,9 @@ export class MonitoringStack extends cdk.Stack {
       evaluationPeriods: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    latencyAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+    if (this.warningAlarmTopic) {
+      latencyAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+    }
   }
 
   private createDynamoDBMonitoring(table: dynamodb.Table, environment: string) {
@@ -208,7 +230,9 @@ export class MonitoringStack extends cdk.Stack {
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    readThrottleAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+    if (this.criticalAlarmTopic) {
+      readThrottleAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+    }
 
     // Write Throttles (Critical)
     const writeThrottleAlarm = new cloudwatch.Alarm(this, 'DynamoDBWriteThrottleAlarm', {
@@ -227,7 +251,9 @@ export class MonitoringStack extends cdk.Stack {
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    writeThrottleAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+    if (this.criticalAlarmTopic) {
+      writeThrottleAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.criticalAlarmTopic));
+    }
   }
 
   private createServiceOverviewDashboard(
@@ -411,7 +437,9 @@ export class MonitoringStack extends cdk.Stack {
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    orderFailureAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+    if (this.warningAlarmTopic) {
+      orderFailureAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+    }
 
     // User Registration Failure Rate (Business Alert)
     const authFailureAlarm = new cloudwatch.Alarm(this, 'AuthFailureRateAlarm', {
@@ -438,6 +466,8 @@ export class MonitoringStack extends cdk.Stack {
       evaluationPeriods: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    authFailureAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+    if (this.warningAlarmTopic) {
+      authFailureAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.warningAlarmTopic));
+    }
   }
 }
