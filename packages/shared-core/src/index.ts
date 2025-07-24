@@ -20,13 +20,6 @@ export {
   createLogger,
 } from './logger';
 
-// Legacy aliases for backward compatibility (used by middleware)
-export {
-  LogContext as PinoLogContext,
-  Logger as PinoLogger,
-  Logger as MetricsLogger,
-} from './logger';
-
 // X-Ray tracing utilities - REMOVED (not used by any services)
 // Basic X-Ray tracing works automatically at Lambda level
 

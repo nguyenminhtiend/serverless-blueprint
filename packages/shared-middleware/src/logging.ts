@@ -3,8 +3,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import {
   createLogger,
   LogLevel,
-  PinoLogContext as LogContext,
-  PinoLogger as Logger,
+  LogContext,
+  Logger,
 } from '@shared/core';
 import type { AuthenticatedEvent } from './auth';
 
