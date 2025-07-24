@@ -2,7 +2,6 @@
 export * from './auth';
 export * from './authorizer';
 export * from './common';
-export * from './cors';
 export * from './error-handler';
 export * from './logging';
 export * from './router';

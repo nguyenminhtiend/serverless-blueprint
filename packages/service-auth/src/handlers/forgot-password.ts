@@ -10,12 +10,12 @@ import {
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { forgotPasswordSchema } from './shared/types';
 import {
+  addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
+  handleCognitoError,
   logger,
   parseRequestBody,
-  addSecretHashIfNeeded,
-  handleCognitoError,
 } from './shared/utils';
 
 export const forgotPasswordHandler = async (
@@ -52,5 +52,4 @@ export const forgotPasswordHandler = async (
 
 export const forgotPassword = createPublicApiHandler(forgotPasswordHandler, {
   logging: { serviceName: 'auth-service' },
-  cors: true,
 });

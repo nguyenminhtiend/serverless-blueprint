@@ -1,27 +1,31 @@
-import { HttpStatus, type BusinessError, type ValidationError } from '@shared/types';
+import { HttpStatusCode, type BusinessError, type ValidationError } from '@shared/types';
 
-export class AppError extends Error {
-  public readonly statusCode: HttpStatus;
+export abstract class BaseError extends Error implements BusinessError {
+  public readonly statusCode: HttpStatusCode;
   public readonly isOperational: boolean;
   public readonly context?: Record<string, unknown>;
+  public readonly code: string;
 
   constructor(
     message: string,
-    statusCode: HttpStatus = 500,
-    isOperational: boolean = true,
-    context?: Record<string, unknown>
+    statusCode: HttpStatusCode = 500,
+    isOperational = false,
+    context?: Record<string, unknown>,
+    code?: string
   ) {
     super(message);
+    this.name = this.constructor.name;
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.context = context;
+    this.code = code || this.constructor.name;
 
-    Object.setPrototypeOf(this, AppError.prototype);
+    // Ensures the stack trace points to this error
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
-export class ValidationErrorException extends AppError {
+export class ValidationErrorException extends BaseError {
   public readonly validationErrors: ValidationError[];
 
   constructor(errors: ValidationError[], context?: Record<string, unknown>) {
@@ -32,7 +36,7 @@ export class ValidationErrorException extends AppError {
   }
 }
 
-export class NotFoundError extends AppError {
+export class NotFoundError extends BaseError {
   constructor(resource: string, identifier?: string, context?: Record<string, unknown>) {
     const message = identifier
       ? `${resource} with identifier '${identifier}' not found`
@@ -42,28 +46,28 @@ export class NotFoundError extends AppError {
   }
 }
 
-export class UnauthorizedError extends AppError {
+export class UnauthorizedError extends BaseError {
   constructor(message: string = 'Unauthorized access', context?: Record<string, unknown>) {
     super(message, 401, true, context);
     Object.setPrototypeOf(this, UnauthorizedError.prototype);
   }
 }
 
-export class ForbiddenError extends AppError {
+export class ForbiddenError extends BaseError {
   constructor(message: string = 'Access forbidden', context?: Record<string, unknown>) {
     super(message, 403, true, context);
     Object.setPrototypeOf(this, ForbiddenError.prototype);
   }
 }
 
-export class ConflictError extends AppError {
+export class ConflictError extends BaseError {
   constructor(message: string, context?: Record<string, unknown>) {
     super(message, 409, true, context);
     Object.setPrototypeOf(this, ConflictError.prototype);
   }
 }
 
-export class BusinessLogicError extends AppError {
+export class BusinessLogicError extends BaseError {
   public readonly businessError: BusinessError;
 
   constructor(businessError: BusinessError, context?: Record<string, unknown>) {
@@ -73,32 +77,35 @@ export class BusinessLogicError extends AppError {
   }
 }
 
-export class ExternalServiceError extends AppError {
-  public readonly service: string;
-
+export class ExternalServiceError extends BaseError {
   constructor(service: string, message: string, context?: Record<string, unknown>) {
-    super(`External service error (${service}): ${message}`, HttpStatus.BAD_GATEWAY, true, context);
-    this.service = service;
-    Object.setPrototypeOf(this, ExternalServiceError.prototype);
+    super(
+      `External service error (${service}): ${message}`,
+      HttpStatusCode.BAD_GATEWAY,
+      true,
+      context
+    );
   }
 }
 
-export class RateLimitError extends AppError {
+/**
+ * Rate limiting error
+ */
+export class RateLimitError extends BaseError {
   public readonly retryAfter?: number;
 
   constructor(
-    message: string = 'Rate limit exceeded',
+    message = 'Too many requests',
     retryAfter?: number,
     context?: Record<string, unknown>
   ) {
-    super(message, HttpStatus.TOO_MANY_REQUESTS, true, context);
+    super(message, HttpStatusCode.TOO_MANY_REQUESTS, true, context);
     this.retryAfter = retryAfter;
-    Object.setPrototypeOf(this, RateLimitError.prototype);
   }
 }
 
-export const isAppError = (error: unknown): error is AppError => {
-  return error instanceof AppError;
+export const isAppError = (error: unknown): error is BaseError => {
+  return error instanceof BaseError;
 };
 
 export const createBusinessError = (

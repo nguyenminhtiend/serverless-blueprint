@@ -64,12 +64,11 @@ export const API_GATEWAY_CONSTANTS = {
   DEFAULT_TIMEOUT_SECONDS: 29,
 } as const;
 
-export const CORS_DEFAULT = {
-  ALLOWED_ORIGINS: ['http://localhost:3000', 'https://app.example.com'],
-  ALLOWED_METHODS: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  ALLOWED_HEADERS: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  EXPOSED_HEADERS: ['X-Total-Count', 'X-Page-Size'],
-  MAX_AGE_SECONDS: 86400, // 24 hours
+export const API_DEFAULTS = {
+  TIMEOUT_MS: 30000,
+  MAX_RETRIES: 3,
+  RATE_LIMIT_WINDOW_MS: 60000,
+  RATE_LIMIT_MAX_REQUESTS: 100,
 } as const;
 
 export const RATE_LIMITS = {

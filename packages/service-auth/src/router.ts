@@ -15,11 +15,9 @@ const { router, handler, addRoutes } = createRouter(
     serviceName: 'auth-service',
     serviceVersion: '1.0.0',
     enableHealthCheck: true,
-    enableCorsOptions: true,
   },
   {
     // Minimal middleware options to avoid logger issues
-    cors: true,
     jsonBodyParser: true,
   }
 );

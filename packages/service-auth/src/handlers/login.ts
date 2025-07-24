@@ -5,14 +5,14 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { createPublicApiHandler, createRouterSuccessResponse } from '@shared/middleware';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { AuthTokens, AuthChallenge, loginSchema } from './shared/types';
+import { AuthChallenge, AuthTokens, loginSchema } from './shared/types';
 import {
+  addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
+  handleCognitoError,
   logger,
   parseRequestBody,
-  addSecretHashIfNeeded,
-  handleCognitoError,
 } from './shared/utils';
 
 export const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -72,5 +72,4 @@ export const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGate
 
 export const login = createPublicApiHandler(loginHandler, {
   logging: { serviceName: 'auth-service' },
-  cors: true,
 });

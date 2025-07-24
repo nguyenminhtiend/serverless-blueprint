@@ -1,11 +1,6 @@
-import { MiddlewareObj, MiddlewareFn } from '@middy/core';
+import { MiddlewareFn, MiddlewareObj } from '@middy/core';
+import { createLogger, LogContext, Logger, LogLevel } from '@shared/core';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import {
-  createLogger,
-  LogLevel,
-  LogContext,
-  Logger,
-} from '@shared/core';
 import type { AuthenticatedEvent } from './auth';
 
 export interface LoggingMiddlewareOptions {
@@ -36,7 +31,7 @@ const DEFAULT_OPTIONS: LoggingMiddlewareOptions = {
   logResponse: false,
   enableTracing: true,
   redactPaths: ['password', 'token', 'authorization', 'x-api-key'],
-  prettyPrint: process.env.NODE_ENV !== 'production',
+  prettyPrint: false, // Disable in Lambda - pino-pretty not bundled
 };
 
 export const loggingMiddleware = (

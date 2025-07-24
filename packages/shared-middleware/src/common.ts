@@ -5,7 +5,6 @@ import httpJsonBodyParser from '@middy/http-json-body-parser';
 import httpMultipartBodyParser from '@middy/http-multipart-body-parser';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authMiddleware, AuthMiddlewareOptions } from './auth';
-import { corsMiddleware, CorsOptions, getEnvironmentCors } from './cors';
 import { errorHandlerMiddleware, ErrorHandlerOptions } from './error-handler';
 import {
   correlationIdsMiddleware,
@@ -24,9 +23,6 @@ export interface MiddlewareStackOptions {
 
   // Error handling options
   errorHandler?: ErrorHandlerOptions | boolean;
-
-  // CORS options
-  cors?: CorsOptions | boolean;
 
   // Validation options
   validation?: ZodValidationOptions;
@@ -53,7 +49,6 @@ const DEFAULT_STACK_OPTIONS: MiddlewareStackOptions = {
   auth: false,
   logging: true,
   errorHandler: true,
-  cors: true,
   performance: true,
   correlationIds: true,
   normalization: true,
@@ -94,7 +89,7 @@ export const createMiddlewareStack = (
     middlewareStack = middlewareStack.use(loggingMiddleware(loggingOptions));
   }
 
-  // 5. Body parsing (before CORS and validation)
+  // 5. Body parsing (before validation)
   if (config.jsonBodyParser) {
     middlewareStack = middlewareStack.use(httpJsonBodyParser());
   }
@@ -102,27 +97,18 @@ export const createMiddlewareStack = (
     middlewareStack = middlewareStack.use(httpMultipartBodyParser());
   }
 
-  // 6. CORS (before auth to handle preflight)
-  if (config.cors) {
-    if (typeof config.cors === 'boolean') {
-      middlewareStack = middlewareStack.use(getEnvironmentCors());
-    } else {
-      middlewareStack = middlewareStack.use(corsMiddleware(config.cors));
-    }
-  }
-
-  // 7. Validation (before auth and business logic)
+  // 6. Validation (before auth and business logic)
   if (config.validation) {
     middlewareStack = middlewareStack.use(zodValidationMiddleware(config.validation));
   }
 
-  // 8. Authentication (after validation, before business logic)
+  // 7. Authentication (after validation, before business logic)
   if (config.auth) {
     const authOptions = typeof config.auth === 'boolean' ? {} : config.auth;
     middlewareStack = middlewareStack.use(authMiddleware(authOptions));
   }
 
-  // 9. Error handling (should be last to catch all errors)
+  // 8. Error handling (should be last to catch all errors)
   if (config.errorHandler) {
     const errorOptions = typeof config.errorHandler === 'boolean' ? {} : config.errorHandler;
     middlewareStack = middlewareStack.use(errorHandlerMiddleware(errorOptions));
@@ -142,7 +128,6 @@ export const createPublicApiHandler = (
 ): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: false,
-    cors: true,
     ...options,
   });
 };
@@ -155,7 +140,6 @@ export const createProtectedApiHandler = (
 ): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: authOptions,
-    cors: true,
     ...options,
   });
 };
@@ -169,41 +153,36 @@ export const createAdminApiHandler = (
     auth: {
       secret: process.env.JWT_SECRET,
     },
-    cors: {
-      origin: process.env.ADMIN_CORS_ORIGIN?.split(',') || false,
-      credentials: true,
-    },
     ...options,
   });
 };
 
-// Webhook endpoint (public but with validation)
+// Webhook API endpoint (no auth, validation only)
 export const createWebhookHandler = (
   handler: LambdaHandler,
-  validationSchema: ZodValidationOptions,
+  validationOptions: ZodValidationOptions = {},
   options: Partial<MiddlewareStackOptions> = {}
 ): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: false,
-    cors: false,
-    validation: validationSchema,
-    logging: {
-      logEvent: true,
-      logResponse: false,
-    },
+    validation: validationOptions,
     ...options,
   });
 };
 
-// Internal service endpoint (minimal middleware)
+// Internal service call handler (minimal middleware)
 export const createInternalHandler = (
   handler: LambdaHandler,
   options: Partial<MiddlewareStackOptions> = {}
 ): MiddyfiedHandler<APIGatewayProxyEvent, APIGatewayProxyResult> => {
   return createMiddlewareStack(handler, {
     auth: false,
-    cors: false,
+    errorHandler: true,
+    logging: true,
+    performance: false,
+    correlationIds: false,
     normalization: false,
+    jsonBodyParser: true,
     ...options,
   });
 };

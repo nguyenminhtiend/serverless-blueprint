@@ -22,8 +22,6 @@ export interface RouterConfig {
   serviceVersion?: string;
   basePath?: string;
   enableHealthCheck?: boolean;
-  enableCorsOptions?: boolean;
-  corsOrigins?: string[];
 }
 
 export interface HealthCheckResponse {
@@ -49,7 +47,6 @@ export interface ErrorResponse {
  */
 export const COMMON_HEADERS = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
 } as const;
 
 /**
@@ -136,35 +133,6 @@ export function createHealthCheckHandler(config: RouterConfig): RouteHandler {
 }
 
 /**
- * Create a CORS options handler
- */
-export function createCorsOptionsHandler(allowedMethods: string[] = []): RouteHandler {
-  return async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    return {
-      statusCode: HTTP_STATUS.OK,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Api-Key,X-Requested-With',
-        'Access-Control-Allow-Methods':
-          allowedMethods.length > 0
-            ? allowedMethods.join(',')
-            : 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
-        'Access-Control-Max-Age': '86400', // 24 hours
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'CORS preflight response',
-        allowedMethods:
-          allowedMethods.length > 0
-            ? allowedMethods
-            : ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      }),
-    };
-  };
-}
-
-/**
  * Extract route key from HTTP API v2.0 event
  */
 export function getRouteKey(event: any): RouteKey {
@@ -189,8 +157,6 @@ export class ApiRouter {
   constructor(config: RouterConfig) {
     this.config = {
       enableHealthCheck: true,
-      enableCorsOptions: true,
-      corsOrigins: ['*'],
       ...config,
     };
     this.logger = createLogger(`${config.serviceName}-router`);
@@ -254,18 +220,6 @@ export class ApiRouter {
   }
 
   /**
-   * Handle OPTIONS requests for CORS
-   */
-  private async handleCorsOptions(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const allowedMethods = this.getRoutes()
-      .map(route => route.split(' ')[0])
-      .filter((method, index, self) => self.indexOf(method) === index);
-
-    const handler = createCorsOptionsHandler(allowedMethods);
-    return await handler(event);
-  }
-
-  /**
    * Main routing handler (HTTP API v2.0 only)
    */
   async route(event: any, _context: Context): Promise<APIGatewayProxyResult> {
@@ -282,11 +236,6 @@ export class ApiRouter {
       routeKey,
       requestId,
     });
-
-    // Handle CORS preflight requests
-    if (httpMethod === 'OPTIONS' && this.config.enableCorsOptions) {
-      return await this.handleCorsOptions(event);
-    }
 
     // Check if route exists
     const handler = this.routes[routeKey];
@@ -356,7 +305,6 @@ export function createRouter(
   // Apply middleware stack
   const handler = createPublicApiHandler(routerHandler, {
     logging: { serviceName: config.serviceName },
-    cors: true,
     jsonBodyParser: true,
     ...middlewareOptions,
   });

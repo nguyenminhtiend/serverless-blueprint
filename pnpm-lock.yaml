@@ -309,9 +309,6 @@ importers:
       '@middy/core':
         specifier: ^6.4.1
         version: 6.4.1
-      '@middy/http-cors':
-        specifier: ^6.4.1
-        version: 6.4.1
       '@middy/http-error-handler':
         specifier: ^6.4.1
         version: 6.4.1
@@ -1066,10 +1063,6 @@ packages:
 
   '@middy/core@6.4.1':
     resolution: {integrity: sha512-NaKLoLUSkoxite0hkw5Tsa3DmuWyhRkZBbhD1tvr7FCWmj+MaQapNEvKMOSVNx/ET4ifY3KnKp0Zm0Q141Xcmg==}
-    engines: {node: '>=20'}
-
-  '@middy/http-cors@6.4.1':
-    resolution: {integrity: sha512-sqo5kiACzCy8tha/SBBb+tlHUquqqR2zMIU5H1gxCauJVyJZPIlsIRGoeaVXxWTr4Ni97x6ozGEo3IQ1OuQUuw==}
     engines: {node: '>=20'}
 
   '@middy/http-error-handler@6.4.1':
@@ -4238,10 +4231,6 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.4
 
   '@middy/core@6.4.1': {}
-
-  '@middy/http-cors@6.4.1':
-    dependencies:
-      '@middy/util': 6.4.1
 
   '@middy/http-error-handler@6.4.1':
     dependencies:

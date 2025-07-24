@@ -31,23 +31,6 @@ declare module '@middy/core' {
   export default middy;
 }
 
-declare module '@middy/http-cors' {
-  import { MiddlewareObj } from '@middy/core';
-  import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-
-  interface CorsOptions {
-    origin?: string | boolean;
-    headers?: string;
-    credentials?: boolean;
-    maxAge?: number;
-  }
-
-  function httpCors(
-    options?: CorsOptions
-  ): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult>;
-  export default httpCors;
-}
-
 declare module '@middy/http-event-normalizer' {
   import { MiddlewareObj } from '@middy/core';
   import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';

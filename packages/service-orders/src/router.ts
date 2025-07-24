@@ -1,4 +1,4 @@
-import { createRouter, POST, GET, PUT } from '@shared/middleware';
+import { createRouter, GET, POST, PUT } from '@shared/middleware';
 import {
   createOrderHandler,
   getOrderHandler,
@@ -14,10 +14,8 @@ const { router, handler, addRoutes } = createRouter(
     serviceName: 'orders-service',
     serviceVersion: '1.0.0',
     enableHealthCheck: true,
-    enableCorsOptions: true,
   },
   {
-    cors: true,
     jsonBodyParser: true,
   }
 );

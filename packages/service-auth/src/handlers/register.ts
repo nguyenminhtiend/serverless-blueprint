@@ -7,12 +7,12 @@ import {
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { registerSchema } from './shared/types';
 import {
+  addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
+  handleCognitoError,
   logger,
   parseRequestBody,
-  addSecretHashIfNeeded,
-  handleCognitoError,
 } from './shared/utils';
 
 export const registerHandler = async (
@@ -61,5 +61,4 @@ export const registerHandler = async (
 
 export const register = createPublicApiHandler(registerHandler, {
   logging: { serviceName: 'auth-service' },
-  cors: true,
 });

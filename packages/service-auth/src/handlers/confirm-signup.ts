@@ -10,12 +10,12 @@ import {
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { confirmSignUpSchema } from './shared/types';
 import {
+  addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
+  handleCognitoError,
   logger,
   parseRequestBody,
-  addSecretHashIfNeeded,
-  handleCognitoError,
 } from './shared/utils';
 
 export const confirmSignUpHandler = async (
@@ -45,5 +45,4 @@ export const confirmSignUpHandler = async (
 
 export const confirmSignUp = createPublicApiHandler(confirmSignUpHandler, {
   logging: { serviceName: 'auth-service' },
-  cors: true,
 });

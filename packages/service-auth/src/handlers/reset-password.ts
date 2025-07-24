@@ -10,12 +10,12 @@ import {
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { resetPasswordSchema } from './shared/types';
 import {
+  addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
+  handleCognitoError,
   logger,
   parseRequestBody,
-  addSecretHashIfNeeded,
-  handleCognitoError,
 } from './shared/utils';
 
 export const resetPasswordHandler = async (
@@ -46,5 +46,4 @@ export const resetPasswordHandler = async (
 
 export const resetPassword = createPublicApiHandler(resetPasswordHandler, {
   logging: { serviceName: 'auth-service' },
-  cors: true,
 });

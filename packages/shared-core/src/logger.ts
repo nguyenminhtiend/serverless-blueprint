@@ -55,7 +55,7 @@ export class Logger {
       level = LogLevel.INFO,
       environment = process.env.ENVIRONMENT || process.env.NODE_ENV || 'dev',
       version = process.env.VERSION || '1.0.0',
-      prettyPrint = false, // Disable pino-pretty in Lambda (not bundled)
+      prettyPrint = false, // Always false - pino-pretty not suitable for Lambda
       enableMetrics = false, // Default disabled for dev cost optimization
     } = options;
 
@@ -68,12 +68,16 @@ export class Logger {
     };
 
     // Initialize Pino logger
+    // Force disable prettyPrint in Lambda environments
+    const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const usePrettyPrint = !isLambda && prettyPrint;
+
     this.pinoLogger = pino({
       level,
       formatters: {
         level: label => ({ level: label }),
       },
-      transport: prettyPrint
+      transport: usePrettyPrint
         ? {
             target: 'pino-pretty',
             options: {
@@ -142,7 +146,7 @@ export class Logger {
   }
 
   // Enhanced monitoring methods (from MetricsLogger)
-  
+
   /**
    * Log with automatic metric emission
    */
@@ -320,7 +324,7 @@ export class Logger {
     // Share CloudWatch client
     childLogger.cloudWatch = this.cloudWatch;
     childLogger.defaultNamespace = this.defaultNamespace;
-    
+
     // Convert context to string dimensions for CloudWatch
     const stringDimensions: Record<string, string> = {};
     Object.entries(context).forEach(([key, value]) => {

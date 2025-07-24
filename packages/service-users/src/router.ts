@@ -1,10 +1,10 @@
-import { createRouter, GET, POST, PUT, DELETE } from '@shared/middleware';
+import { createRouter, DELETE, GET, POST, PUT } from '@shared/middleware';
 import {
-  getUserProfileHandler,
-  updateUserProfileHandler,
   addAddressHandler,
-  updateAddressHandler,
   deleteAddressHandler,
+  getUserProfileHandler,
+  updateAddressHandler,
+  updateUserProfileHandler,
 } from './handlers';
 
 /**
@@ -15,10 +15,8 @@ const { router, handler, addRoutes } = createRouter(
     serviceName: 'users-service',
     serviceVersion: '1.0.0',
     enableHealthCheck: true,
-    enableCorsOptions: true,
   },
   {
-    cors: true,
     jsonBodyParser: true,
   }
 );
