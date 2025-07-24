@@ -4,7 +4,7 @@ import {
   PutEventsRequestEntry,
 } from '@aws-sdk/client-eventbridge';
 import type { DomainEvent } from '@shared/types';
-import { createLogger } from './unified-logger';
+import { createLogger } from './logger';
 
 export interface EventPublishResult {
   success: boolean;

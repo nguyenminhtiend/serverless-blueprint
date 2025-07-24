@@ -10,7 +10,7 @@ export * from './errors';
 // Event Publisher
 export * from './event-publisher';
 
-// Unified logger with Pino + CloudWatch metrics (replaces both logger.ts and metrics-logger.ts)
+// Unified logger with Pino + CloudWatch metrics  
 export {
   LogLevel,
   LogContext,
@@ -18,24 +18,14 @@ export {
   LoggerOptions,
   MetricOptions,
   createLogger,
-  withMonitoring,
-  defaultLogger,
-  getLogLevel,
-  logError,
-  logRequest,
-  logResponse,
-  shouldLog,
-} from './unified-logger';
+} from './logger';
 
-// Legacy aliases for backward compatibility
+// Legacy aliases for backward compatibility (used by middleware)
 export {
   LogContext as PinoLogContext,
   Logger as PinoLogger,
-  LoggerOptions as PinoLoggerOptions,
-  createLogger as createPinoLogger,
   Logger as MetricsLogger,
-  LoggerOptions as MetricsLoggerOptions,
-} from './unified-logger';
+} from './logger';
 
 // X-Ray tracing utilities - REMOVED (not used by any services)
 // Basic X-Ray tracing works automatically at Lambda level

@@ -357,8 +357,8 @@ export function createLogger(
   return new Logger(service, context, options);
 }
 
-// Enhanced Lambda wrapper with automatic monitoring
-export function withMonitoring<TEvent = any, TResult = any>(
+// Enhanced Lambda wrapper with automatic monitoring (available but not exported)
+function withMonitoring<TEvent = any, TResult = any>(
   handler: (event: TEvent, context: any, logger: Logger) => Promise<TResult>,
   serviceName: string
 ) {
@@ -397,34 +397,3 @@ export function withMonitoring<TEvent = any, TResult = any>(
     }
   };
 }
-
-// Utility functions for common logging patterns
-export const getLogLevel = (): LogLevel => {
-  const level = process.env.LOG_LEVEL?.toLowerCase();
-  return Object.values(LogLevel).includes(level as LogLevel) ? (level as LogLevel) : LogLevel.INFO;
-};
-
-export const shouldLog = (level: LogLevel, currentLevel: LogLevel = getLogLevel()): boolean => {
-  const levels = [LogLevel.TRACE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL];
-  return levels.indexOf(level) >= levels.indexOf(currentLevel);
-};
-
-export const logRequest = (logger: Logger, method: string, path: string, context?: LogContext) => {
-  logger.info(`${method} ${path}`, { httpMethod: method, path, ...context });
-};
-
-export const logResponse = (
-  logger: Logger,
-  statusCode: number,
-  duration: number,
-  context?: LogContext
-) => {
-  logger.info(`Response ${statusCode}`, { statusCode, duration, ...context });
-};
-
-export const logError = (logger: Logger, error: Error, context?: LogContext) => {
-  logger.error(error.message, context, error);
-};
-
-// Create a default logger instance
-export const defaultLogger = createLogger('app');
