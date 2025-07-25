@@ -91,7 +91,11 @@ export const createMiddlewareStack = (
 
   // 5. Body parsing (before validation)
   if (config.jsonBodyParser) {
-    middlewareStack = middlewareStack.use(httpJsonBodyParser());
+    middlewareStack = middlewareStack.use(
+      httpJsonBodyParser({
+        disableContentTypeError: true,
+      })
+    );
   }
   if (config.multipartBodyParser) {
     middlewareStack = middlewareStack.use(httpMultipartBodyParser());
