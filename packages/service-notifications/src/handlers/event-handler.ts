@@ -33,31 +33,6 @@ interface OrderEventData extends BaseEventData {
   itemCount?: number;
 }
 
-interface OrderStatusEventData extends OrderEventData {
-  previousStatus: string;
-  newStatus: string;
-  reason?: string;
-}
-
-interface OrderCancelledEventData extends OrderEventData {
-  reason: string;
-  refundAmount?: number;
-}
-
-interface PaymentEventData extends BaseEventData {
-  orderId: string;
-  paymentId: string;
-  status: string;
-  amount: number;
-  method: string;
-}
-
-interface UserEventData extends BaseEventData {
-  email: string;
-  firstName?: string;
-  lastName?: string;
-}
-
 /**
  * Event-driven notification handler
  * Processes domain events from SQS queues and triggers appropriate notifications
@@ -190,22 +165,6 @@ export class EventHandler {
         await this.handleOrderCreated(eventData);
         break;
 
-      case 'ORDER_STATUS_CHANGED':
-        await this.handleOrderStatusChanged(eventData);
-        break;
-
-      case 'ORDER_CANCELLED':
-        await this.handleOrderCancelled(eventData);
-        break;
-
-      case 'PAYMENT_PROCESSED':
-        await this.handlePaymentProcessed(eventData);
-        break;
-
-      case 'USER_CREATED':
-        await this.handleUserCreated(eventData);
-        break;
-
       default:
         this.logger.warn('Unhandled event type', {
           eventType: eventType,
@@ -266,154 +225,6 @@ export class EventHandler {
     if (validNotifications.length > 0) {
       await this.notificationService.processBatchNotifications(validNotifications);
     }
-  }
-
-  /**
-   * Handle ORDER_STATUS_CHANGED event
-   */
-  private async handleOrderStatusChanged(
-    eventData: OrderStatusEventData | { data: OrderStatusEventData }
-  ): Promise<void> {
-    const data = this.normalizeEventData(eventData);
-
-    this.logger.info('Handling ORDER_STATUS_CHANGED event', {
-      orderId: data.orderId,
-      previousStatus: data.previousStatus,
-      newStatus: data.newStatus,
-    });
-
-    const notifications: NotificationRequest[] = [
-      {
-        userId: data.userId,
-        type: 'ORDER_STATUS_CHANGED',
-        channel: 'EMAIL',
-        recipient: await this.getUserEmail(data.userId),
-        template: 'order-status-changed',
-        subject: `Order Update - #${data.orderId}`,
-        payload: {
-          orderId: data.orderId,
-          previousStatus: data.previousStatus,
-          newStatus: data.newStatus,
-          reason: data.reason,
-          trackingUrl: `https://example.com/track/${data.orderId}`,
-        },
-        priority: 'MEDIUM',
-      },
-    ];
-
-    const validNotifications = notifications.filter(n => n.recipient);
-    if (validNotifications.length > 0) {
-      await this.notificationService.processBatchNotifications(validNotifications);
-    }
-  }
-
-  /**
-   * Handle ORDER_CANCELLED event
-   */
-  private async handleOrderCancelled(
-    eventData: OrderCancelledEventData | { data: OrderCancelledEventData }
-  ): Promise<void> {
-    const data = this.normalizeEventData(eventData);
-
-    this.logger.info('Handling ORDER_CANCELLED event', {
-      orderId: data.orderId,
-      reason: data.reason,
-    });
-
-    const notifications: NotificationRequest[] = [
-      {
-        userId: data.userId,
-        type: 'ORDER_CANCELLED',
-        channel: 'EMAIL',
-        recipient: await this.getUserEmail(data.userId),
-        template: 'order-cancelled',
-        subject: `Order Cancelled - #${data.orderId}`,
-        payload: {
-          orderId: data.orderId,
-          reason: data.reason,
-          refundAmount: data.refundAmount,
-        },
-        priority: 'HIGH',
-      },
-    ];
-
-    const validNotifications = notifications.filter(n => n.recipient);
-    if (validNotifications.length > 0) {
-      await this.notificationService.processBatchNotifications(validNotifications);
-    }
-  }
-
-  /**
-   * Handle PAYMENT_PROCESSED event
-   */
-  private async handlePaymentProcessed(
-    eventData: PaymentEventData | { data: PaymentEventData }
-  ): Promise<void> {
-    const data = this.normalizeEventData(eventData);
-
-    this.logger.info('Handling PAYMENT_PROCESSED event', {
-      orderId: data.orderId,
-      paymentId: data.paymentId,
-      status: data.status,
-    });
-
-    if (data.status === 'SUCCESS') {
-      const notifications: NotificationRequest[] = [
-        {
-          userId: data.userId,
-          type: 'PAYMENT_PROCESSED',
-          channel: 'EMAIL',
-          recipient: await this.getUserEmail(data.userId),
-          template: 'payment-processed',
-          subject: `Payment Confirmation - #${data.orderId}`,
-          payload: {
-            orderId: data.orderId,
-            paymentId: data.paymentId,
-            amount: data.amount,
-            method: data.method,
-          },
-          priority: 'HIGH',
-        },
-      ];
-
-      const validNotifications = notifications.filter(n => n.recipient);
-      if (validNotifications.length > 0) {
-        await this.notificationService.processBatchNotifications(validNotifications);
-      }
-    }
-  }
-
-  /**
-   * Handle USER_CREATED event
-   */
-  private async handleUserCreated(
-    eventData: UserEventData | { data: UserEventData }
-  ): Promise<void> {
-    const data = this.normalizeEventData(eventData);
-
-    this.logger.info('Handling USER_CREATED event', {
-      userId: data.userId,
-      email: data.email,
-    });
-
-    const notifications: NotificationRequest[] = [
-      {
-        userId: data.userId,
-        type: 'USER_WELCOME',
-        channel: 'EMAIL',
-        recipient: data.email,
-        template: 'user-welcome',
-        subject: 'Welcome to Our Service!',
-        payload: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-        },
-        priority: 'MEDIUM',
-      },
-    ];
-
-    await this.notificationService.processBatchNotifications(notifications);
   }
 
   /**
