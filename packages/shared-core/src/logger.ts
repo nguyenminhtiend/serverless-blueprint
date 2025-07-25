@@ -46,11 +46,7 @@ export class Logger {
   private metricsEnabled: boolean;
   private defaultContext: LogContext;
 
-  constructor(
-    service: string,
-    context: LogContext = {},
-    options: LoggerOptions = {}
-  ) {
+  constructor(service: string, context: LogContext = {}, options: LoggerOptions = {}) {
     const {
       level = LogLevel.INFO,
       environment = process.env.ENVIRONMENT || process.env.NODE_ENV || 'dev',
@@ -189,12 +185,7 @@ export class Logger {
   /**
    * Business metrics logging
    */
-  businessMetric(
-    metricName: string,
-    value: number,
-    context?: LogContext,
-    options?: MetricOptions
-  ) {
+  businessMetric(metricName: string, value: number, context?: LogContext, options?: MetricOptions) {
     this.info(`Business Metric: ${metricName}`, {
       ...context,
       metricName,

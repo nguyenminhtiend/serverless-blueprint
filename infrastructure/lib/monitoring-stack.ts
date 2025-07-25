@@ -29,8 +29,8 @@ export class MonitoringStack extends cdk.Stack {
     super(scope, id, props);
 
     // Determine if we should enable expensive monitoring features
-    const enableAlarms = props.enableAlarms ?? (props.environment === 'prod');
-    const enableDashboards = props.enableDashboards ?? (props.environment === 'prod');
+    const enableAlarms = props.enableAlarms ?? props.environment === 'prod';
+    const enableDashboards = props.enableDashboards ?? props.environment === 'prod';
 
     // Log Groups are automatically created by Lambda functions
     // No need to create them explicitly here
@@ -52,7 +52,9 @@ export class MonitoringStack extends cdk.Stack {
         this.criticalAlarmTopic.addSubscription(
           new subscriptions.EmailSubscription(props.alertEmail)
         );
-        this.warningAlarmTopic.addSubscription(new subscriptions.EmailSubscription(props.alertEmail));
+        this.warningAlarmTopic.addSubscription(
+          new subscriptions.EmailSubscription(props.alertEmail)
+        );
       }
 
       // Lambda Function Monitoring
@@ -88,9 +90,9 @@ export class MonitoringStack extends cdk.Stack {
         environment: props.environment,
         alarmsEnabled: enableAlarms,
         dashboardsEnabled: enableDashboards,
-        estimatedMonthlyCost: enableDashboards ? '$6-8' : '$0-1'
+        estimatedMonthlyCost: enableDashboards ? '$6-8' : '$0-1',
       }),
-      description: 'Monitoring configuration and estimated costs'
+      description: 'Monitoring configuration and estimated costs',
     });
   }
 
