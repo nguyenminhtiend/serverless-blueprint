@@ -75,31 +75,6 @@ export const OrderSchema = z.object({
 });
 
 /**
- * Update Order Status Request Schema
- */
-export const UpdateOrderStatusRequestSchema = z.object({
-  status: OrderStatusSchema,
-  notes: z.string().max(500).optional(),
-});
-
-/**
- * Get User Orders Query Schema
- */
-export const GetUserOrdersQuerySchema = z
-  .object({
-    limit: z
-      .string()
-      .optional()
-      .transform(val => (val ? parseInt(val, 10) : 20)),
-    startKey: z.string().optional(), // For pagination
-    status: OrderStatusSchema.optional(),
-  })
-  .transform(data => ({
-    ...data,
-    limit: Math.min(Math.max(data.limit, 1), 100), // Clamp between 1-100
-  }));
-
-/**
  * Order Path Parameters Schema
  */
 export const OrderPathParamsSchema = z.object({
@@ -113,6 +88,4 @@ export type PaymentInfo = z.infer<typeof PaymentInfoSchema>;
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 export type CreateOrderRequest = z.infer<typeof CreateOrderRequestSchema>;
 export type Order = z.infer<typeof OrderSchema>;
-export type UpdateOrderStatusRequest = z.infer<typeof UpdateOrderStatusRequestSchema>;
-export type GetUserOrdersQuery = z.infer<typeof GetUserOrdersQuerySchema>;
 export type OrderPathParams = z.infer<typeof OrderPathParamsSchema>;
