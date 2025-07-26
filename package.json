@@ -40,7 +40,11 @@
     "synth:dev": "cd infrastructure && pnpm run synth:dev",
     "synth:prod": "cd infrastructure && pnpm run synth:prod",
     "destroy": "cd infrastructure && pnpm cdk destroy --all",
-    "bootstrap": "cd infrastructure && pnpm cdk bootstrap"
+    "bootstrap": "cd infrastructure && pnpm cdk bootstrap",
+    "_comment_sam": "=== MINIMAL SAM TESTING ===",
+    "sam:build": "cp package-sam.json packages/service-auth/package.json && sam build --cached && git checkout packages/service-auth/package.json",
+    "sam:test": "sam local invoke TestPostFunction --event events/test-post.json",
+    "sam:start": "sam local start-api --warm-containers EAGER"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
