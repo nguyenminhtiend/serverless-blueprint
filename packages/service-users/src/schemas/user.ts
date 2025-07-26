@@ -73,31 +73,12 @@ export const getUserProfileResponseSchema = z.object({
   extendedProfile: extendedUserProfileSchema.optional(),
 });
 
-export const updateUserProfileRequestSchema = z.object({
-  preferences: userPreferencesSchema.partial().optional(),
-  businessRole: z.enum(['customer', 'admin']).optional(),
-});
-
-export const addAddressRequestSchema = z.object({
-  address: addressSchema,
-  label: z.string().min(1).max(50),
-  isDefault: z.boolean().default(false),
-});
-
-export const updateAddressRequestSchema = addAddressRequestSchema.partial();
-
-export const deleteAddressRequestSchema = z.object({
-  addressId: z.string().uuid(),
-});
 
 // Path parameter schemas
 export const userIdPathSchema = z.object({
   userId: z.string().uuid(),
 });
 
-export const addressIdPathSchema = z.object({
-  addressId: z.string().uuid(),
-});
 
 // Type inference exports
 export type Address = z.infer<typeof addressSchema>;
@@ -105,7 +86,3 @@ export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type ExtendedUserProfile = z.infer<typeof extendedUserProfileSchema>;
 export type GetUserProfileResponse = z.infer<typeof getUserProfileResponseSchema>;
-export type UpdateUserProfileRequest = z.infer<typeof updateUserProfileRequestSchema>;
-export type AddAddressRequest = z.infer<typeof addAddressRequestSchema>;
-export type UpdateAddressRequest = z.infer<typeof updateAddressRequestSchema>;
-export type DeleteAddressRequest = z.infer<typeof deleteAddressRequestSchema>;

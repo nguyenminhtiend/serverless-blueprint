@@ -1,10 +1,6 @@
-import { createRouter, DELETE, GET, POST, PUT } from '@shared/middleware';
+import { createRouter, GET } from '@shared/middleware';
 import {
-  addAddressHandler,
-  deleteAddressHandler,
   getUserProfileHandler,
-  updateAddressHandler,
-  updateUserProfileHandler,
 } from './handlers';
 
 /**
@@ -26,12 +22,6 @@ const { router, handler, addRoutes } = createRouter(
 addRoutes([
   // Profile management
   GET('/users/profile', getUserProfileHandler),
-  PUT('/users/profile', updateUserProfileHandler),
-
-  // Address management
-  POST('/users/addresses', addAddressHandler),
-  PUT('/users/addresses/{id}', updateAddressHandler),
-  DELETE('/users/addresses/{id}', deleteAddressHandler),
 ]);
 
 // Export the configured handler

@@ -1,10 +1,8 @@
 import { createRouter, POST } from '@shared/middleware';
 import {
   confirmSignUpHandler,
-  forgotPasswordHandler,
   loginHandler,
   registerHandler,
-  resetPasswordHandler,
 } from './handlers/auth';
 
 /**
@@ -28,8 +26,6 @@ addRoutes([
   POST('/auth/login', loginHandler),
   POST('/auth/register', registerHandler),
   POST('/auth/confirm-signup', confirmSignUpHandler),
-  POST('/auth/forgot-password', forgotPasswordHandler),
-  POST('/auth/reset-password', resetPasswordHandler),
 ]);
 
 // Export the configured handler

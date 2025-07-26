@@ -31,18 +31,7 @@ export const confirmSignUpSchema = z.object({
   confirmationCode: z.string().min(6).max(6),
 });
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().email(),
-});
-
-export const resetPasswordSchema = z.object({
-  email: z.string().email(),
-  confirmationCode: z.string().min(6).max(6),
-  newPassword: z.string().min(8),
-});
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ConfirmSignUpInput = z.infer<typeof confirmSignUpSchema>;
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
