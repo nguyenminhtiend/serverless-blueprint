@@ -31,7 +31,6 @@ export const confirmSignUpSchema = z.object({
   confirmationCode: z.string().min(6).max(6),
 });
 
-
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ConfirmSignUpInput = z.infer<typeof confirmSignUpSchema>;

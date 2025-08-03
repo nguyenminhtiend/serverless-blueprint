@@ -1,6 +1,6 @@
 import { createRouter, route } from '@shared/middleware';
-import { loginSchema, registerSchema, confirmSignUpSchema } from './handlers/shared/types';
-import { loginHandler, registerHandler, confirmSignUpHandler } from './handlers/auth';
+import { confirmSignUpHandler, loginHandler, registerHandler } from './handlers/auth';
+import { confirmSignUpSchema, loginSchema, registerSchema } from './handlers/shared/types';
 
 /**
  * Create auth service router using new middleware
@@ -10,18 +10,18 @@ export const handler = createRouter([
     method: 'POST',
     path: '/auth/login',
     handler: loginHandler,
-    schema: { body: loginSchema }
+    schema: { body: loginSchema },
   }),
   route({
     method: 'POST',
-    path: '/auth/register', 
+    path: '/auth/register',
     handler: registerHandler,
-    schema: { body: registerSchema }
+    schema: { body: registerSchema },
   }),
   route({
     method: 'POST',
     path: '/auth/confirm-signup',
     handler: confirmSignUpHandler,
-    schema: { body: confirmSignUpSchema }
-  })
+    schema: { body: confirmSignUpSchema },
+  }),
 ]);
