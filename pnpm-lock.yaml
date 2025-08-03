@@ -306,24 +306,6 @@ importers:
 
   packages/shared-middleware:
     dependencies:
-      '@middy/core':
-        specifier: ^6.4.1
-        version: 6.4.1
-      '@middy/http-error-handler':
-        specifier: ^6.4.1
-        version: 6.4.1
-      '@middy/http-event-normalizer':
-        specifier: ^6.4.1
-        version: 6.4.1
-      '@middy/http-header-normalizer':
-        specifier: ^6.4.1
-        version: 6.4.1
-      '@middy/http-json-body-parser':
-        specifier: ^6.4.1
-        version: 6.4.1
-      '@middy/http-multipart-body-parser':
-        specifier: ^6.4.1
-        version: 6.4.1
       '@shared/core':
         specifier: workspace:*
         version: link:../shared-core
@@ -923,9 +905,6 @@ packages:
     resolution: {integrity: sha512-Ul5l+lHEcw3L5+k8POx6r74mxEYKG5kOb6Xpy2gCRW6zweT6TEhAf8vhxGgjhqrd/VO/Dirhsb+1hNpD1ue9hw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@fastify/busboy@3.1.1':
-    resolution: {integrity: sha512-5DGmA8FTdB2XbDeEwc/5ZXBl6UbBAyBOOLlPuBnZ/N1SwdH9Ii+cOX3tBROlDgcTXxjOYnLMVoKk9+FXAw0CJw==}
-
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
     engines: {node: '>=18.18.0'}
@@ -1060,34 +1039,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.29':
     resolution: {integrity: sha512-uw6guiW/gcAGPDhLmd77/6lW8QLeiV5RUTsAX46Db6oLhGaVj4lhnPwb184s1bkc8kdVg/+h988dro8GRDpmYQ==}
-
-  '@middy/core@6.4.1':
-    resolution: {integrity: sha512-NaKLoLUSkoxite0hkw5Tsa3DmuWyhRkZBbhD1tvr7FCWmj+MaQapNEvKMOSVNx/ET4ifY3KnKp0Zm0Q141Xcmg==}
-    engines: {node: '>=20'}
-
-  '@middy/http-error-handler@6.4.1':
-    resolution: {integrity: sha512-06RAohqdb1AFRWFzM2qzw4+n0xqggnPgawssBY9jaSU/pjh+9+LQ2KbreY6qLtjxTt1xs+bdWElwU66FPVRb1g==}
-    engines: {node: '>=20'}
-
-  '@middy/http-event-normalizer@6.4.1':
-    resolution: {integrity: sha512-NgzhQOi8T+OD2xvE8AeyFGhCXyV3ighoVeiZLma4AWsg/+Vnu9qeAr95VyPYuBZ/pczf/3HTRV1ZMteW6hpc4A==}
-    engines: {node: '>=20'}
-
-  '@middy/http-header-normalizer@6.4.1':
-    resolution: {integrity: sha512-R6SLfoz2T5A+wu4fPuXSha94MjTEoyZirvcJ+qyt8ebDZXl3GmisgA1w+BnaklTzJjMcs3GoosFPReZgKGWq5A==}
-    engines: {node: '>=20'}
-
-  '@middy/http-json-body-parser@6.4.1':
-    resolution: {integrity: sha512-gEjx2LD/7tkun1kCOHR1lg4Wu8FAwDbRqv38rhM+Pkd/yZP02cfrRzyG9GS5qQV9CsGRpdpuJLX7ZcAEPmNLsg==}
-    engines: {node: '>=20'}
-
-  '@middy/http-multipart-body-parser@6.4.1':
-    resolution: {integrity: sha512-QbP4mDLid5ZPxP49Svt/blwZFqg/4HlPyGR0o2JguWJZ/bBPxKg2F4VGjy07cJfj4EI4ISL7XBg7edGDtGPQQg==}
-    engines: {node: '>=20'}
-
-  '@middy/util@6.4.1':
-    resolution: {integrity: sha512-/re+VOjVo/UrGbUmFDW5ty4H7YNUor76SWo+tjtEOj1950luXSvdfb1xQUz850SQs0HVUfBCfJaGYZ5hy/o2Vg==}
-    engines: {node: '>=20'}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -3997,8 +3948,6 @@ snapshots:
       '@eslint/core': 0.15.1
       levn: 0.4.1
 
-  '@fastify/busboy@3.1.1': {}
-
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.6':
@@ -4229,26 +4178,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.4
-
-  '@middy/core@6.4.1': {}
-
-  '@middy/http-error-handler@6.4.1':
-    dependencies:
-      '@middy/util': 6.4.1
-
-  '@middy/http-event-normalizer@6.4.1': {}
-
-  '@middy/http-header-normalizer@6.4.1': {}
-
-  '@middy/http-json-body-parser@6.4.1':
-    dependencies:
-      '@middy/util': 6.4.1
-
-  '@middy/http-multipart-body-parser@6.4.1':
-    dependencies:
-      '@fastify/busboy': 3.1.1
-
-  '@middy/util@6.4.1': {}
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:

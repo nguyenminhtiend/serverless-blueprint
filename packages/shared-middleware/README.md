@@ -29,52 +29,127 @@ export const myHandler = async (event: APIGatewayProxyEvent) => {
 4. **Type Safety**: Validates and types the parsed body in one step
 5. **Performance**: Avoids duplicate parsing
 
-## User Authentication
+## JWT Authorizer Support (API Gateway v2)
 
-### Centralized User Context Extraction
+### TypeScript Types for JWT Claims
 
-All protected handlers should use the centralized auth utilities instead of manual JWT parsing:
+This middleware provides proper TypeScript support for AWS API Gateway HTTP API v2.0 with JWT authorizers:
 
 ```typescript
-import { extractUserOrError, UserContext } from '@shared/middleware';
+import { 
+  APIGatewayProxyEventV2WithJWTAuthorizer,
+  JWTClaims,
+  getJWTClaims,
+  getUserId,
+  requireUserId,
+  createRouter 
+} from '@shared/middleware';
 
-export const myHandler = async (event: APIGatewayProxyEvent) => {
-  // ✅ Use centralized auth extraction
-  const userResult = extractUserOrError(event);
-  if ('statusCode' in userResult) {
-    return userResult; // Return error response
-  }
-  const { userId, email } = userResult as UserContext;
+// Create a handler with proper JWT types
+export const handler = createRouter([
+  {
+    method: 'GET',
+    path: '/profile',
+    handler: async (ctx) => {
+      // ✅ Type-safe access to JWT claims
+      const claims = getJWTClaims(ctx.event);
+      const userId = getUserId(ctx.event);
+      const requiredUserId = requireUserId(ctx.event); // Throws on missing
 
-  // ❌ Don't do manual auth parsing
-  // const userContext = event.requestContext.authorizer;
-  // if (!userContext || !userContext.jwt || !userContext.jwt.claims) { ... }
-};
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ userId, claims }),
+      };
+    },
+  },
+]);
 ```
 
-### Auth Utilities Available
-
-1. **`extractUserOrError`**: Returns `UserContext` or error response (most common)
-2. **`extractUserContext`**: Throws error on failure (for middleware use)
-3. **`createAuthErrorResponse`**: Creates standardized auth error responses
-
-### UserContext Interface
+### JWT Claims Access Methods
 
 ```typescript
-interface UserContext {
-  userId: string;      // Cognito sub
-  email?: string;      // User email (if available)
-  claims: Record<string, any>; // Full JWT claims
+// Safe access (returns null if not found)
+const claims = getJWTClaims(event); // JWTClaims | null
+const userId = getUserId(event);    // string | undefined
+const email = getUserEmail(event);  // string | undefined
+
+// Specific claim access
+const customClaim = getJWTClaim(event, 'custom:role'); // string | number | boolean | undefined
+
+// Required access (throws HttpError if not found)
+const claims = requireJWTClaims(event); // JWTClaims (never null)
+const userId = requireUserId(event);    // string (never undefined)
+```
+
+### Claims Property Path
+
+JWT claims are accessible at:
+```typescript
+event.requestContext.authorizer?.jwt?.claims
+```
+
+### Custom Type Definition
+
+The middleware extends the standard `APIGatewayProxyEventV2` to include JWT authorizer support:
+
+```typescript
+interface APIGatewayProxyEventV2WithJWTAuthorizer extends APIGatewayProxyEventV2 {
+  requestContext: APIGatewayProxyEventV2['requestContext'] & {
+    authorizer?: {
+      jwt?: {
+        claims: Record<string, string | number | boolean>;
+        scopes?: string[] | null;
+      };
+      lambda?: Record<string, any>;  // Lambda authorizer support
+      iam?: { /* IAM context */ };   // IAM authorizer support
+    };
+  };
+}
+```
+
+### Error Handling
+
+```typescript
+import { HttpError } from '@shared/middleware';
+
+try {
+  const userId = requireUserId(event);
+  // Process with guaranteed userId
+} catch (error) {
+  if (error instanceof HttpError && error.statusCode === 401) {
+    // Handle missing JWT claims
+    return error.toResponse();
+  }
+  throw error;
 }
 ```
 
 ### Why This Approach?
 
-1. **Consistency**: All handlers use same auth logic
-2. **Error Handling**: Standardized 401/400 responses
-3. **Type Safety**: Typed user context with proper validation
-4. **Maintainability**: Single source of truth for auth extraction
-5. **Performance**: Eliminates code duplication
+1. **Type Safety**: Full TypeScript support for JWT claims
+2. **Error Handling**: Standardized 401 responses for missing claims
+3. **Convenience**: Helper functions for common claim access patterns
+4. **Future-Proof**: Supports Lambda and IAM authorizers too
+5. **Standards Compliant**: Follows AWS API Gateway v2 event structure
+
+## User Authentication
+
+### Legacy Support
+
+For backward compatibility, the old auth utilities are still available:
+
+```typescript
+import { extractUserOrError, UserContext } from '@shared/middleware';
+
+export const myHandler = async (event: APIGatewayProxyEvent) => {
+  // ✅ Legacy approach (still supported)
+  const userResult = extractUserOrError(event);
+  if ('statusCode' in userResult) {
+    return userResult;
+  }
+  const { userId, email } = userResult as UserContext;
+};
+```
 
 ### Default Middleware Configuration
 

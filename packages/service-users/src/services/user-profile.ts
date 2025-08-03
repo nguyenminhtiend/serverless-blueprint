@@ -1,4 +1,4 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { createLogger } from '@shared/core';
 import { Address, ExtendedUserProfile } from '../schemas';
@@ -77,7 +77,6 @@ export class UserProfileService {
       throw new Error('Failed to retrieve user profile');
     }
   }
-
 }
 
 // Default export for convenience

@@ -1,6 +1,5 @@
 import { createLogger } from '@shared/core';
-import { extractUserOrError, UserContext } from '@shared/middleware';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { LambdaContext, ok, internalError, requireUserId } from '@shared/middleware';
 import { getUserProfileResponseSchema } from '../schemas';
 import { createCognitoService, createUserProfileService } from '../services';
 
@@ -9,16 +8,10 @@ const logger = createLogger('get-user-profile');
 /**
  * Get User Profile Handler - Retrieves user profile from both Cognito and DynamoDB
  */
-export const getUserProfileHandler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const getUserProfileHandler = async (ctx: LambdaContext) => {
   try {
-    // Extract user context or return error
-    const userResult = extractUserOrError(event);
-    if ('statusCode' in userResult) {
-      return userResult; // Return error response
-    }
-    const { userId: cognitoSub } = userResult as UserContext;
+    // Extract user from JWT claims (HTTP API v2.0 JWT authorizer)
+    const cognitoSub = requireUserId(ctx.event);
 
     logger.info('Getting user profile', { cognitoSub });
 
@@ -46,27 +39,12 @@ export const getUserProfileHandler = async (
 
     logger.info('User profile retrieved successfully', { cognitoSub });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        data: validatedProfile,
-      }),
-    };
+    return ok({
+      success: true,
+      data: validatedProfile,
+    });
   } catch (error) {
     logger.error('Failed to get user profile', { error });
-
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        error: 'Failed to retrieve user profile',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      }),
-    };
+    internalError(error instanceof Error ? error.message : 'Unknown error during profile retrieval');
   }
 };

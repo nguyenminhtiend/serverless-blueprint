@@ -1,7 +1,5 @@
 import { createLogger } from '@shared/core';
-import { extractUserOrError, UserContext } from '@shared/middleware';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { OrderPathParamsSchema } from '../schemas';
+import { LambdaContext, ok, forbidden, notFound, internalError, requireUserId } from '@shared/middleware';
 import { createOrderService } from '../services';
 
 const logger = createLogger('get-order');
@@ -9,28 +7,13 @@ const logger = createLogger('get-order');
 /**
  * Get Order Handler - Retrieves a specific order by ID
  */
-export const getOrderHandler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const getOrderHandler = async (ctx: LambdaContext) => {
   try {
-    // Extract user context or return error
-    const userResult = extractUserOrError(event);
-    if ('statusCode' in userResult) {
-      return userResult; // Return error response
-    }
-    const { userId } = userResult as UserContext;
+    // Extract user from JWT claims (HTTP API v2.0 JWT authorizer)
+    const userId = requireUserId(ctx.event);
 
-    // Validate path parameters
-    if (!event.pathParameters) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing path parameters' }),
-      };
-    }
-
-    const pathParams = OrderPathParamsSchema.parse(event.pathParameters);
-    const { orderId } = pathParams;
+    // Path parameters are already parsed and validated by middleware
+    const { orderId } = ctx.event.pathParameters;
 
     logger.info('Getting order details', { orderId, userId });
 
@@ -41,11 +24,8 @@ export const getOrderHandler = async (
     const order = await orderService.getOrderById(orderId);
 
     if (!order) {
-      return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Order not found' }),
-      };
+      notFound('Order not found');
+      return; // This ensures TypeScript knows order is not null below
     }
 
     // Validate ownership (security check)
@@ -55,12 +35,8 @@ export const getOrderHandler = async (
         requestedBy: userId,
         actualOwner: order.userId,
       });
-
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Access denied' }),
-      };
+      forbidden('Access denied');
+      return; // This ensures the function doesn't continue
     }
 
     logger.info('Order retrieved successfully', {
@@ -69,39 +45,12 @@ export const getOrderHandler = async (
       status: order.status,
     });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        data: order,
-      }),
-    };
+    return ok({
+      success: true,
+      data: order,
+    });
   } catch (error) {
     logger.error('Failed to get order', { error });
-
-    // Handle validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Invalid order ID format',
-          details: JSON.parse(error.message),
-        }),
-      };
-    }
-
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        error: 'Failed to retrieve order',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      }),
-    };
+    internalError(error instanceof Error ? error.message : 'Unknown error during order retrieval');
   }
 };

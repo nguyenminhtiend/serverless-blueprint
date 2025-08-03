@@ -1,8 +1,7 @@
 import { createLogger } from '@shared/core';
-import { extractUserOrError, parseValidatedBody, UserContext } from '@shared/middleware';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { LambdaContext, created, internalError, requireUserId } from '@shared/middleware';
 import { createOrderCreatedEvent, publishOrderCreatedEvent } from '../events';
-import { CreateOrderRequest, CreateOrderRequestSchema } from '../schemas';
+import { CreateOrderRequest } from '../schemas';
 import { createOrderService } from '../services';
 
 const logger = createLogger('create-order');
@@ -10,28 +9,13 @@ const logger = createLogger('create-order');
 /**
  * Create Order Handler - Creates new order with event publishing
  */
-export const createOrderHandler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const createOrderHandler = async (ctx: LambdaContext) => {
   try {
-    // Extract user context or return error
-    const userResult = extractUserOrError(event);
-    if ('statusCode' in userResult) {
-      return userResult; // Return error response
-    }
-    const { userId } = userResult as UserContext;
+    // Extract user from JWT claims (HTTP API v2.0 JWT authorizer)
+    const userId = requireUserId(ctx.event);
 
-    // Parse and validate request body
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Request body is required' }),
-      };
-    }
-
-    // Body is already parsed by middleware, just validate
-    const orderRequest = parseValidatedBody<CreateOrderRequest>(event, CreateOrderRequestSchema);
+    // Body is already parsed and validated by middleware
+    const orderRequest: CreateOrderRequest = ctx.event.body;
 
     logger.info('Creating new order', {
       userId,
@@ -75,7 +59,7 @@ export const createOrderHandler = async (
           },
         },
         {
-          correlationId: event.requestContext.requestId, // Use request ID for correlation
+          correlationId: ctx.event.requestContext.requestId, // Use request ID for correlation
         }
       );
 
@@ -118,39 +102,12 @@ export const createOrderHandler = async (
       total: order.total,
     });
 
-    return {
-      statusCode: 201,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: true,
-        data: order,
-      }),
-    };
+    return created({
+      success: true,
+      data: order,
+    });
   } catch (error) {
     logger.error('Failed to create order', { error });
-
-    // Handle validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Validation failed',
-          details: JSON.parse(error.message),
-        }),
-      };
-    }
-
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        error: 'Failed to create order',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      }),
-    };
+    internalError(error instanceof Error ? error.message : 'Unknown error during order creation');
   }
 };
