@@ -17,9 +17,9 @@
     "dist"
   ],
   "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.24.1",
     "@shared/core": "workspace:*",
     "jsonwebtoken": "^9.0.2",
-    "pino": "9.7.0",
     "zod": "4.0.5"
   },
   "devDependencies": {

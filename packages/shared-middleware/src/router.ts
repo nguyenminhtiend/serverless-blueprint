@@ -1,15 +1,63 @@
+import { createLogger } from '@shared/core';
 import { APIGatewayProxyResultV2, Context } from 'aws-lambda';
 import { HttpError, createErrorResponse } from './errors';
-import { loggingMiddleware } from './logging';
 import { createSuccessResponse } from './responses';
 import { findMatchingRoute, parseBody, validateSchema } from './routing';
 import { APIGatewayProxyEventV2WithJWTAuthorizer, ParsedEvent, Route } from './types';
 
+const logger = createLogger('middleware');
+
+const addContext = (context: Context): void => {
+  if (process.env.ENABLE_REQUEST_LOGGING === 'false') return;
+  logger.addContext(context);
+};
+
+const logRequest = (event: APIGatewayProxyEventV2WithJWTAuthorizer | ParsedEvent) => {
+  if (process.env.ENABLE_REQUEST_LOGGING === 'false') return;
+
+  const userId = event.requestContext.authorizer?.jwt?.claims?.sub;
+  const logData = {
+    requestId: event.requestContext.requestId,
+    method: event.requestContext.http.method,
+    path: event.requestContext.http.path,
+    userId: typeof userId === 'string' ? userId : undefined,
+  };
+
+  logger.info('Incoming request', logData);
+};
+
+const logResponse = (
+  event: APIGatewayProxyEventV2WithJWTAuthorizer | ParsedEvent,
+  response: APIGatewayProxyResultV2,
+  duration: number
+) => {
+  if (process.env.ENABLE_REQUEST_LOGGING === 'false') return;
+
+  const statusCode =
+    typeof response === 'object' && 'statusCode' in response ? response.statusCode : 200;
+
+  const logData = {
+    requestId: event.requestContext.requestId,
+    statusCode,
+    duration: `${duration}ms`,
+  };
+
+  const logLevel =
+    statusCode && statusCode >= 500 ? 'error' : statusCode && statusCode >= 400 ? 'warn' : 'info';
+
+  logger[logLevel]('Request completed', logData);
+};
+
 export const createRouter = (routes: Route[]) => {
-  const routerHandler = async (
+  return async (
     event: APIGatewayProxyEventV2WithJWTAuthorizer,
     context: Context
   ): Promise<APIGatewayProxyResultV2> => {
+    const startTime = Date.now();
+
+    addContext(context);
+    logRequest(event);
+
     try {
       const method = event.requestContext.http.method;
       const path = event.requestContext.http.path;
@@ -53,12 +101,17 @@ export const createRouter = (routes: Route[]) => {
         context,
       });
 
-      return createSuccessResponse(result);
+      const response = createSuccessResponse(result);
+      const duration = Date.now() - startTime;
+      logResponse(event, response, duration);
+
+      return response;
     } catch (error) {
-      return createErrorResponse(error);
+      const response = createErrorResponse(error);
+      const duration = Date.now() - startTime;
+      logResponse(event, response, duration);
+
+      return response;
     }
   };
-
-  // Wrap with logging middleware
-  return loggingMiddleware.wrap(routerHandler);
 };

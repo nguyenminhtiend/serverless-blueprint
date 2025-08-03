@@ -50,5 +50,8 @@
     "node": ">=22.0.0",
     "pnpm": ">=10.0.0"
   },
-  "packageManager": "pnpm@10.13.1"
+  "packageManager": "pnpm@10.13.1",
+  "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.24.1"
+  }
 }
