@@ -30,7 +30,6 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
   "references": [
-    { "path": "./packages/shared-types" },
     { "path": "./packages/shared-core" },
     { "path": "./packages/shared-middleware" },
     { "path": "./packages/service-auth" },

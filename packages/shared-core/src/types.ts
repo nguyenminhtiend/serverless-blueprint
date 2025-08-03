@@ -1,10 +1,9 @@
-// Basic types only - all others are unused
+// Core types that should be shared across all packages
+import { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Context } from 'aws-lambda';
+import { ZodType } from 'zod';
+
 export type UUID = string;
 export type ISO8601 = string;
-
-// Core types that should be shared across all packages
-import { APIGatewayProxyEventV2, Context, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { ZodType } from 'zod';
 
 export interface APIGatewayProxyEventV2WithJWTAuthorizer extends APIGatewayProxyEventV2 {
   requestContext: APIGatewayProxyEventV2['requestContext'] & {
@@ -35,7 +34,10 @@ export interface APIGatewayProxyEventV2WithJWTAuthorizer extends APIGatewayProxy
 export type JWTClaims = Record<string, string | number | boolean>;
 
 export interface ParsedEvent
-  extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, 'body' | 'pathParameters' | 'queryStringParameters'> {
+  extends Omit<
+    APIGatewayProxyEventV2WithJWTAuthorizer,
+    'body' | 'pathParameters' | 'queryStringParameters'
+  > {
   body: any;
   pathParameters: Record<string, string>;
   queryStringParameters: Record<string, string>;
