@@ -21,7 +21,7 @@
     "@aws-sdk/util-dynamodb": "^3.848.0",
     "uuid": "^11.1.0",
     "zod": "^4.0.5",
-    "@shared/types": "workspace:*",
+    "@shared/core": "workspace:*",
     "@shared/core": "workspace:*",
     "@shared/middleware": "workspace:*"
   },

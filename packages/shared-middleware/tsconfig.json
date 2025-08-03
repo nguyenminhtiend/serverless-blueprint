@@ -13,5 +13,5 @@
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts"],
-  "references": [{ "path": "../shared-types" }, { "path": "../shared-core" }]
+  "references": [{ "path": "../shared-core" }]
 }

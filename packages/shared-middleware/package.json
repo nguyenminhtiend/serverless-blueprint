@@ -18,7 +18,6 @@
   ],
   "dependencies": {
     "@shared/core": "workspace:*",
-    "@shared/types": "workspace:*",
     "jsonwebtoken": "^9.0.2",
     "pino": "9.7.0",
     "zod": "4.0.5"

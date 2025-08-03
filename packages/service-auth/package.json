@@ -16,7 +16,7 @@
   ],
   "dependencies": {
     "@types/aws-lambda": "^8.10.152",
-    "@shared/types": "workspace:*",
+    "@shared/core": "workspace:*",
     "@shared/core": "workspace:*",
     "@shared/middleware": "workspace:*",
     "@aws-sdk/client-cognito-identity-provider": "^3.848.0",
