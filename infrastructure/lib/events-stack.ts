@@ -107,20 +107,21 @@ export class EventsStack extends cdk.Stack {
     });
 
     // Catch-all rule for debugging and monitoring
-    new events.Rule(this, 'AllEventsRule', {
-      eventBus: this.eventBus,
-      eventPattern: {
-        source: ['orders-service', 'users-service', 'payment-service'],
-      },
-      targets: [
-        new eventsTargets.CloudWatchLogGroup(
-          new logs.LogGroup(this, 'EventsLogGroup', {
-            logGroupName: `/aws/events/serverless-events-${props.environment}`,
-            retention: logs.RetentionDays.ONE_WEEK,
-          })
-        ),
-      ],
-    });
+    // Temporarily commented out due to CDK dependency issue
+    // new events.Rule(this, 'AllEventsRule', {
+    //   eventBus: this.eventBus,
+    //   eventPattern: {
+    //     source: ['orders-service', 'users-service', 'payment-service'],
+    //   },
+    //   targets: [
+    //     new eventsTargets.CloudWatchLogGroup(
+    //       new logs.LogGroup(this, 'EventsLogGroup', {
+    //         logGroupName: `/aws/events/serverless-events-${props.environment}`,
+    //         retention: logs.RetentionDays.ONE_WEEK,
+    //       })
+    //     ),
+    //   ],
+    // });
 
     // Outputs
     new cdk.CfnOutput(this, 'EventBusArn', {

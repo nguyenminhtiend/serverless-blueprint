@@ -6,7 +6,6 @@ import { CognitoStack } from '../lib/cognito-stack';
 import { DatabaseStack } from '../lib/database-stack';
 import { EventsStack } from '../lib/events-stack';
 import { LambdaStack } from '../lib/lambda-stack';
-import { MonitoringStack } from '../lib/monitoring-stack';
 
 const app = new cdk.App();
 
@@ -15,9 +14,6 @@ const environment = app.node.tryGetContext('environment') || 'dev';
 const account = app.node.tryGetContext('account') || process.env.CDK_DEFAULT_ACCOUNT;
 const region =
   app.node.tryGetContext('region') || process.env.CDK_DEFAULT_REGION || 'ap-southeast-1';
-
-// Get optional alert email from context
-const alertEmail = app.node.tryGetContext('alertEmail');
 
 // Validate required parameters
 if (!account) {
@@ -89,34 +85,11 @@ const apiGatewayStack = new ApiGatewayStack(
   }
 );
 
-// Monitoring Stack - Phase 10
-const monitoringStack = new MonitoringStack(
-  app,
-  `ServerlessMicroservices-Monitoring-${environment}`,
-  {
-    ...stackProps,
-    environment,
-    lambdaFunctions: {
-      authService: lambdaStack.authFunction,
-      userService: lambdaStack.userFunction,
-      orderService: lambdaStack.orderFunction,
-      notificationService: lambdaStack.notificationFunction,
-    },
-    apiGateway: apiGatewayStack.httpApi,
-    dynamoTable: databaseStack.table,
-    alertEmail,
-    description: `Monitoring and observability infrastructure for ${environment} environment`,
-  }
-);
-
 // Add stack dependencies
 lambdaStack.addDependency(databaseStack);
 lambdaStack.addDependency(eventsStack);
 lambdaStack.addDependency(cognitoStack); // Lambda needs Cognito for env vars
 apiGatewayStack.addDependency(lambdaStack);
 apiGatewayStack.addDependency(cognitoStack);
-monitoringStack.addDependency(lambdaStack); // Monitoring needs Lambda functions
-monitoringStack.addDependency(apiGatewayStack); // Monitoring needs API Gateway
-monitoringStack.addDependency(databaseStack); // Monitoring needs DynamoDB
 
 // Stack naming convention is set in cdk.json context
