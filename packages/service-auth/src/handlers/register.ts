@@ -11,7 +11,6 @@ import {
 export const registerHandler = async (ctx: LambdaContext) => {
   try {
     const { email, password, givenName, familyName }: RegisterInput = ctx.event.body;
-    logger.info('Processing registration request', { email });
 
     const userAttributes = [{ Name: 'email', Value: email }];
     if (givenName) userAttributes.push({ Name: 'given_name', Value: givenName });
@@ -29,11 +28,6 @@ export const registerHandler = async (ctx: LambdaContext) => {
     const command = new SignUpCommand(signUpParams);
     const result = await cognitoClient.send(command);
 
-    logger.info('Registration successful', {
-      email,
-      userConfirmed: result.UserConfirmed,
-    });
-
     const registerResponse = {
       userSub: result.UserSub!,
       userConfirmed: result.UserConfirmed!,
@@ -42,7 +36,6 @@ export const registerHandler = async (ctx: LambdaContext) => {
 
     return created(registerResponse);
   } catch (error) {
-    logger.error('Registration error:', { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof Error) {
       internalError(error.message);
     }

@@ -15,7 +15,6 @@ import {
 export const loginHandler = async (ctx: LambdaContext) => {
   try {
     const { email, password }: LoginInput = ctx.event.body;
-    logger.info('Processing login request', { email });
 
     const authParameters: InitiateAuthCommandInput['AuthParameters'] = {
       USERNAME: email,
@@ -33,11 +32,6 @@ export const loginHandler = async (ctx: LambdaContext) => {
     const result = await cognitoClient.send(command);
 
     if (result.ChallengeName) {
-      logger.info('Authentication challenge required', {
-        challengeName: result.ChallengeName,
-        email,
-      });
-
       const challengeResponse: AuthChallenge = {
         challenge: true,
         challengeName: result.ChallengeName,
@@ -49,8 +43,6 @@ export const loginHandler = async (ctx: LambdaContext) => {
     }
 
     if (result.AuthenticationResult) {
-      logger.info('Login successful', { email });
-
       const tokens: AuthTokens = {
         accessToken: result.AuthenticationResult.AccessToken!,
         idToken: result.AuthenticationResult.IdToken!,
@@ -63,7 +55,6 @@ export const loginHandler = async (ctx: LambdaContext) => {
 
     internalError('Authentication failed - no result');
   } catch (error) {
-    logger.error('Login error:', { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof Error) {
       internalError(error.message);
     }

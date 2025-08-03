@@ -1,15 +1,12 @@
 import { APIGatewayProxyResultV2, Context } from 'aws-lambda';
-import { 
-  Route, 
-  APIGatewayProxyEventV2WithJWTAuthorizer, 
-  ParsedEvent 
-} from './types';
 import { HttpError, createErrorResponse } from './errors';
-import { parseBody, validateSchema, findMatchingRoute } from './routing';
+import { loggingMiddleware } from './logging';
 import { createSuccessResponse } from './responses';
+import { findMatchingRoute, parseBody, validateSchema } from './routing';
+import { APIGatewayProxyEventV2WithJWTAuthorizer, ParsedEvent, Route } from './types';
 
 export const createRouter = (routes: Route[]) => {
-  return async (
+  const routerHandler = async (
     event: APIGatewayProxyEventV2WithJWTAuthorizer,
     context: Context
   ): Promise<APIGatewayProxyResultV2> => {
@@ -61,4 +58,7 @@ export const createRouter = (routes: Route[]) => {
       return createErrorResponse(error);
     }
   };
+
+  // Wrap with logging middleware
+  return loggingMiddleware.wrap(routerHandler);
 };
