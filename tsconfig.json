@@ -32,7 +32,6 @@
   "references": [
     { "path": "./packages/shared-types" },
     { "path": "./packages/shared-core" },
-    { "path": "./packages/shared-database" },
     { "path": "./packages/shared-middleware" },
     { "path": "./packages/service-auth" },
     { "path": "./packages/service-users" },
