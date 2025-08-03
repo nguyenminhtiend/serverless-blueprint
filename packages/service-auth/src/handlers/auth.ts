@@ -1,5 +1,5 @@
-export { loginHandler, login } from './login';
-export { registerHandler, register } from './register';
-export { confirmSignUpHandler, confirmSignUp } from './confirm-signup';
+export { loginHandler } from './login';
+export { registerHandler } from './register';
+export { confirmSignUpHandler } from './confirm-signup';
 
 export * from './shared/types';

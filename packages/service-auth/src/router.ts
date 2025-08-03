@@ -1,35 +1,27 @@
-import { createRouter, POST } from '@shared/middleware';
-import {
-  confirmSignUpHandler,
-  loginHandler,
-  registerHandler,
-} from './handlers/auth';
+import { createLambdaRouter, lambdaRoute } from '@shared/middleware';
+import { loginSchema, registerSchema, confirmSignUpSchema } from './handlers/shared/types';
+import { loginHandler, registerHandler, confirmSignUpHandler } from './handlers/auth';
 
 /**
- * Create auth service router using shared router utilities
+ * Create auth service router using new middleware
  */
-const { router, handler, addRoutes } = createRouter(
-  {
-    serviceName: 'auth-service',
-    serviceVersion: '1.0.0',
-    enableHealthCheck: true,
-  },
-  {
-    // Minimal middleware options to avoid logger issues
-    jsonBodyParser: true,
-  }
-);
-
-// Register all auth routes using convenience functions
-// Note: API Gateway handles the /auth prefix, so we use simple paths here
-addRoutes([
-  POST('/auth/login', loginHandler),
-  POST('/auth/register', registerHandler),
-  POST('/auth/confirm-signup', confirmSignUpHandler),
+export const handler = createLambdaRouter([
+  lambdaRoute({
+    method: 'POST',
+    path: '/auth/login',
+    handler: loginHandler,
+    schema: { body: loginSchema }
+  }),
+  lambdaRoute({
+    method: 'POST',
+    path: '/auth/register', 
+    handler: registerHandler,
+    schema: { body: registerSchema }
+  }),
+  lambdaRoute({
+    method: 'POST',
+    path: '/auth/confirm-signup',
+    handler: confirmSignUpHandler,
+    schema: { body: confirmSignUpSchema }
+  })
 ]);
-
-// Export the configured handler
-export { handler };
-
-// Export router instance for testing or additional configuration
-export { router };

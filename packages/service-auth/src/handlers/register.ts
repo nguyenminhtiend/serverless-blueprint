@@ -1,25 +1,16 @@
 import { SignUpCommand, SignUpCommandInput } from '@aws-sdk/client-cognito-identity-provider';
-import {
-  createPublicApiHandler,
-  createRouterSuccessResponse,
-  HTTP_STATUS,
-} from '@shared/middleware';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { registerSchema } from './shared/types';
+import { LambdaContext, created, internalError } from '@shared/middleware';
+import { RegisterInput } from './shared/types';
 import {
   addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
-  handleCognitoError,
   logger,
-  parseRequestBody,
 } from './shared/utils';
 
-export const registerHandler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const registerHandler = async (ctx: LambdaContext) => {
   try {
-    const { email, password, givenName, familyName } = parseRequestBody(event, registerSchema);
+    const { email, password, givenName, familyName }: RegisterInput = ctx.event.body;
     logger.info('Processing registration request', { email });
 
     const userAttributes = [{ Name: 'email', Value: email }];
@@ -49,16 +40,12 @@ export const registerHandler = async (
       needsConfirmation: !result.UserConfirmed,
     };
 
-    return createRouterSuccessResponse(
-      registerResponse,
-      HTTP_STATUS.CREATED,
-      'User registered successfully'
-    );
+    return created(registerResponse);
   } catch (error) {
-    return handleCognitoError(error as Error & { name?: string }, 'Registration');
+    logger.error('Registration error:', { error: error instanceof Error ? error.message : String(error) });
+    if (error instanceof Error) {
+      internalError(error.message);
+    }
+    internalError('Unknown error during registration');
   }
 };
-
-export const register = createPublicApiHandler(registerHandler, {
-  logging: { serviceName: 'auth-service' },
-});

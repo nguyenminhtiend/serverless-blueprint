@@ -3,21 +3,18 @@ import {
   InitiateAuthCommand,
   InitiateAuthCommandInput,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { createPublicApiHandler, createRouterSuccessResponse } from '@shared/middleware';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { AuthChallenge, AuthTokens, loginSchema } from './shared/types';
+import { LambdaContext, ok, internalError } from '@shared/middleware';
+import { AuthChallenge, AuthTokens, LoginInput } from './shared/types';
 import {
   addSecretHashIfNeeded,
   CLIENT_ID,
   cognitoClient,
-  handleCognitoError,
   logger,
-  parseRequestBody,
 } from './shared/utils';
 
-export const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const loginHandler = async (ctx: LambdaContext) => {
   try {
-    const { email, password } = parseRequestBody(event, loginSchema);
+    const { email, password }: LoginInput = ctx.event.body;
     logger.info('Processing login request', { email });
 
     const authParameters: InitiateAuthCommandInput['AuthParameters'] = {
@@ -48,7 +45,7 @@ export const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGate
         challengeParameters: result.ChallengeParameters || {},
       };
 
-      return createRouterSuccessResponse(challengeResponse);
+      return ok(challengeResponse);
     }
 
     if (result.AuthenticationResult) {
@@ -61,15 +58,15 @@ export const loginHandler = async (event: APIGatewayProxyEvent): Promise<APIGate
         expiresIn: result.AuthenticationResult.ExpiresIn!,
       };
 
-      return createRouterSuccessResponse({ tokens });
+      return ok({ tokens });
     }
 
-    throw new Error('Authentication failed - no result');
+    internalError('Authentication failed - no result');
   } catch (error) {
-    return handleCognitoError(error as Error & { name?: string }, 'Login');
+    logger.error('Login error:', { error: error instanceof Error ? error.message : String(error) });
+    if (error instanceof Error) {
+      internalError(error.message);
+    }
+    internalError('Unknown error during login');
   }
 };
-
-export const login = createPublicApiHandler(loginHandler, {
-  logging: { serviceName: 'auth-service' },
-});
