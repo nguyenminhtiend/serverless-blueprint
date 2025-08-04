@@ -1,6 +1,6 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
+import { GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { createLogger } from '@shared/core';
+import { createLogger, AWSClients } from '@shared/core';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderRequest, Order, OrderStatus } from '../schemas';
 
@@ -122,17 +122,13 @@ export class OrderService {
 }
 
 /**
- * Factory function to create OrderService instance
+ * Factory function to create OrderService instance with singleton client
  */
 export const createOrderService = (): OrderService => {
-  const dynamoClient = new DynamoDBClient({
-    region: process.env.AWS_REGION || 'ap-southeast-1',
-  });
-
   const tableName = process.env.TABLE_NAME;
   if (!tableName) {
     throw new Error('TABLE_NAME environment variable is required');
   }
 
-  return new OrderService(dynamoClient, tableName);
+  return new OrderService(AWSClients.dynamoDB, tableName);
 };

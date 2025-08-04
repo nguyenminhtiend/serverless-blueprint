@@ -4,7 +4,7 @@ import {
   AdminGetUserCommand,
   AttributeType,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { createLogger } from '@shared/core';
+import { createLogger, AWSClients } from '@shared/core';
 
 const logger = createLogger('cognito-service');
 
@@ -23,12 +23,9 @@ export class CognitoService {
   private client: CognitoIdentityProviderClient;
   private userPoolId: string;
 
-  constructor(userPoolId: string, region: string = 'ap-southeast-1') {
+  constructor(userPoolId: string, client: CognitoIdentityProviderClient) {
     this.userPoolId = userPoolId;
-    this.client = new CognitoIdentityProviderClient({
-      region,
-      maxAttempts: 3,
-    });
+    this.client = client;
   }
 
   /**
@@ -132,11 +129,11 @@ export class CognitoService {
   }
 }
 
-// Default export for convenience
-export const createCognitoService = (userPoolId?: string, region?: string): CognitoService => {
+// Factory function to create CognitoService instance with singleton client
+export const createCognitoService = (userPoolId?: string): CognitoService => {
   const poolId = userPoolId || process.env.COGNITO_USER_POOL_ID;
   if (!poolId) {
     throw new Error('Cognito User Pool ID is required');
   }
-  return new CognitoService(poolId, region);
+  return new CognitoService(poolId, AWSClients.cognito);
 };

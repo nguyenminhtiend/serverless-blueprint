@@ -16,3 +16,6 @@ export * from './responses';
 // Router and routing
 export * from './router';
 export * from './routing';
+
+// AWS Client singletons
+export * from './clients/aws-clients';

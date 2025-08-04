@@ -1,6 +1,6 @@
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { createLogger } from '@shared/core';
+import { createLogger, AWSClients } from '@shared/core';
 import { Address, ExtendedUserProfile } from '../schemas';
 
 const logger = createLogger('user-profile-service');
@@ -36,12 +36,9 @@ export class UserProfileService {
   private client: DynamoDBClient;
   private tableName: string;
 
-  constructor(tableName: string, region: string = 'ap-southeast-1') {
+  constructor(tableName: string, client: DynamoDBClient) {
     this.tableName = tableName;
-    this.client = new DynamoDBClient({
-      region,
-      maxAttempts: 3,
-    });
+    this.client = client;
   }
 
   /**
@@ -79,14 +76,11 @@ export class UserProfileService {
   }
 }
 
-// Default export for convenience
-export const createUserProfileService = (
-  tableName?: string,
-  region?: string
-): UserProfileService => {
+// Factory function to create UserProfileService instance with singleton client
+export const createUserProfileService = (tableName?: string): UserProfileService => {
   const table = tableName || process.env.TABLE_NAME;
   if (!table) {
     throw new Error('DynamoDB table name is required');
   }
-  return new UserProfileService(table, region);
+  return new UserProfileService(table, AWSClients.dynamoDB);
 };
