@@ -36,7 +36,7 @@ export class UserProfileService {
   private client: DynamoDBClient;
   private tableName: string;
 
-  constructor(tableName: string, region: string = 'us-east-1') {
+  constructor(tableName: string, region: string = 'ap-southeast-1') {
     this.tableName = tableName;
     this.client = new DynamoDBClient({
       region,

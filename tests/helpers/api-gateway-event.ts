@@ -4,7 +4,9 @@ import { APIGatewayProxyEventV2, APIGatewayProxyEventV2WithJWTAuthorizer } from 
  * Creates a mock API Gateway Proxy Event V2 for testing purposes.
  * This helper is shared across multiple test files to ensure consistency.
  */
-export const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
+export const createMockEvent = (
+  overrides: Partial<APIGatewayProxyEventV2> = {}
+): APIGatewayProxyEventV2 => ({
   version: '2.0',
   routeKey: 'GET /users/profile',
   rawPath: '/users/profile',
@@ -69,7 +71,7 @@ export const createMockEventWithJWT = (
   requestContext: {
     accountId: '123456789',
     apiId: 'test-api',
-    domainName: 'test.execute-api.us-east-1.amazonaws.com',
+    domainName: 'test.execute-api.ap-southeast-1.amazonaws.com',
     http: {
       method,
       path,

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { Context } from 'aws-lambda';
 import { createMockEvent } from '../../../helpers/api-gateway-event';
 
@@ -16,7 +16,7 @@ describe('Users Service Router', () => {
     callbackWaitsForEmptyEventLoop: false,
     functionName: 'test-function',
     functionVersion: '1',
-    invokedFunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:test-function',
+    invokedFunctionArn: 'arn:aws:lambda:ap-southeast-1:123456789012:function:test-function',
     memoryLimitInMB: '128',
     awsRequestId: 'test-request-id',
     logGroupName: '/aws/lambda/test-function',
@@ -27,6 +27,15 @@ describe('Users Service Router', () => {
     succeed: vi.fn(),
   };
 
+  beforeAll(() => {
+    // Disable request/response logging during tests
+    process.env.ENABLE_REQUEST_LOGGING = 'false';
+  });
+
+  afterAll(() => {
+    // Clean up environment variable
+    delete process.env.ENABLE_REQUEST_LOGGING;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -90,7 +99,7 @@ describe('Users Service Router', () => {
       expect(JSON.parse(result.body!)).toMatchObject({
         error: 'Internal server error',
       });
-      
+
       // Check that handler was called
       expect(handlers.getUserProfileHandler).toHaveBeenCalled();
     });
@@ -284,6 +293,193 @@ describe('Users Service Router', () => {
         'x-api-key': 'test-key',
         'user-agent': 'test-client/1.0',
       });
+    });
+  });
+
+  describe('Path Parameter Validation', () => {
+    it('should extract and validate path parameters for GET /users/:userId', async () => {
+      const validUserId = '123e4567-e89b-12d3-a456-426614174000';
+      const mockEvent = createMockEvent({
+        routeKey: 'GET /users/{userId}',
+        rawPath: `/users/${validUserId}`,
+        pathParameters: { userId: validUserId },
+        requestContext: {
+          ...createMockEvent().requestContext,
+          http: {
+            ...createMockEvent().requestContext.http,
+            method: 'GET',
+            path: `/users/${validUserId}`,
+          },
+          routeKey: 'GET /users/{userId}',
+          authorizer: {
+            jwt: {
+              claims: { sub: validUserId },
+              scopes: [],
+            },
+          },
+        },
+      });
+
+      const mockHandlerResponse = {
+        success: true,
+        data: { cognitoSub: validUserId, email: 'test@example.com' },
+      };
+
+      vi.mocked(handlers.getUserProfileHandler).mockResolvedValue(mockHandlerResponse);
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(200);
+      const callArgs = vi.mocked(handlers.getUserProfileHandler).mock.calls[0][0];
+      expect(callArgs.event.pathParameters?.userId).toBe(validUserId);
+    });
+
+    it('should reject invalid UUID in path parameters', async () => {
+      const invalidUserId = 'invalid-uuid';
+      const mockEvent = createMockEvent({
+        routeKey: 'GET /users/{userId}',
+        rawPath: `/users/${invalidUserId}`,
+        pathParameters: { userId: invalidUserId },
+        requestContext: {
+          ...createMockEvent().requestContext,
+          http: {
+            ...createMockEvent().requestContext.http,
+            method: 'GET',
+            path: `/users/${invalidUserId}`,
+          },
+          routeKey: 'GET /users/{userId}',
+        },
+      });
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body!)).toMatchObject({
+        error: expect.stringContaining('path parameters'),
+      });
+      expect(handlers.getUserProfileHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Request Body Schema Validation', () => {
+    it('should validate request body for PUT /users/profile', async () => {
+      const validUserProfile = {
+        avatarUrl: 'https://example.com/avatar.jpg',
+        bio: 'Software developer',
+        phoneNumber: '+1234567890',
+        dateOfBirth: '1990-01-01',
+        occupation: 'Engineer',
+      };
+
+      const mockEvent = createMockEvent({
+        routeKey: 'PUT /users/profile',
+        rawPath: '/users/profile',
+        body: JSON.stringify(validUserProfile),
+        headers: { 'content-type': 'application/json' },
+        requestContext: {
+          ...createMockEvent().requestContext,
+          http: {
+            ...createMockEvent().requestContext.http,
+            method: 'PUT',
+            path: '/users/profile',
+          },
+          routeKey: 'PUT /users/profile',
+          authorizer: {
+            jwt: {
+              claims: { sub: '123e4567-e89b-12d3-a456-426614174000' },
+              scopes: [],
+            },
+          },
+        },
+      });
+
+      const mockHandlerResponse = {
+        success: true,
+        data: { message: 'Profile updated successfully' },
+      };
+
+      vi.mocked(handlers.getUserProfileHandler).mockResolvedValue(mockHandlerResponse);
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(200);
+      const callArgs = vi.mocked(handlers.getUserProfileHandler).mock.calls[0][0];
+      expect(callArgs.event.body).toEqual(validUserProfile);
+    });
+
+    it('should reject invalid request body schema', async () => {
+      const invalidUserProfile = {
+        avatarUrl: 'not-a-valid-url',
+        bio: 'x'.repeat(501), // Too long
+        phoneNumber: '123', // Too short
+        dateOfBirth: 'invalid-date',
+        occupation: 'x'.repeat(101), // Too long
+      };
+
+      const mockEvent = createMockEvent({
+        routeKey: 'PUT /users/profile',
+        rawPath: '/users/profile',
+        body: JSON.stringify(invalidUserProfile),
+        headers: { 'content-type': 'application/json' },
+        requestContext: {
+          ...createMockEvent().requestContext,
+          http: {
+            ...createMockEvent().requestContext.http,
+            method: 'PUT',
+            path: '/users/profile',
+          },
+          routeKey: 'PUT /users/profile',
+        },
+      });
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(400);
+      expect(JSON.parse(result.body!)).toMatchObject({
+        error: expect.stringContaining('body'),
+      });
+      expect(handlers.getUserProfileHandler).not.toHaveBeenCalled();
+    });
+
+    it('should accept optional fields in request body', async () => {
+      const minimalUserProfile = {
+        bio: 'Simple bio',
+      };
+
+      const mockEvent = createMockEvent({
+        routeKey: 'PUT /users/profile',
+        rawPath: '/users/profile',
+        body: JSON.stringify(minimalUserProfile),
+        headers: { 'content-type': 'application/json' },
+        requestContext: {
+          ...createMockEvent().requestContext,
+          http: {
+            ...createMockEvent().requestContext.http,
+            method: 'PUT',
+            path: '/users/profile',
+          },
+          routeKey: 'PUT /users/profile',
+          authorizer: {
+            jwt: {
+              claims: { sub: '123e4567-e89b-12d3-a456-426614174000' },
+              scopes: [],
+            },
+          },
+        },
+      });
+
+      const mockHandlerResponse = {
+        success: true,
+        data: { message: 'Profile updated successfully' },
+      };
+
+      vi.mocked(handlers.getUserProfileHandler).mockResolvedValue(mockHandlerResponse);
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(200);
+      const callArgs = vi.mocked(handlers.getUserProfileHandler).mock.calls[0][0];
+      expect(callArgs.event.body).toEqual(minimalUserProfile);
     });
   });
 });

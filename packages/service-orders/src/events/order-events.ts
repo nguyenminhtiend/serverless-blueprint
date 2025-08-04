@@ -247,7 +247,7 @@ export class OrderEventPublisher {
  */
 export const createOrderEventPublisher = (): OrderEventPublisher => {
   const eventBridgeClient = new EventBridgeClient({
-    region: process.env.AWS_REGION || 'us-east-1',
+    region: process.env.AWS_REGION || 'ap-southeast-1',
   });
 
   const eventBusName = process.env.EVENT_BUS_NAME || 'default';

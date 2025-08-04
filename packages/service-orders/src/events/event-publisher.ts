@@ -31,7 +31,7 @@ export class OrderEventPublisher {
   constructor(config: EventPublisherConfig = {}) {
     this.config = {
       eventBusName: config.eventBusName || process.env.EVENT_BUS_NAME || 'default',
-      region: config.region || process.env.AWS_REGION || 'us-east-1',
+      region: config.region || process.env.AWS_REGION || 'ap-southeast-1',
       maxRetries: config.maxRetries || 3,
       retryDelayMs: config.retryDelayMs || 1000,
     };

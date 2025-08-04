@@ -23,7 +23,7 @@ export class CognitoService {
   private client: CognitoIdentityProviderClient;
   private userPoolId: string;
 
-  constructor(userPoolId: string, region: string = 'us-east-1') {
+  constructor(userPoolId: string, region: string = 'ap-southeast-1') {
     this.userPoolId = userPoolId;
     this.client = new CognitoIdentityProviderClient({
       region,

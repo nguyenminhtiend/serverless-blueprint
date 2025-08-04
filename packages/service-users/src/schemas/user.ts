@@ -73,12 +73,10 @@ export const getUserProfileResponseSchema = z.object({
   extendedProfile: extendedUserProfileSchema.optional(),
 });
 
-
 // Path parameter schemas
 export const userIdPathSchema = z.object({
   userId: z.string().uuid(),
 });
-
 
 // Type inference exports
 export type Address = z.infer<typeof addressSchema>;

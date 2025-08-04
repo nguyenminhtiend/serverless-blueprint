@@ -20,7 +20,7 @@ describe('Routing Utils', () => {
     requestContext: {
       accountId: '123456789',
       apiId: 'test-api',
-      domainName: 'test.execute-api.us-east-1.amazonaws.com',
+      domainName: 'test.execute-api.ap-southeast-1.amazonaws.com',
       http: {
         method: 'POST',
         path: '/test',

@@ -1,4 +1,10 @@
-import { beforeEach, afterEach, vi } from 'vitest'
+import { beforeEach, afterEach, vi, beforeAll } from 'vitest'
+
+// Global test environment setup
+beforeAll(() => {
+  // Disable request/response logging during all tests
+  process.env.ENABLE_REQUEST_LOGGING = 'false'
+})
 
 // Basic test environment setup for unit tests only
 beforeEach(() => {

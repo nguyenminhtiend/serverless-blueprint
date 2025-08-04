@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Context } from 'aws-lambda';
-import { getUserProfileHandler } from '../../../../packages/service-users/src/handlers/get-profile';
+import { getUserProfileHandler } from '../../../../packages/service-users/src/handlers';
 import * as sharedCore from '@shared/core';
 import * as services from '../../../../packages/service-users/src/services';
 import * as schemas from '../../../../packages/service-users/src/schemas';
@@ -31,7 +31,7 @@ describe('getUserProfileHandler', () => {
     callbackWaitsForEmptyEventLoop: false,
     functionName: 'test-function',
     functionVersion: '1',
-    invokedFunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:test-function',
+    invokedFunctionArn: 'arn:aws:lambda:ap-southeast-1:123456789012:function:test-function',
     memoryLimitInMB: '128',
     awsRequestId: 'test-request-id',
     logGroupName: '/aws/lambda/test-function',
@@ -41,7 +41,6 @@ describe('getUserProfileHandler', () => {
     fail: vi.fn(),
     succeed: vi.fn(),
   };
-
 
   const mockCognitoUser: CognitoUser = {
     cognitoSub: '123e4567-e89b-12d3-a456-426614174000',

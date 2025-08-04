@@ -126,7 +126,7 @@ export class OrderService {
  */
 export const createOrderService = (): OrderService => {
   const dynamoClient = new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
+    region: process.env.AWS_REGION || 'ap-southeast-1',
   });
 
   const tableName = process.env.TABLE_NAME;

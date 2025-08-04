@@ -1,8 +1,4 @@
-import {
-  createRouter,
-  HttpError,
-  Route,
-} from '@shared/core';
+import { createRouter, HttpError, Route } from '@shared/core';
 import { Context } from 'aws-lambda';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -27,7 +23,7 @@ describe('Router', () => {
     callbackWaitsForEmptyEventLoop: false,
     functionName: 'test-function',
     functionVersion: '1',
-    invokedFunctionArn: 'arn:aws:lambda:us-east-1:123456789:function:test-function',
+    invokedFunctionArn: 'arn:aws:lambda:ap-southeast-1:123456789:function:test-function',
     memoryLimitInMB: '128',
     awsRequestId: 'test-request-id',
     logGroupName: '/aws/lambda/test-function',
@@ -37,7 +33,6 @@ describe('Router', () => {
     fail: vi.fn(),
     succeed: vi.fn(),
   };
-
 
   beforeEach(() => {
     vi.clearAllMocks();
