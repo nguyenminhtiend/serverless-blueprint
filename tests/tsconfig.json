@@ -1,19 +1,25 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["vitest/globals", "node"],
-    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "rootDir": ".",
-    "baseUrl": "..",
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "baseUrl": ".",
     "paths": {
-      "@shared/core": ["./packages/shared-core/src"],
-      "@shared/middleware": ["./packages/shared-middleware/src"],
-      "@auth/*": ["./packages/service-auth/src/*"],
-      "@users/*": ["./packages/service-users/src/*"],
-      "@orders/*": ["./packages/service-orders/src/*"],
-      "@notifications/*": ["./packages/service-notifications/src/*"]
-    }
+      "@shared/core": ["../packages/shared-core/src"],
+
+      "@auth/*": ["../packages/service-auth/src/*"],
+      "@users/*": ["../packages/service-users/src/*"],
+      "@orders/*": ["../packages/service-orders/src/*"],
+      "@notifications/*": ["../packages/service-notifications/src/*"]
+    },
+    "types": ["vitest/globals", "node"]
   },
   "include": ["./**/*"],
   "exclude": ["coverage", "node_modules"]

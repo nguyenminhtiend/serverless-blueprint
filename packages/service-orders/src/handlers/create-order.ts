@@ -1,4 +1,4 @@
-import { LambdaContext, created, internalError, requireUserId } from '@shared/middleware';
+import { LambdaContext, created, internalError, requireUserId } from '@shared/core';
 import { createOrderCreatedEvent, publishOrderCreatedEvent } from '../events';
 import { CreateOrderRequest } from '../schemas';
 import { createOrderService } from '../services';

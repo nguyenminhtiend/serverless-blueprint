@@ -1,6 +1,5 @@
 import { ZodError, ZodType } from 'zod';
-import { Route, APIGatewayProxyEventV2WithJWTAuthorizer } from './types';
-import { HttpError } from './errors';
+import { Route, APIGatewayProxyEventV2WithJWTAuthorizer, HttpError } from './types';
 
 export const parseBody = (event: APIGatewayProxyEventV2WithJWTAuthorizer): any => {
   if (!event.body) return {};

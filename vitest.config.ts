@@ -57,7 +57,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared/core': resolve(__dirname, './packages/shared-core/src'),
-      '@shared/middleware': resolve(__dirname, './packages/shared-middleware/src'),
+
       '@middleware': resolve(__dirname, './packages/shared-middleware/src'),
     },
   },

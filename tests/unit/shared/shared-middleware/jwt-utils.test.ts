@@ -7,7 +7,7 @@ import {
   HttpError,
   requireJWTClaims,
   requireUserId,
-} from '@shared/middleware';
+} from '@shared/core';
 import { describe, expect, it } from 'vitest';
 
 describe('JWT Utils', () => {

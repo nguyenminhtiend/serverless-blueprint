@@ -1,4 +1,4 @@
-import { LambdaContext, ok, forbidden, notFound, internalError, requireUserId } from '@shared/middleware';
+import { LambdaContext, ok, forbidden, notFound, internalError, requireUserId } from '@shared/core';
 import { createOrderService } from '../services';
 
 /**

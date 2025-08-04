@@ -1,4 +1,4 @@
-import { createRouter, route } from '@shared/middleware';
+import { createRouter, route } from '@shared/core';
 import { getUserProfileHandler } from './handlers';
 
 /**

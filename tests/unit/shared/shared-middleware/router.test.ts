@@ -3,7 +3,7 @@ import {
   createRouter,
   HttpError,
   Route,
-} from '@shared/middleware';
+} from '@shared/core';
 import { Context } from 'aws-lambda';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';

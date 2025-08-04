@@ -536,7 +536,7 @@ export const webhook = createWebhookHandler(webhookHandler, {
 
 ```typescript
 // Example service function with Pino + Zod
-import { createProtectedApiHandler, commonSchemas } from '@shared/middleware'
+import { createProtectedApiHandler, commonSchemas } from '@shared/core'
 import { z } from 'zod'
 import { createLogger, LogLevel } from '@shared/core'
 
@@ -785,7 +785,7 @@ module.exports = {
 
 // Enhanced testing with Zod schemas
 import { z } from 'zod'
-import { validateEmail, schemas, commonSchemas } from '@shared/middleware'
+import { validateEmail, schemas, commonSchemas } from '@shared/core'
 
 describe('Type-Safe Validation Tests', () => {
   test('email validation utility', () => {

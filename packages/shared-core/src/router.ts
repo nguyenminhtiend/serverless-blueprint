@@ -1,9 +1,14 @@
-import { createLogger } from '@shared/core';
+import { createLogger } from './logger';
 import { APIGatewayProxyResultV2, Context } from 'aws-lambda';
-import { HttpError, createErrorResponse } from './errors';
+import {
+  HttpError,
+  createErrorResponse,
+  APIGatewayProxyEventV2WithJWTAuthorizer,
+  ParsedEvent,
+  Route,
+} from './types';
 import { createSuccessResponse } from './responses';
 import { findMatchingRoute, parseBody, validateSchema } from './routing';
-import { APIGatewayProxyEventV2WithJWTAuthorizer, ParsedEvent, Route } from './types';
 
 const logger = createLogger('middleware');
 

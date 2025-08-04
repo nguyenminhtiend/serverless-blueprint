@@ -1,4 +1,4 @@
-import { LambdaContext, ok, internalError, requireUserId } from '@shared/middleware';
+import { LambdaContext, ok, internalError, requireUserId } from '@shared/core';
 import { getUserProfileResponseSchema } from '../schemas';
 import { createCognitoService, createUserProfileService } from '../services';
 
@@ -37,6 +37,8 @@ export const getUserProfileHandler = async (ctx: LambdaContext) => {
       data: validatedProfile,
     });
   } catch (error) {
-    internalError(error instanceof Error ? error.message : 'Unknown error during profile retrieval');
+    internalError(
+      error instanceof Error ? error.message : 'Unknown error during profile retrieval'
+    );
   }
 };

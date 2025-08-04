@@ -2,14 +2,9 @@ import {
   ConfirmSignUpCommand,
   ConfirmSignUpCommandInput,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { LambdaContext, ok, internalError } from '@shared/middleware';
+import { LambdaContext, ok, internalError } from '@shared/core';
 import { ConfirmSignUpInput } from './shared/types';
-import {
-  addSecretHashIfNeeded,
-  CLIENT_ID,
-  cognitoClient,
-  logger,
-} from './shared/utils';
+import { addSecretHashIfNeeded, CLIENT_ID, cognitoClient, logger } from './shared/utils';
 
 export const confirmSignUpHandler = async (ctx: LambdaContext) => {
   try {
@@ -30,7 +25,9 @@ export const confirmSignUpHandler = async (ctx: LambdaContext) => {
     logger.info('Sign-up confirmation successful', { email });
     return ok({ message: 'Account confirmed successfully' });
   } catch (error) {
-    logger.error('Sign-up confirmation error:', { error: error instanceof Error ? error.message : String(error) });
+    logger.error('Sign-up confirmation error:', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     if (error instanceof Error) {
       internalError(error.message);
     }
