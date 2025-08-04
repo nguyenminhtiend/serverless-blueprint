@@ -2,6 +2,10 @@ import { LambdaContext, ok, internalError, requireUserId } from '@shared/core';
 import { getUserProfileResponseSchema } from '../schemas';
 import { createCognitoService, createUserProfileService } from '../services';
 
+// Initialize services at module level for reuse across warm invocations
+const cognitoService = createCognitoService();
+const userProfileService = createUserProfileService();
+
 /**
  * Get User Profile Handler - Retrieves user profile from both Cognito and DynamoDB
  */
@@ -9,10 +13,6 @@ export const getUserProfileHandler = async (ctx: LambdaContext) => {
   try {
     // Extract user from JWT claims (HTTP API v2.0 JWT authorizer)
     const cognitoSub = requireUserId(ctx.event);
-
-    // Get services
-    const cognitoService = createCognitoService();
-    const userProfileService = createUserProfileService();
 
     // Get Cognito user data (basic profile)
     const cognitoUser = await cognitoService.getUserByUsername(cognitoSub);

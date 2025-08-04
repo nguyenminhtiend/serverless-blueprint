@@ -3,6 +3,9 @@ import { createOrderCreatedEvent, publishOrderCreatedEvent } from '../events';
 import { CreateOrderRequest } from '../schemas';
 import { createOrderService } from '../services';
 
+// Initialize service at module level for reuse across warm invocations
+const orderService = createOrderService();
+
 /**
  * Create Order Handler - Creates new order with event publishing
  */
@@ -12,9 +15,6 @@ export const createOrderHandler = async (ctx: LambdaContext) => {
 
   // Body is already parsed and validated by middleware
   const orderRequest: CreateOrderRequest = ctx.event.body;
-
-  // Create order service
-  const orderService = createOrderService();
 
   // Create order
   const order = await orderService.createOrder(userId, orderRequest);

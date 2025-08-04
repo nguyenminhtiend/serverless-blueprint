@@ -1,6 +1,9 @@
 import { LambdaContext, ok, forbidden, notFound, internalError, requireUserId } from '@shared/core';
 import { createOrderService } from '../services';
 
+// Initialize service at module level for reuse across warm invocations
+const orderService = createOrderService();
+
 /**
  * Get Order Handler - Retrieves a specific order by ID
  */
@@ -11,9 +14,6 @@ export const getOrderHandler = async (ctx: LambdaContext) => {
 
     // Path parameters are already parsed and validated by middleware
     const { orderId } = ctx.event.pathParameters;
-
-    // Create service
-    const orderService = createOrderService();
 
     // Get order
     const order = await orderService.getOrderById(orderId);
