@@ -4,7 +4,16 @@
     "types": ["vitest/globals", "node"],
     "noEmit": true,
     "skipLibCheck": true,
-    "rootDir": "."
+    "rootDir": ".",
+    "baseUrl": "..",
+    "paths": {
+      "@shared/core": ["./packages/shared-core/src"],
+      "@shared/middleware": ["./packages/shared-middleware/src"],
+      "@auth/*": ["./packages/service-auth/src/*"],
+      "@users/*": ["./packages/service-users/src/*"],
+      "@orders/*": ["./packages/service-orders/src/*"],
+      "@notifications/*": ["./packages/service-notifications/src/*"]
+    }
   },
   "include": ["./**/*"],
   "exclude": ["coverage", "node_modules"]

@@ -4,9 +4,19 @@ import { beforeEach, afterEach, vi } from 'vitest'
 beforeEach(() => {
   // Reset all mocks before each test
   vi.clearAllMocks()
+  // Suppress console.error during tests to reduce noise from expected errors
+  vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 afterEach(() => {
   // Clean up after each test
   vi.resetModules()
 })
+
+// Global mock setup for AWS SDK
+vi.mock('@aws-sdk/client-cognito-identity-provider')
+vi.mock('@aws-sdk/client-dynamodb')
+vi.mock('@aws-sdk/lib-dynamodb')
+vi.mock('@aws-sdk/client-eventbridge')
+vi.mock('@aws-sdk/client-ses')
+vi.mock('@aws-sdk/client-sns')

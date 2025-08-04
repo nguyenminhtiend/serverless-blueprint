@@ -2,7 +2,125 @@
 
 ## 🎯 Executive Summary
 
-This plan establishes a production-ready testing framework for your AWS serverless microservices architecture using **Vitest** (2025's fastest test runner) with a phased approach that prioritizes basic unit testing setup first.
+This plan establishes a production-ready testing framework for your AWS serverless microservices architecture using **Vitest** (2025's fastest test runner) with a **100% code coverage strategy** that prioritizes efficiency and speed.
+
+---
+
+## 🏗️ Codebase Architecture Analysis
+
+### **Service Architecture Overview**
+- **4 Microservices**: Auth, Orders, Users, Notifications
+- **2 Shared Libraries**: Core utilities, Middleware framework  
+- **Tech Stack**: TypeScript, AWS Lambda, DynamoDB, Cognito, EventBridge, SQS
+- **Framework**: Custom middleware router with Zod validation
+
+### **Code Patterns & Complexity Analysis**
+
+#### **Service-Auth** (`/packages/service-auth/src/`)
+- **Complexity**: Medium-High
+- **AWS Services**: Cognito Identity Provider
+- **Functions**: 3 handlers (login, register, confirm-signup)
+- **Key Components**: JWT/Cognito token handling, Secret hash calculations, Error handling
+
+#### **Service-Orders** (`/packages/service-orders/src/`)
+- **Complexity**: High
+- **AWS Services**: DynamoDB, EventBridge
+- **Functions**: 2 handlers + event publishing
+- **Key Components**: DynamoDB single-table design, EventBridge publishing, Business logic
+
+#### **Service-Users** (`/packages/service-users/src/`)
+- **Complexity**: Medium
+- **AWS Services**: Cognito, DynamoDB
+- **Functions**: 1 handler (profile retrieval)
+- **Key Components**: Multi-source data aggregation, Profile schema validation
+
+#### **Service-Notifications** (`/packages/service-notifications/src/`)
+- **Complexity**: High
+- **AWS Services**: SES, SNS, SQS
+- **Functions**: Event-driven processing
+- **Key Components**: Multi-channel notifications, EventBridge routing, Batch processing
+
+#### **Shared-Core** (`/packages/shared-core/src/`)
+- **Complexity**: Low
+- **Components**: Logger factory, common types, HTTP helpers
+
+#### **Shared-Middleware** (`/packages/shared-middleware/src/`)
+- **Complexity**: Medium-High
+- **Key Components**: Custom router, JWT extraction, Schema validation, Error handling
+
+---
+
+## 🎯 Optimal Testing Strategy for 100% Coverage
+
+### **Strategic Approach: "Test Pyramid with Smart Mocking"**
+
+#### **1. Foundation Layer (80% of coverage, 20% of effort)**
+- **Target**: Pure business logic, utilities, schemas
+- **Speed**: Ultra-fast (no I/O operations)
+- **Coverage**: 95%+ achievable with simple unit tests
+
+#### **2. Service Layer (15% of coverage, 60% of effort)**  
+- **Target**: AWS service integrations with mocking
+- **Speed**: Fast (mocked external calls)
+- **Coverage**: 90%+ with AWS SDK mocks
+
+#### **3. Integration Layer (5% of coverage, 20% of effort)**
+- **Target**: Critical end-to-end flows
+- **Speed**: Moderate (LocalStack containers)
+- **Coverage**: 80%+ for essential scenarios
+
+### **Priority Testing Order (High ROI → Low ROI)**
+
+#### **Week 1: Foundation Testing (Easy Wins)**
+1. **shared-core/** - Logger, types, utilities (100% coverage)
+2. **shared-middleware/** - Router, JWT utils, responses (95% coverage)
+3. **Service schemas** - Zod validators across all services (100% coverage)
+4. **Pure business logic** - Order calculations, validation functions (100% coverage)
+
+#### **Week 2: Service Handler Testing (Moderate Effort)**
+1. **service-auth/** - Mock Cognito SDK, test login/register flows
+2. **service-users/** - Mock DynamoDB, test profile retrieval
+3. **service-orders/** - Mock DynamoDB + EventBridge, test order creation
+4. **service-notifications/** - Mock SES/SNS, test notification sending
+
+#### **Week 3: Integration Testing (High Impact)**
+1. **Critical user flows** - Auth → Profile → Order creation
+2. **Event processing** - Order events → Notifications
+3. **Error scenarios** - Network failures, invalid tokens
+
+### **Fast Execution Techniques**
+
+#### **1. Smart Mocking Strategy**
+```typescript
+// Mock entire AWS SDK modules, not individual calls
+vi.mock('@aws-sdk/client-cognito-identity-provider')
+vi.mock('@aws-sdk/client-dynamodb')
+vi.mock('@aws-sdk/client-eventbridge')
+```
+
+#### **2. Test Organization**
+```
+tests/
+├── unit/           # Fast tests (0-50ms each)
+├── integration/    # Moderate tests (100-500ms each)  
+└── e2e/           # Slow tests (1-5s each)
+```
+
+#### **3. Parallel Execution**
+- Vitest runs tests in parallel by default
+- Separate test suites prevent resource conflicts
+- Mock reset between tests for isolation
+
+### **Code Coverage Targets**
+
+| Package | Target Coverage | Strategy |
+|---------|----------------|----------|
+| shared-core | 100% | Pure functions, easy to test |
+| shared-middleware | 95% | Mock HTTP contexts |
+| service-auth | 90% | Mock Cognito SDK |
+| service-orders | 90% | Mock DynamoDB + EventBridge |
+| service-users | 95% | Simple profile logic |
+| service-notifications | 85% | Complex multi-service flows |
 
 ---
 
@@ -40,9 +158,13 @@ tests/
 │
 ├── unit/                       # Unit tests (Phase 1-2)
 │   ├── shared/                 # Shared utilities tests
-│   ├── services/               # Service-specific tests
-│   ├── middleware/             # Middleware tests
-│   └── database/               # Database layer tests
+│   │   ├── shared-core/        # shared-core package tests
+│   │   └── shared-middleware/  # shared-middleware package tests
+│   └── services/               # Service-specific tests
+│       ├── service-auth/       # Auth service tests
+│       ├── service-orders/     # Orders service tests
+│       ├── service-users/      # Users service tests
+│       └── service-notifications/ # Notifications service tests
 │
 ├── integration/                # Integration tests (Phase 5+)
 │   ├── api/                    # API integration tests
@@ -61,6 +183,10 @@ tests/
 │
 ├── mocks/                      # Mock implementations (Phase 4+)
 │   ├── aws/                    # AWS service mocks
+│   │   ├── cognito.mock.ts     # Cognito mock factory
+│   │   ├── dynamodb.mock.ts    # DynamoDB mock factory
+│   │   ├── eventbridge.mock.ts # EventBridge mock factory
+│   │   └── ses-sns.mock.ts     # SES/SNS mock factory
 │   ├── api/                    # API mocks
 │   ├── database/               # Database mocks
 │   └── setup-msw.ts            # MSW server setup
@@ -70,22 +196,6 @@ tests/
     ├── api-gateway-event.ts    # API Gateway event helpers (Phase 3+)
     └── test-utils.ts           # General test utilities
 ```
-
-**Key Benefits of this Structure:**
-
-1. **Phase-aligned Organization** - Each folder corresponds to implementation phases
-2. **Clear Separation of Concerns** - Unit, integration, and performance tests are isolated
-3. **Reusable Components** - Factories, mocks, and helpers can be shared across test types
-4. **Scalable Architecture** - Easy to add new test categories and services
-5. **IDE-Friendly** - Clear navigation and file discovery
-
-**Folder Usage by Phase:**
-
-- **Phase 1-2**: `tests/setup.ts`, `tests/example.test.ts`, `tests/unit/`
-- **Phase 3**: `tests/factories/`, `tests/helpers/`  
-- **Phase 4**: `tests/mocks/setup-msw.ts`, `tests/mocks/api/`
-- **Phase 5**: `tests/integration/`, `tests/mocks/aws/`
-- **Phase 7**: `tests/performance/`
 
 ### 1.4 Root Level Test Configuration
 
@@ -115,10 +225,29 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 80,
-          functions: 85,
-          lines: 85,
-          statements: 85
+          branches: 100,
+          functions: 100,
+          lines: 100,
+          statements: 100
+        },
+        // Package-specific thresholds for 100% coverage
+        'packages/shared-core/src/**': {
+          branches: 100,
+          functions: 100,
+          lines: 100,
+          statements: 100
+        },
+        'packages/shared-middleware/src/**': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95
+        },
+        'packages/service-*/src/**': {
+          branches: 90,
+          functions: 90,
+          lines: 90,
+          statements: 90
         }
       }
     },
@@ -150,6 +279,14 @@ afterEach(() => {
   // Clean up after each test
   vi.resetModules()
 })
+
+// Global mock setup for AWS SDK
+vi.mock('@aws-sdk/client-cognito-identity-provider')
+vi.mock('@aws-sdk/client-dynamodb')
+vi.mock('@aws-sdk/lib-dynamodb')
+vi.mock('@aws-sdk/client-eventbridge')
+vi.mock('@aws-sdk/client-ses')
+vi.mock('@aws-sdk/client-sns')
 ```
 
 ---
@@ -167,6 +304,8 @@ afterEach(() => {
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --config vitest.config.ts",
+    "test:unit:watch": "vitest --config vitest.config.ts",
+    "test:coverage:100": "vitest run --coverage --coverage.thresholds.global.branches=100 --coverage.thresholds.global.functions=100 --coverage.thresholds.global.lines=100 --coverage.thresholds.global.statements=100",
     "typecheck": "tsc --noEmit"
   }
 }
@@ -190,6 +329,7 @@ describe('Basic Unit Test Example', () => {
     expect(greeting.length).toBe(11)
   })
 })
+```
 
 ---
 
@@ -213,21 +353,41 @@ pnpm add -D -w msw@latest whatwg-fetch@latest
 pnpm add -D -w @aws-sdk/client-dynamodb@latest @aws-sdk/lib-dynamodb@latest
 ```
 
+**File: `tests/mocks/aws/cognito.mock.ts`**
+```typescript
+import { vi } from 'vitest'
+
+export const mockCognitoClient = {
+  send: vi.fn(),
+}
+
+export const createMockCognitoResponse = (overrides = {}) => ({
+  AuthenticationResult: {
+    AccessToken: 'mock-access-token',
+    IdToken: 'mock-id-token',
+    RefreshToken: 'mock-refresh-token',
+    ...overrides
+  }
+})
+```
+
 **File: `tests/factories/basic.factory.ts`**
 ```typescript
-// Simple factory example for Phase 3
+import { faker } from '@faker-js/faker'
+
 export const createMockUser = (overrides: Partial<any> = {}) => ({
-  id: 'user-123',
-  name: 'Test User',
-  email: 'test@example.com',
+  id: faker.string.uuid(),
+  name: faker.person.fullName(),
+  email: faker.internet.email(),
   ...overrides
 })
 
-export const createMockRequest = (overrides: Partial<any> = {}) => ({
-  method: 'GET',
-  url: '/api/test',
-  headers: {},
-  body: null,
+export const createMockOrder = (overrides: Partial<any> = {}) => ({
+  id: faker.string.uuid(),
+  userId: faker.string.uuid(),
+  total: faker.number.float({ min: 10, max: 1000 }),
+  status: 'pending',
+  createdAt: faker.date.recent().toISOString(),
   ...overrides
 })
 ```
@@ -252,6 +412,8 @@ export { server }
 ```
 
 ---
+
+## 📋 Phase 5: LocalStack & Container Testing Dependencies
 
 ### 5.1 LocalStack & Container Testing Dependencies
 
@@ -302,11 +464,13 @@ pnpm add -D -w clinic@latest
 
 ---
 
+## 📋 Phase 8: GitHub Actions Setup
+
 ### 8.1 GitHub Actions Setup (Phase 8+)
 
 **File: `.github/workflows/test.yml`**
 ```yaml
-name: Unit Tests
+name: Unit Tests with 100% Coverage
 on: [push, pull_request]
 jobs:
   test:
@@ -321,33 +485,77 @@ jobs:
       with:
         version: 9
     - run: pnpm install --frozen-lockfile
-    - run: pnpm test:unit
+    - run: pnpm test:coverage:100
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./tests/coverage/lcov.info
 ```
 
 ---
 
 ## 🎯 Implementation Timeline & Success Metrics
 
-### Phase Implementation Order (Simplified)
-1. **Phase 1-2** (Week 1): Basic Vitest setup with simple unit tests
-2. **Phase 3** (Week 2): Basic factories and mock utilities  
-3. **Phase 4** (Week 3): MSW and API mocking
-4. **Phase 5** (Week 4): AWS service integration with LocalStack
+### Phase Implementation Order (Optimized for 100% Coverage)
+1. **Phase 1-2** (Week 1): Basic Vitest setup with 100% coverage configuration
+2. **Phase 3** (Week 2): AWS mocks and factories for comprehensive testing  
+3. **Phase 4** (Week 3): Service handler testing with complete coverage
+4. **Phase 5** (Week 4): Integration testing for critical flows
 5. **Phase 6** (Week 5): Infrastructure (CDK) testing
 6. **Phase 7** (Week 6): Performance testing
-7. **Phase 8** (Week 7): Full CI/CD integration
+7. **Phase 8** (Week 7): Full CI/CD integration with coverage reporting
 
-### Success Metrics
-- ✅ **Unit Test Coverage**: 85%+ across all packages
-- ✅ **Simple Setup**: Start with basic unit tests first  
-- ✅ **Progressive Enhancement**: Add complexity incrementally
-- ✅ **Latest Dependencies**: Always fetch latest versions before install
+### Testing Coverage by Location & Phase
 
-### Key Changes Made
-- **Removed Jest dependencies** - Focus purely on Vitest
-- **Simplified Phase 1-2** - Basic unit testing setup only
-- **Root-level `tests/` folder** - Centralized test organization
-- **Latest version fetching** - `pnpm update` before each install phase
-- **Progressive complexity** - Advanced features moved to later phases
+#### **packages/** Testing (Service Unit Tests):
+- **Phase 1-2**: Basic unit testing setup with 100% coverage targets
+- **Phase 3**: AWS service mocking and comprehensive test utilities
+- **Phase 4**: Complete service handler coverage with edge cases
 
-This simplified approach ensures you can start with basic unit testing immediately while building towards more complex integration testing in later phases.
+#### **infrastructure/** Testing (CDK/Infrastructure Tests):
+- **Phase 6**: CDK/SAM infrastructure testing with aws-cdk-lib and @aws-cdk/assertions
+
+### Test Types by Phase:
+
+#### **Unit Tests (100% Coverage Focus)**:
+- **Phase 1-2**: Comprehensive unit tests in `tests/unit/` folder
+  - `tests/unit/shared/shared-core/` - 100% coverage for utilities
+  - `tests/unit/shared/shared-middleware/` - 95% coverage for middleware
+  - `tests/unit/services/service-*/` - 90% coverage for service logic
+
+#### **Integration Tests**:
+- **Phase 5**: Critical integration tests in `tests/integration/` folder
+  - `tests/integration/api/` - API integration tests
+  - `tests/integration/database/` - Database integration tests
+  - `tests/integration/aws/` - AWS service integration tests
+
+#### **E2E/Performance Tests**:
+- **Phase 7**: Performance tests (E2E-style) in `tests/performance/` folder
+  - `tests/performance/lambda/` - Lambda performance tests
+  - `tests/performance/database/` - Database performance tests
+
+### Success Metrics for 100% Coverage Strategy
+- ✅ **Unit Test Coverage** 
+  - shared-core: 100%
+  - shared-middleware: 95%
+  - service packages: 90%+
+  - Overall: 95%+
+- ✅ **Test Execution Speed**: <30 seconds for full suite
+- ✅ **Test Code Ratio**: ~40% of production code size
+- ✅ **Smart Mocking**: AWS services mocked, no actual API calls
+- ✅ **Progressive Enhancement**: Build complexity incrementally
+
+### Expected Results
+- **Total Coverage**: 95%+ across all packages
+- **Test Execution Time**: <30 seconds for full suite
+- **Test Code Volume**: ~40% of production code size
+- **Maintenance Effort**: Low (focused on business logic)
+
+### Key Strategy Changes for 100% Coverage
+- **100% Coverage Targets** - Set aggressive but achievable coverage thresholds
+- **Smart AWS Mocking** - Complete AWS SDK mocking for fast, reliable tests
+- **Package-specific Coverage** - Different thresholds based on complexity
+- **Foundation-first Approach** - Start with high-ROI, easy-to-test code
+- **Comprehensive Test Structure** - Organized for maintainability and speed
+
+This optimized approach ensures you achieve 100% code coverage efficiently while maintaining fast execution and high code quality.

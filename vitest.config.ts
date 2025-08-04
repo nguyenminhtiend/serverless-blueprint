@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
-    include: ['./tests/**/*.test.ts'],
+    include: ['./tests/**/*.test.ts', './packages/**/src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
@@ -25,10 +25,29 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 80,
-          functions: 85,
-          lines: 85,
-          statements: 85,
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        // Package-specific thresholds for 100% coverage
+        'packages/shared-core/src/**': {
+          branches: 100,
+          functions: 100,
+          lines: 100,
+          statements: 100,
+        },
+        'packages/shared-middleware/src/**': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'packages/service-*/src/**': {
+          branches: 90,
+          functions: 90,
+          lines: 90,
+          statements: 90,
         },
       },
     },
@@ -37,9 +56,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': resolve(__dirname, './packages/shared-core/src'),
-      '@types': resolve(__dirname, './packages/shared-types/src'),
-      '@database': resolve(__dirname, './packages/shared-database/src'),
+      '@shared/core': resolve(__dirname, './packages/shared-core/src'),
+      '@shared/middleware': resolve(__dirname, './packages/shared-middleware/src'),
       '@middleware': resolve(__dirname, './packages/shared-middleware/src'),
     },
   },
