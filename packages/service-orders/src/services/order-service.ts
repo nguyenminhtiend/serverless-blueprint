@@ -1,6 +1,12 @@
-import { GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { createLogger, AWSClients } from '@shared/core';
+import {
+  createLogger,
+  AWSClients,
+  DynamoDBClient,
+  GetItemCommand,
+  PutItemCommand,
+  marshall,
+  unmarshall,
+} from '@shared/core';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderRequest, Order, OrderStatus } from '../schemas';
 

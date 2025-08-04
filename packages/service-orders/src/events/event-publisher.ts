@@ -1,9 +1,10 @@
 import {
+  createLogger,
+  AWSClients,
   EventBridgeClient,
   PutEventsCommand,
   PutEventsRequestEntry,
-} from '@aws-sdk/client-eventbridge';
-import { createLogger } from '@shared/core';
+} from '@shared/core';
 import { OrderCreatedEvent, OrderEvent } from './event-schemas';
 
 export interface EventPublishResult {
@@ -36,9 +37,7 @@ export class OrderEventPublisher {
       retryDelayMs: config.retryDelayMs || 1000,
     };
 
-    this.eventBridgeClient = new EventBridgeClient({
-      region: this.config.region,
-    });
+    this.eventBridgeClient = AWSClients.eventBridge;
 
     this.logger.info('OrderEventPublisher initialized', {
       eventBusName: this.config.eventBusName,

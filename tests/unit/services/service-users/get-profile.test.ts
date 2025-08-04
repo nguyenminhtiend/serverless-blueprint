@@ -8,17 +8,36 @@ import { CognitoUser } from '../../../../packages/service-users/src/services/cog
 import { ExtendedUserProfile } from '../../../../packages/service-users/src/schemas';
 import { createMockEvent } from '../../../helpers/api-gateway-event';
 
-// Mock all dependencies
+// Get the mocked services
+const { mockCognitoService, mockUserProfileService } = vi.mocked(services);
+
+// Mock AWS clients first to prevent real client creation
 vi.mock('@shared/core', () => ({
   requireUserId: vi.fn(),
   ok: vi.fn(),
   internalError: vi.fn(),
+  AWSClients: {
+    dynamoDB: {},
+    cognito: {},
+  },
 }));
 
-vi.mock('../../../../packages/service-users/src/services', () => ({
-  createCognitoService: vi.fn(),
-  createUserProfileService: vi.fn(),
-}));
+vi.mock('../../../../packages/service-users/src/services', () => {
+  const mockCognitoService = {
+    getUserByUsername: vi.fn(),
+  };
+
+  const mockUserProfileService = {
+    getUserProfile: vi.fn(),
+  };
+
+  return {
+    createCognitoService: vi.fn(() => mockCognitoService),
+    createUserProfileService: vi.fn(() => mockUserProfileService),
+    mockCognitoService,
+    mockUserProfileService,
+  };
+});
 
 vi.mock('../../../../packages/service-users/src/schemas', () => ({
   getUserProfileResponseSchema: {
@@ -94,18 +113,8 @@ describe('getUserProfileHandler', () => {
     businessRole: 'customer' as const,
   };
 
-  const mockCognitoService = {
-    getUserByUsername: vi.fn(),
-  };
-
-  const mockUserProfileService = {
-    getUserProfile: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(services.createCognitoService).mockReturnValue(mockCognitoService as any);
-    vi.mocked(services.createUserProfileService).mockReturnValue(mockUserProfileService as any);
   });
 
   afterEach(() => {
@@ -138,8 +147,6 @@ describe('getUserProfileHandler', () => {
       await getUserProfileHandler({ event: mockEvent, context: mockContext });
 
       expect(sharedCore.requireUserId).toHaveBeenCalledWith(mockEvent);
-      expect(services.createCognitoService).toHaveBeenCalled();
-      expect(services.createUserProfileService).toHaveBeenCalled();
       expect(mockCognitoService.getUserByUsername).toHaveBeenCalledWith(mockCognitoUser.cognitoSub);
       expect(mockUserProfileService.getUserProfile).toHaveBeenCalledWith(
         mockCognitoUser.cognitoSub
@@ -288,20 +295,8 @@ describe('getUserProfileHandler', () => {
       expect(sharedCore.internalError).toHaveBeenCalledWith('Invalid response schema');
     });
 
-    it('should handle service initialization errors', async () => {
-      const errorMessage = 'Failed to initialize Cognito service';
-      vi.mocked(sharedCore.requireUserId).mockReturnValue(mockCognitoUser.cognitoSub);
-      vi.mocked(services.createCognitoService).mockImplementation(() => {
-        throw new Error(errorMessage);
-      });
-
-      const mockEvent = createMockEvent();
-      await getUserProfileHandler({ event: mockEvent, context: mockContext });
-
-      expect(services.createCognitoService).toHaveBeenCalled();
-      expect(mockCognitoService.getUserByUsername).not.toHaveBeenCalled();
-      expect(sharedCore.internalError).toHaveBeenCalledWith(errorMessage);
-    });
+    // Note: Service initialization errors now occur at module level, not during handler execution
+    // This test is no longer applicable with module-level service initialization
 
     it('should handle unknown errors', async () => {
       vi.mocked(sharedCore.requireUserId).mockReturnValue(mockCognitoUser.cognitoSub);
@@ -450,8 +445,6 @@ describe('getUserProfileHandler', () => {
       const mockEvent = createMockEvent();
       await getUserProfileHandler({ event: mockEvent, context: mockContext });
 
-      expect(services.createCognitoService).toHaveBeenCalledTimes(1);
-      expect(services.createUserProfileService).toHaveBeenCalledTimes(1);
       expect(mockCognitoService.getUserByUsername).toHaveBeenCalledWith(cognitoSub);
       expect(mockUserProfileService.getUserProfile).toHaveBeenCalledWith(cognitoSub);
     });
@@ -465,9 +458,6 @@ describe('getUserProfileHandler', () => {
 
       const mockEvent = createMockEvent();
       await getUserProfileHandler({ event: mockEvent, context: mockContext });
-
-      expect(services.createCognitoService).toHaveBeenCalledTimes(1);
-      expect(services.createUserProfileService).toHaveBeenCalledTimes(1);
     });
   });
 });

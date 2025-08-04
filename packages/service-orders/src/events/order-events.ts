@@ -1,5 +1,4 @@
-import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
-import { createLogger } from '@shared/core';
+import { createLogger, AWSClients, EventBridgeClient, PutEventsCommand } from '@shared/core';
 import { z } from 'zod';
 import { Order, OrderStatus } from '../schemas';
 
@@ -243,14 +242,10 @@ export class OrderEventPublisher {
 }
 
 /**
- * Factory function to create OrderEventPublisher instance
+ * Factory function to create OrderEventPublisher instance with singleton client
  */
 export const createOrderEventPublisher = (): OrderEventPublisher => {
-  const eventBridgeClient = new EventBridgeClient({
-    region: process.env.AWS_REGION || 'ap-southeast-1',
-  });
-
   const eventBusName = process.env.EVENT_BUS_NAME || 'default';
 
-  return new OrderEventPublisher(eventBridgeClient, eventBusName);
+  return new OrderEventPublisher(AWSClients.eventBridge, eventBusName);
 };

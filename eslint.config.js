@@ -13,7 +13,7 @@ export default [
         sourceType: 'module',
         project: [
           './tsconfig.json',
-          './packages/*/tsconfig.json',  
+          './packages/*/tsconfig.json',
           './infrastructure/tsconfig.json',
           './tests/tsconfig.json',
         ],

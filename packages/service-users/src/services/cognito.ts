@@ -1,10 +1,11 @@
 import {
+  createLogger,
+  AWSClients,
   CognitoIdentityProviderClient,
   GetUserCommand,
   AdminGetUserCommand,
   AttributeType,
-} from '@aws-sdk/client-cognito-identity-provider';
-import { createLogger, AWSClients } from '@shared/core';
+} from '@shared/core';
 
 const logger = createLogger('cognito-service');
 

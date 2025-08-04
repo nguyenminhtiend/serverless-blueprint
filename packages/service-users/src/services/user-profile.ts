@@ -1,6 +1,11 @@
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { createLogger, AWSClients } from '@shared/core';
+import {
+  createLogger,
+  AWSClients,
+  DynamoDBClient,
+  GetItemCommand,
+  marshall,
+  unmarshall,
+} from '@shared/core';
 import { Address, ExtendedUserProfile } from '../schemas';
 
 const logger = createLogger('user-profile-service');
