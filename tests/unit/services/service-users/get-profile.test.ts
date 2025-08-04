@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { Context } from 'aws-lambda';
 import { getUserProfileHandler } from '../../../../packages/service-users/src/handlers/get-profile';
 import * as sharedCore from '@shared/core';
 import * as services from '../../../../packages/service-users/src/services';
 import * as schemas from '../../../../packages/service-users/src/schemas';
 import { CognitoUser } from '../../../../packages/service-users/src/services/cognito';
 import { ExtendedUserProfile } from '../../../../packages/service-users/src/schemas';
+import { createMockEvent } from '../../../helpers/api-gateway-event';
 
 // Mock all dependencies
 vi.mock('@shared/core', () => ({
@@ -41,51 +42,6 @@ describe('getUserProfileHandler', () => {
     succeed: vi.fn(),
   };
 
-  // Helper function to create base mock event
-  const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
-    version: '2.0',
-    routeKey: 'GET /users/profile',
-    rawPath: '/users/profile',
-    rawQueryString: '',
-    cookies: [],
-    headers: {
-      'content-type': 'application/json',
-      authorization: 'Bearer valid-jwt-token',
-    },
-    queryStringParameters: {},
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      authorizer: {
-        jwt: {
-          claims: {
-            sub: '123e4567-e89b-12d3-a456-426614174000',
-            email: 'test@example.com',
-          },
-          scopes: [],
-        },
-      },
-      domainName: 'api.example.com',
-      domainPrefix: 'api',
-      http: {
-        method: 'GET',
-        path: '/users/profile',
-        protocol: 'HTTP/1.1',
-        sourceIp: '192.168.1.1',
-        userAgent: 'test-agent',
-      },
-      requestId: 'test-request-id',
-      routeKey: 'GET /users/profile',
-      stage: 'dev',
-      time: '01/Jan/2023:00:00:00 +0000',
-      timeEpoch: 1672531200000,
-    },
-    body: null,
-    pathParameters: {},
-    isBase64Encoded: false,
-    stageVariables: {},
-    ...overrides,
-  });
 
   const mockCognitoUser: CognitoUser = {
     cognitoSub: '123e4567-e89b-12d3-a456-426614174000',

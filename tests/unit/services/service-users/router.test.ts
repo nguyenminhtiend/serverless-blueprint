@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { Context } from 'aws-lambda';
+import { createMockEvent } from '../../../helpers/api-gateway-event';
 
 // Mock the handlers before importing anything else
 vi.mock('../../../../packages/service-users/src/handlers', () => ({
@@ -26,50 +27,6 @@ describe('Users Service Router', () => {
     succeed: vi.fn(),
   };
 
-  // Helper function to create base mock event
-  const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
-    version: '2.0',
-    routeKey: 'GET /users/profile',
-    rawPath: '/users/profile',
-    rawQueryString: '',
-    cookies: [],
-    headers: {
-      'content-type': 'application/json',
-    },
-    queryStringParameters: {},
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      authorizer: {
-        jwt: {
-          claims: {
-            sub: '123e4567-e89b-12d3-a456-426614174000',
-            email: 'test@example.com',
-          },
-          scopes: [],
-        },
-      },
-      domainName: 'api.example.com',
-      domainPrefix: 'api',
-      http: {
-        method: 'GET',
-        path: '/users/profile',
-        protocol: 'HTTP/1.1',
-        sourceIp: '192.168.1.1',
-        userAgent: 'test-agent',
-      },
-      requestId: 'test-request-id',
-      routeKey: 'GET /users/profile',
-      stage: 'dev',
-      time: '01/Jan/2023:00:00:00 +0000',
-      timeEpoch: 1672531200000,
-    },
-    body: null,
-    pathParameters: {},
-    isBase64Encoded: false,
-    stageVariables: {},
-    ...overrides,
-  });
 
   beforeEach(() => {
     vi.clearAllMocks();

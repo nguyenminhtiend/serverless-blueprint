@@ -1,5 +1,4 @@
 import {
-  APIGatewayProxyEventV2WithJWTAuthorizer,
   createRouter,
   HttpError,
   Route,
@@ -7,6 +6,7 @@ import {
 import { Context } from 'aws-lambda';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { createMockEventWithJWT } from '../../helpers/api-gateway-event';
 
 // Mock the logger
 vi.mock('@shared/core', async () => {
@@ -38,46 +38,6 @@ describe('Router', () => {
     succeed: vi.fn(),
   };
 
-  const createMockEvent = (
-    method = 'GET',
-    path = '/test',
-    body?: any,
-    claims?: Record<string, any>
-  ): APIGatewayProxyEventV2WithJWTAuthorizer => ({
-    version: '2.0',
-    routeKey: `${method} ${path}`,
-    rawPath: path,
-    rawQueryString: '',
-    headers: {
-      'content-type': 'application/json',
-    },
-    requestContext: {
-      accountId: '123456789',
-      apiId: 'test-api',
-      domainName: 'test.execute-api.us-east-1.amazonaws.com',
-      http: {
-        method,
-        path,
-        protocol: 'HTTP/1.1',
-        sourceIp: '127.0.0.1',
-        userAgent: 'test-agent',
-      },
-      requestId: 'test-request-id',
-      routeKey: `${method} ${path}`,
-      stage: 'test',
-      time: '2023-01-01T00:00:00.000Z',
-      timeEpoch: 1672531200000,
-      authorizer: claims
-        ? {
-            jwt: { claims },
-          }
-        : undefined,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    isBase64Encoded: false,
-    queryStringParameters: null,
-    pathParameters: null,
-  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -90,7 +50,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'GET', path: '/test', handler }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('GET', '/test');
+      const event = createMockEventWithJWT('GET', '/test');
 
       const response = await router(event, mockContext);
 
@@ -112,7 +72,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'GET', path: '/users/{id}', handler }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('GET', '/users/123');
+      const event = createMockEventWithJWT('GET', '/users/123');
 
       const response = await router(event, mockContext);
 
@@ -131,7 +91,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const event = {
-        ...createMockEvent('GET', '/users'),
+        ...createMockEventWithJWT('GET', '/users'),
         queryStringParameters: { page: '1', limit: '10' },
       };
 
@@ -164,7 +124,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const bodyData = { name: 'John Doe', email: 'john@example.com' };
-      const event = createMockEvent('POST', '/users', bodyData);
+      const event = createMockEventWithJWT('POST', '/users', bodyData);
 
       const response = await router(event, mockContext);
 
@@ -195,7 +155,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const event = {
-        ...createMockEvent('GET', '/users'),
+        ...createMockEventWithJWT('GET', '/users'),
         queryStringParameters: { page: '1', limit: '10' },
       };
 
@@ -227,7 +187,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const event = createMockEvent('GET', `/users/${userId}`);
+      const event = createMockEventWithJWT('GET', `/users/${userId}`);
 
       const response = await router(event, mockContext);
 
@@ -244,7 +204,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'GET', path: '/users', handler: vi.fn() }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('GET', '/posts');
+      const event = createMockEventWithJWT('GET', '/posts');
 
       const response = await router(event, mockContext);
 
@@ -270,7 +230,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const invalidBody = { name: 'John', email: 'invalid-email' };
-      const event = createMockEvent('POST', '/users', invalidBody);
+      const event = createMockEventWithJWT('POST', '/users', invalidBody);
 
       const response = await router(event, mockContext);
 
@@ -287,7 +247,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'GET', path: '/test', handler }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('GET', '/test');
+      const event = createMockEventWithJWT('GET', '/test');
 
       const response = await router(event, mockContext);
 
@@ -302,7 +262,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'GET', path: '/test', handler }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('GET', '/test');
+      const event = createMockEventWithJWT('GET', '/test');
 
       const response = await router(event, mockContext);
 
@@ -321,7 +281,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'POST', path: '/test', handler }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('POST', '/test');
+      const event = createMockEventWithJWT('POST', '/test');
 
       const response = await router(event, mockContext);
 
@@ -335,7 +295,7 @@ describe('Router', () => {
       const routes: Route[] = [{ method: 'GET', path: '/test', handler }];
 
       const router = createRouter(routes);
-      const event = createMockEvent('GET', '/test');
+      const event = createMockEventWithJWT('GET', '/test');
 
       const response = await router(event, mockContext);
 
@@ -354,7 +314,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const event = {
-        ...createMockEvent('GET', '/users/123'),
+        ...createMockEventWithJWT('GET', '/users/123'),
         pathParameters: { existing: 'value' },
       };
 
@@ -375,7 +335,7 @@ describe('Router', () => {
 
       const router = createRouter(routes);
       const event = {
-        ...createMockEvent('GET', '/test'),
+        ...createMockEventWithJWT('GET', '/test'),
         queryStringParameters: null,
       };
 
