@@ -32,6 +32,9 @@ importers:
       '@vitest/ui':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4)
+      aws-cdk:
+        specifier: ^2.174.2
+        version: 2.1023.0
       eslint:
         specifier: ^9.32.0
         version: 9.32.0
