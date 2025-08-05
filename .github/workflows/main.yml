@@ -79,10 +79,7 @@ jobs:
         run: pnpm run build
 
       - name: Deploy to staging
-        run: |
-          cd infrastructure
-          pnpm cdk bootstrap
-          pnpm cdk deploy --all --require-approval never
+        run: pnpm run deploy:all
         env:
           CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
           CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
@@ -120,10 +117,7 @@ jobs:
         run: pnpm run build
 
       - name: Deploy to production
-        run: |
-          cd infrastructure
-          pnpm cdk bootstrap
-          pnpm cdk deploy --all --require-approval never
+        run: pnpm run deploy:all:prod
         env:
           CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
           CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
