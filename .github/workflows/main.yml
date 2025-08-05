@@ -37,9 +37,6 @@ jobs:
       - name: Run lint
         run: pnpm run lint
 
-      - name: Run typecheck
-        run: pnpm run typecheck
-
       - name: Run unit tests
         run: pnpm run test:unit
 
@@ -81,6 +78,9 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
+      - name: Run typecheck
+        run: pnpm run typecheck
+
       - name: Deploy to staging
         run: pnpm run deploy:all
         env:
@@ -118,6 +118,9 @@ jobs:
 
       - name: Build packages
         run: pnpm run build
+
+      - name: Run typecheck
+        run: pnpm run typecheck
 
       - name: Deploy to production
         run: pnpm run deploy:all:prod
