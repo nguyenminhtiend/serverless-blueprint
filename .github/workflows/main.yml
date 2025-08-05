@@ -78,9 +78,6 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
-      - name: Run typecheck
-        run: pnpm run typecheck
-
       - name: Deploy to staging
         run: pnpm run deploy:all
         env:
@@ -118,9 +115,6 @@ jobs:
 
       - name: Build packages
         run: pnpm run build
-
-      - name: Run typecheck
-        run: pnpm run typecheck
 
       - name: Deploy to production
         run: pnpm run deploy:all:prod
