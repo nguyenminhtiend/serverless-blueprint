@@ -34,24 +34,28 @@ cleanup_role() {
     
     # Detach managed policies
     echo -e "${BLUE}  📎 Detaching managed policies...${NC}"
-    aws iam list-attached-role-policies --role-name "$role_name" --query 'AttachedPolicies[].PolicyArn' --output text | \
-    while read -r policy_arn; do
-        if [ -n "$policy_arn" ]; then
-            policy_name=$(basename "$policy_arn")
-            echo -e "${BLUE}    🔗 Detaching ${policy_name}...${NC}"
-            aws iam detach-role-policy --role-name "$role_name" --policy-arn "$policy_arn"
-        fi
-    done
+    policy_arns=$(aws iam list-attached-role-policies --role-name "$role_name" --query 'AttachedPolicies[].PolicyArn' --output text)
+    if [ -n "$policy_arns" ] && [ "$policy_arns" != "None" ]; then
+        for policy_arn in $policy_arns; do
+            if [ -n "$policy_arn" ]; then
+                policy_name=$(basename "$policy_arn")
+                echo -e "${BLUE}    🔗 Detaching ${policy_name}...${NC}"
+                aws iam detach-role-policy --role-name "$role_name" --policy-arn "$policy_arn"
+            fi
+        done
+    fi
     
     # Delete inline policies
     echo -e "${BLUE}  📄 Deleting inline policies...${NC}"
-    aws iam list-role-policies --role-name "$role_name" --query 'PolicyNames' --output text | \
-    while read -r policy_name; do
-        if [ -n "$policy_name" ] && [ "$policy_name" != "None" ]; then
-            echo -e "${BLUE}    🗑️  Deleting inline policy: ${policy_name}...${NC}"
-            aws iam delete-role-policy --role-name "$role_name" --policy-name "$policy_name"
-        fi
-    done
+    policy_names=$(aws iam list-role-policies --role-name "$role_name" --query 'PolicyNames' --output text)
+    if [ -n "$policy_names" ] && [ "$policy_names" != "None" ]; then
+        for policy_name in $policy_names; do
+            if [ -n "$policy_name" ]; then
+                echo -e "${BLUE}    🗑️  Deleting inline policy: ${policy_name}...${NC}"
+                aws iam delete-role-policy --role-name "$role_name" --policy-name "$policy_name"
+            fi
+        done
+    fi
     
     # Delete the role
     echo -e "${BLUE}  🗑️  Deleting role...${NC}"
