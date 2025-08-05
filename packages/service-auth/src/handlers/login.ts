@@ -5,7 +5,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { LambdaContext, ok, internalError } from '@shared/core';
 import { AuthChallenge, AuthTokens, LoginInput } from './shared/types';
-import { addSecretHashIfNeeded, CLIENT_ID, cognitoClient, logger } from './shared/utils';
+import { addSecretHashIfNeeded, CLIENT_ID, cognitoClient } from './shared/utils';
 
 export const loginHandler = async (ctx: LambdaContext) => {
   try {

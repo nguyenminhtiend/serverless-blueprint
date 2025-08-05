@@ -1,7 +1,7 @@
 import { SignUpCommand, SignUpCommandInput } from '@aws-sdk/client-cognito-identity-provider';
 import { LambdaContext, created, internalError } from '@shared/core';
 import { RegisterInput } from './shared/types';
-import { addSecretHashIfNeeded, CLIENT_ID, cognitoClient, logger } from './shared/utils';
+import { addSecretHashIfNeeded, CLIENT_ID, cognitoClient } from './shared/utils';
 
 export const registerHandler = async (ctx: LambdaContext) => {
   try {
