@@ -32,11 +32,6 @@ const stackProps: cdk.StackProps = {
     region: config.region,
   },
   description: `Serverless Microservices - ${environment} environment`,
-  tags: {
-    Environment: environment,
-    Project: 'ServerlessMicroservices',
-    ManagedBy: 'CDK',
-  },
 };
 
 // Phase 1: Foundational Stacks (can deploy in parallel)
@@ -102,14 +97,10 @@ lambdaStack.addDependency(eventsStack);
 apiGatewayStack.addDependency(lambdaStack);
 apiGatewayStack.addDependency(cognitoStack);
 
-// Apply comprehensive tagging aspect to all stacks
+// Apply comprehensive tagging aspect to entire app
 const taggingConfig = TaggingConfigFactory.create(environment);
 const taggingAspect = new TaggingAspect(taggingConfig);
 
-cdk.Aspects.of(databaseStack).add(taggingAspect);
-cdk.Aspects.of(cognitoStack).add(taggingAspect);
-cdk.Aspects.of(eventsStack).add(taggingAspect);
-cdk.Aspects.of(lambdaStack).add(taggingAspect);
-cdk.Aspects.of(apiGatewayStack).add(taggingAspect);
+cdk.Aspects.of(app).add(taggingAspect);
 
 // Stack naming convention is set in cdk.json context
