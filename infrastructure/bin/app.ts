@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
 import 'source-map-support/register';
-import { ApiGatewayStack } from '../lib/api-gateway-stack';
-import { CognitoStack } from '../lib/cognito-stack';
-import { DatabaseStack } from '../lib/database-stack';
-import { EventsStack } from '../lib/events-stack';
-import { LambdaStack } from '../lib/lambda-stack';
+import { ApiGatewayStack } from '../lib/stacks/api-gateway-stack';
+import { CognitoStack } from '../lib/stacks/cognito-stack';
+import { DatabaseStack } from '../lib/stacks/database-stack';
+import { EventsStack } from '../lib/stacks/events-stack';
+import { LambdaStack } from '../lib/stacks/lambda-stack';
 
 const app = new cdk.App();
 

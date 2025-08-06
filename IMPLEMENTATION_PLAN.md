@@ -301,9 +301,37 @@ serverless-blueprint/
 3. Environment-specific configurations and secrets management
 4. Blue-green deployment strategy with Lambda versions and aliases
 
-### Phase 13: Enhanced Security & Operational Excellence
+### Phase 13: Advanced CDK Patterns
 
-#### 13.1: Security Enhancements
+#### 13.1: Infrastructure Patterns
+1. **Stack Organization**
+   - Cross-stack resource sharing with exports
+   - Nested stacks for complex deployments
+   - Stack dependencies and deployment order
+   - Resource tagging strategy
+
+2. **CDK Best Practices**
+   - Construct creation for reusable components
+   - Aspect implementation for cross-cutting concerns
+   - CDK Pipelines for self-mutating deployments
+   - Environment context and configuration
+
+#### 13.2: Deployment Strategies
+1. **Advanced Deployment**
+   - Blue-green deployments with Lambda aliases
+   - Canary deployments for gradual rollouts
+   - Rollback strategies and automation
+   - Health checks and deployment validation
+
+2. **Multi-Environment Management**
+   - Environment promotion pipeline
+   - Configuration drift detection
+   - Cross-account deployment patterns
+   - Environment-specific resource sizing
+
+### Phase 14: Enhanced Security & Operational Excellence
+
+#### 14.1: Security Enhancements
 1. **Lambda Security**
    - Function-level IAM roles with least privilege
    - Lambda layers for security utilities
@@ -322,7 +350,7 @@ serverless-blueprint/
    - Backup automation with lifecycle policies
    - Point-in-time recovery enabled
 
-#### 13.2: Configuration Management
+#### 14.2: Configuration Management
 1. **Environment Configuration Stack**
    - AWS Systems Manager Parameter Store
    - AWS Secrets Manager for sensitive data
@@ -335,7 +363,7 @@ serverless-blueprint/
    - Rollback capabilities
    - A/B testing support
 
-#### 13.3: Enhanced Monitoring Stack
+#### 14.3: Enhanced Monitoring Stack
 1. **Observability Infrastructure**
    - CloudWatch dashboard stack for each service
    - Custom metrics from Lambda functions
@@ -348,7 +376,7 @@ serverless-blueprint/
    - Lambda error rate and duration monitoring
    - DynamoDB throttling and capacity alarms
 
-#### 13.4: Performance Optimization
+#### 14.4: Performance Optimization
 1. **Lambda Optimization**
    - Memory and timeout optimization
    - Reserved concurrency for critical functions
@@ -360,34 +388,6 @@ serverless-blueprint/
    - GSI optimization and monitoring
    - Connection pooling for external services
    - Caching strategies with ElastiCache (if needed)
-
-### Phase 14: Advanced CDK Patterns
-
-#### 14.1: Infrastructure Patterns
-1. **Stack Organization**
-   - Cross-stack resource sharing with exports
-   - Nested stacks for complex deployments
-   - Stack dependencies and deployment order
-   - Resource tagging strategy
-
-2. **CDK Best Practices**
-   - Construct creation for reusable components
-   - Aspect implementation for cross-cutting concerns
-   - CDK Pipelines for self-mutating deployments
-   - Environment context and configuration
-
-#### 14.2: Deployment Strategies
-1. **Advanced Deployment**
-   - Blue-green deployments with Lambda aliases
-   - Canary deployments for gradual rollouts
-   - Rollback strategies and automation
-   - Health checks and deployment validation
-
-2. **Multi-Environment Management**
-   - Environment promotion pipeline
-   - Configuration drift detection
-   - Cross-account deployment patterns
-   - Environment-specific resource sizing
 
 ## Technology Stack
 
