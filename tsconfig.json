@@ -31,7 +31,6 @@
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
   "references": [
     { "path": "./packages/shared-core" },
-    { "path": "./packages/shared-middleware" },
     { "path": "./packages/service-auth" },
     { "path": "./packages/service-users" },
     { "path": "./packages/service-orders" },

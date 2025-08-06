@@ -8,9 +8,11 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
+import { EnvironmentConfig } from '../config/environment-config';
 
 export interface LambdaStackProps extends cdk.StackProps {
   readonly environment?: string;
+  readonly config: EnvironmentConfig;
   readonly table: dynamodb.Table;
   readonly userPool?: cognito.UserPool;
   readonly userPoolClient?: cognito.UserPoolClient;
@@ -28,7 +30,7 @@ export class LambdaStack extends cdk.Stack {
     super(scope, id, props);
 
     const environment = props.environment || 'dev';
-    const { table, userPool, userPoolClient, notificationQueue, eventBusName } = props;
+    const { config, table, userPool, userPoolClient, notificationQueue, eventBusName } = props;
 
     // CloudWatch Logs retention based on environment
     const logRetention =
@@ -36,18 +38,19 @@ export class LambdaStack extends cdk.Stack {
         ? logs.RetentionDays.ONE_MONTH // 30 days for prod (best practice)
         : logs.RetentionDays.ONE_DAY; // 1 day for dev (maximum cost optimization)
 
-    // Memory allocation based on environment
-    const memorySize = environment === 'prod' ? 512 : 256; // 512MB prod, 256MB dev
+    // Memory allocation and timeout from config
+    const memorySize = config!.lambda.memorySize;
+    const timeout = config!.lambda.timeout;
 
     // Common Lambda configuration
     const commonLambdaProps = {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(30),
+      timeout: timeout,
       memorySize: memorySize,
       environment: {
-        TABLE_NAME: table.tableName,
-        NODE_ENV: environment,
+        TABLE_NAME: config!.dynamodb.tableName,
+        NODE_ENV: config!.lambda.nodeEnv,
         LOG_LEVEL: environment === 'prod' ? 'WARN' : 'INFO',
         POWERTOOLS_SERVICE_NAME: 'serverless-microservices',
         POWERTOOLS_LOG_LEVEL: environment === 'prod' ? 'WARN' : 'INFO',
@@ -128,14 +131,12 @@ export class LambdaStack extends cdk.Stack {
       }),
       environment: {
         ...commonLambdaProps.environment,
-        FROM_EMAIL_ADDRESS: process.env.FROM_EMAIL_ADDRESS || 'noreply@example.com',
-        REPLY_TO_ADDRESSES: process.env.REPLY_TO_ADDRESSES || '',
-        SMS_SENDER_ID: process.env.SMS_SENDER_ID || 'ServerlessApp',
-        DEFAULT_USER_EMAIL: process.env.DEFAULT_USER_EMAIL || 'user@example.com',
-        DEFAULT_USER_PHONE: process.env.DEFAULT_USER_PHONE || '',
-        // Cost-saving: Enable mock notifications by default for dev, allow override
-        ENABLE_MOCK_NOTIFICATIONS:
-          process.env.ENABLE_MOCK_NOTIFICATIONS || (environment === 'dev' ? 'true' : 'false'),
+        FROM_EMAIL_ADDRESS: config!.notifications.email.fromAddress,
+        REPLY_TO_ADDRESSES: config!.notifications.email.replyToAddresses.join(','),
+        SMS_SENDER_ID: config!.notifications.sms.senderId,
+        DEFAULT_USER_EMAIL: config!.notifications.email.defaultUserEmail,
+        DEFAULT_USER_PHONE: config!.notifications.sms.defaultUserPhone,
+        ENABLE_MOCK_NOTIFICATIONS: config!.notifications.enableMock.toString(),
       },
     });
 

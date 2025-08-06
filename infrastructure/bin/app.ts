@@ -8,17 +8,18 @@ import { EventsStack } from '../lib/stacks/events-stack';
 import { LambdaStack } from '../lib/stacks/lambda-stack';
 import { TaggingAspect } from '../lib/aspects/tagging-aspect';
 import { TaggingConfigFactory } from '../lib/config/tagging-config';
+import { EnvironmentConfigFactory } from '../lib/config/environment-config';
 
 const app = new cdk.App();
 
 // Get environment from context or default to 'dev'
 const environment = app.node.tryGetContext('environment') || 'dev';
-const account = app.node.tryGetContext('account') || process.env.CDK_DEFAULT_ACCOUNT;
-const region =
-  app.node.tryGetContext('region') || process.env.CDK_DEFAULT_REGION || 'ap-southeast-1';
+
+// Create environment-specific configuration
+const config = EnvironmentConfigFactory.create(environment);
 
 // Validate required parameters
-if (!account) {
+if (!config.account) {
   throw new Error(
     'Account must be specified either via context or CDK_DEFAULT_ACCOUNT environment variable'
   );
@@ -27,8 +28,8 @@ if (!account) {
 // Common stack props
 const stackProps: cdk.StackProps = {
   env: {
-    account,
-    region,
+    account: config.account,
+    region: config.region,
   },
   description: `Serverless Microservices - ${environment} environment`,
   tags: {
@@ -65,6 +66,7 @@ const eventsStack = new EventsStack(app, `ServerlessMicroservices-Events-${envir
 const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${environment}`, {
   ...stackProps,
   environment,
+  config,
   table: databaseStack.table,
   userPool: cognitoStack.userPool,
   userPoolClient: cognitoStack.userPoolClient,
