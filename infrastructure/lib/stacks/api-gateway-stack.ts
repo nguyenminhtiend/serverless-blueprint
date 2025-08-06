@@ -98,25 +98,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     this.httpApi.addRoutes({
-      path: '/auth/refresh',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: authIntegration,
-    });
-
-    this.httpApi.addRoutes({
       path: '/auth/confirm-signup',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: authIntegration,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/auth/forgot-password',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: authIntegration,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/auth/reset-password',
       methods: [apigatewayv2.HttpMethod.POST],
       integration: authIntegration,
     });
@@ -126,21 +108,6 @@ export class ApiGatewayStack extends cdk.Stack {
     this.httpApi.addRoutes({
       path: '/users/profile',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.PUT],
-      integration: userIntegration,
-      authorizer: this.jwtAuthorizer,
-    });
-
-    // User address management
-    this.httpApi.addRoutes({
-      path: '/users/addresses',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: userIntegration,
-      authorizer: this.jwtAuthorizer,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/users/addresses/{addressId}',
-      methods: [apigatewayv2.HttpMethod.PUT, apigatewayv2.HttpMethod.DELETE],
       integration: userIntegration,
       authorizer: this.jwtAuthorizer,
     });
@@ -161,20 +128,6 @@ export class ApiGatewayStack extends cdk.Stack {
         apigatewayv2.HttpMethod.DELETE,
         apigatewayv2.HttpMethod.PATCH,
       ],
-      integration: orderIntegration,
-      authorizer: this.jwtAuthorizer,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/orders/{id}/status',
-      methods: [apigatewayv2.HttpMethod.PUT],
-      integration: orderIntegration,
-      authorizer: this.jwtAuthorizer,
-    });
-
-    this.httpApi.addRoutes({
-      path: '/users/{userId}/orders',
-      methods: [apigatewayv2.HttpMethod.GET],
       integration: orderIntegration,
       authorizer: this.jwtAuthorizer,
     });
@@ -203,11 +156,6 @@ export class ApiGatewayStack extends cdk.Stack {
       // For now, we'll rely on Lambda concurrency limits and monitoring
     }
 
-    // CloudWatch alarms for API Gateway (production only to reduce costs)
-    if (environment === 'prod') {
-      this.createCloudWatchAlarms(environment);
-    }
-
     // Outputs
     new cdk.CfnOutput(this, 'HttpApiUrl', {
       value: this.httpApi.apiEndpoint,
@@ -231,73 +179,6 @@ export class ApiGatewayStack extends cdk.Stack {
       value: userPool.userPoolId,
       description: 'Cognito User Pool ID used by JWT Authorizer',
       exportName: `${environment}-api-user-pool-id`,
-    });
-  }
-
-  private createCloudWatchAlarms(environment: string) {
-    // API Gateway 4XX errors alarm
-    new cdk.aws_cloudwatch.Alarm(this, 'Api4XXErrorAlarm', {
-      alarmName: `${environment}-api-gateway-4xx-errors`,
-      alarmDescription: 'High rate of 4XX errors in API Gateway',
-      metric: new cdk.aws_cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: '4XXError',
-        dimensionsMap: {
-          ApiName: this.httpApi.apiId,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 20,
-      evaluationPeriods: 2,
-      treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    // API Gateway 5XX errors alarm
-    new cdk.aws_cloudwatch.Alarm(this, 'Api5XXErrorAlarm', {
-      alarmName: `${environment}-api-gateway-5xx-errors`,
-      alarmDescription: 'High rate of 5XX errors in API Gateway',
-      metric: new cdk.aws_cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: '5XXError',
-        dimensionsMap: {
-          ApiName: this.httpApi.apiId,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 5,
-      evaluationPeriods: 1,
-      treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    // API Gateway latency alarm
-    new cdk.aws_cloudwatch.Alarm(this, 'ApiLatencyAlarm', {
-      alarmName: `${environment}-api-gateway-latency`,
-      alarmDescription: 'High latency in API Gateway',
-      metric: new cdk.aws_cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: 'Latency',
-        dimensionsMap: {
-          ApiName: this.httpApi.apiId,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 3000, // 3 seconds
-      evaluationPeriods: 3,
-      treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    // API Gateway request count for monitoring
-    new cdk.aws_cloudwatch.Metric({
-      namespace: 'AWS/ApiGateway',
-      metricName: 'Count',
-      dimensionsMap: {
-        ApiName: this.httpApi.apiId,
-      },
-      statistic: 'Sum',
-      period: cdk.Duration.minutes(5),
     });
   }
 }
