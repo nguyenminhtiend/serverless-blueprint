@@ -27,9 +27,17 @@ serverless-blueprint/
 │   │   ├── cognito-stack.ts      # Authentication (User Pools)
 │   │   ├── api-gateway-stack.ts  # API Gateway setup
 │   │   ├── lambda-stack.ts       # Lambda functions
-│   │   └── events-stack.ts       # EventBridge + SQS
+│   │   ├── events-stack.ts       # EventBridge + SQS
+│   │   ├── monitoring-stack.ts   # CloudWatch dashboards & alarms
+│   │   ├── security-stack.ts     # WAF, KMS, parameter store
+│   │   ├── config-stack.ts       # Environment configs, feature flags
+│   │   └── layers-stack.ts       # Lambda layers for common deps
 │   ├── bin/
 │   │   └── app.ts                # CDK app entry point
+│   ├── constructs/               # Reusable CDK constructs
+│   │   ├── secure-lambda.ts      # Lambda with security best practices
+│   │   ├── monitored-api.ts      # API Gateway with monitoring
+│   │   └── encrypted-table.ts    # DynamoDB with encryption
 │   └── cdk.json                  # CDK configuration
 ├── layers/
 │   ├── aws-sdk/                  # AWS SDK layer
@@ -288,9 +296,98 @@ serverless-blueprint/
 3. End-to-end testing setup
 
 ### Phase 12: CI/CD Pipeline
-1. Configure GitHub Actions workflow
-2. Automated testing and deployment
-3. Environment-specific configurations
+1. Configure GitHub Actions workflow with multi-environment support
+2. Automated testing and deployment with CDK diff
+3. Environment-specific configurations and secrets management
+4. Blue-green deployment strategy with Lambda versions and aliases
+
+### Phase 13: Enhanced Security & Operational Excellence
+
+#### 13.1: Security Enhancements
+1. **Lambda Security**
+   - Function-level IAM roles with least privilege
+   - Lambda layers for security utilities
+   - VPC configuration for sensitive functions
+   - Environment variable encryption
+
+2. **API Gateway Security**
+   - WAF integration with custom rules
+   - Resource policies for IP restrictions
+   - Request/response transformations
+   - CORS configuration per environment
+
+3. **Data Security**
+   - DynamoDB encryption with customer-managed KMS keys
+   - Field-level encryption for PII
+   - Backup automation with lifecycle policies
+   - Point-in-time recovery enabled
+
+#### 13.2: Configuration Management
+1. **Environment Configuration Stack**
+   - AWS Systems Manager Parameter Store
+   - AWS Secrets Manager for sensitive data
+   - Environment-specific configuration management
+   - Automatic secret rotation
+
+2. **Feature Management**
+   - AWS AppConfig for feature flags
+   - Safe deployment of configuration changes
+   - Rollback capabilities
+   - A/B testing support
+
+#### 13.3: Enhanced Monitoring Stack
+1. **Observability Infrastructure**
+   - CloudWatch dashboard stack for each service
+   - Custom metrics from Lambda functions
+   - X-Ray tracing with sampling rules
+   - Log aggregation and retention policies
+
+2. **Alerting and Incident Response**
+   - CloudWatch alarms for critical metrics
+   - SNS topics for notification routing
+   - Lambda error rate and duration monitoring
+   - DynamoDB throttling and capacity alarms
+
+#### 13.4: Performance Optimization
+1. **Lambda Optimization**
+   - Memory and timeout optimization
+   - Reserved concurrency for critical functions
+   - Provisioned concurrency for low-latency requirements
+   - Lambda layers for common dependencies
+
+2. **Database Optimization**
+   - DynamoDB auto-scaling configuration
+   - GSI optimization and monitoring
+   - Connection pooling for external services
+   - Caching strategies with ElastiCache (if needed)
+
+### Phase 14: Advanced CDK Patterns
+
+#### 14.1: Infrastructure Patterns
+1. **Stack Organization**
+   - Cross-stack resource sharing with exports
+   - Nested stacks for complex deployments
+   - Stack dependencies and deployment order
+   - Resource tagging strategy
+
+2. **CDK Best Practices**
+   - Construct creation for reusable components
+   - Aspect implementation for cross-cutting concerns
+   - CDK Pipelines for self-mutating deployments
+   - Environment context and configuration
+
+#### 14.2: Deployment Strategies
+1. **Advanced Deployment**
+   - Blue-green deployments with Lambda aliases
+   - Canary deployments for gradual rollouts
+   - Rollback strategies and automation
+   - Health checks and deployment validation
+
+2. **Multi-Environment Management**
+   - Environment promotion pipeline
+   - Configuration drift detection
+   - Cross-account deployment patterns
+   - Environment-specific resource sizing
 
 ## Technology Stack
 
@@ -304,14 +401,16 @@ serverless-blueprint/
 - Validation: Zod v4.0.5 (TypeScript-first schema validation)
 
 **AWS Services:**
-- Compute: Lambda (ARM64 for cost optimization)
-- API: API Gateway HTTP API v2 with native JWT authorization
-- Database: DynamoDB with single-table design
-- Events: EventBridge + SQS
-- Monitoring: CloudWatch + X-Ray
-- Authentication: AWS Cognito User Pools (basic setup)
+- Compute: Lambda (ARM64 for cost optimization) with layers
+- API: API Gateway HTTP API v2 with native JWT authorization + WAF
+- Database: DynamoDB with single-table design + encryption + backups
+- Events: EventBridge + SQS with dead letter queues
+- Monitoring: CloudWatch + X-Ray + custom dashboards + alarms
+- Authentication: AWS Cognito User Pools with advanced security
 - Authorization: API Gateway JWT authorizers (native, non-Lambda)
-- Security: IAM + Cognito basic authentication
+- Security: IAM least privilege + KMS + Secrets Manager + Parameter Store
+- Configuration: AWS AppConfig for feature flags
+- Performance: Lambda reserved/provisioned concurrency
 
 **Development Tools:**
 - Build: esbuild (fastest bundling)
