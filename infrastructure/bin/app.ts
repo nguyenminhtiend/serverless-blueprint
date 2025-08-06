@@ -6,6 +6,8 @@ import { CognitoStack } from '../lib/stacks/cognito-stack';
 import { DatabaseStack } from '../lib/stacks/database-stack';
 import { EventsStack } from '../lib/stacks/events-stack';
 import { LambdaStack } from '../lib/stacks/lambda-stack';
+import { TaggingAspect } from '../lib/aspects/tagging-aspect';
+import { TaggingConfigFactory } from '../lib/config/tagging-config';
 
 const app = new cdk.App();
 
@@ -36,6 +38,7 @@ const stackProps: cdk.StackProps = {
   },
 };
 
+// Phase 1: Foundational Stacks (can deploy in parallel)
 // Database Stack - Phase 3
 const databaseStack = new DatabaseStack(app, `ServerlessMicroservices-Database-${environment}`, {
   ...stackProps,
@@ -57,6 +60,7 @@ const eventsStack = new EventsStack(app, `ServerlessMicroservices-Events-${envir
   description: `EventBridge and SQS infrastructure for ${environment} environment`,
 });
 
+// Phase 2: Compute Stack (depends on Phase 1)
 // Lambda Stack - Phase 4
 const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${environment}`, {
   ...stackProps,
@@ -69,6 +73,7 @@ const lambdaStack = new LambdaStack(app, `ServerlessMicroservices-Lambda-${envir
   description: `Lambda functions for ${environment} environment`,
 });
 
+// Phase 3: API Stack (depends on Phase 2)
 // API Gateway Stack - Phase 4
 const apiGatewayStack = new ApiGatewayStack(
   app,
@@ -85,11 +90,24 @@ const apiGatewayStack = new ApiGatewayStack(
   }
 );
 
-// Add stack dependencies
+// Explicit Stack Dependencies - Deployment Order
+// Phase 1: Lambda depends on all foundational stacks (Database, Cognito, Events)
 lambdaStack.addDependency(databaseStack);
+lambdaStack.addDependency(cognitoStack);
 lambdaStack.addDependency(eventsStack);
-lambdaStack.addDependency(cognitoStack); // Lambda needs Cognito for env vars
+
+// Phase 2: API Gateway depends on Lambda and Cognito
 apiGatewayStack.addDependency(lambdaStack);
 apiGatewayStack.addDependency(cognitoStack);
+
+// Apply comprehensive tagging aspect to all stacks
+const taggingConfig = TaggingConfigFactory.create(environment);
+const taggingAspect = new TaggingAspect(taggingConfig);
+
+cdk.Aspects.of(databaseStack).add(taggingAspect);
+cdk.Aspects.of(cognitoStack).add(taggingAspect);
+cdk.Aspects.of(eventsStack).add(taggingAspect);
+cdk.Aspects.of(lambdaStack).add(taggingAspect);
+cdk.Aspects.of(apiGatewayStack).add(taggingAspect);
 
 // Stack naming convention is set in cdk.json context
