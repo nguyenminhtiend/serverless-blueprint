@@ -297,10 +297,6 @@ export class LambdaStack extends cdk.Stack {
       exportName: `${environment}-notification-function-arn`,
     });
 
-    // Tags
-    cdk.Tags.of(this).add('Environment', environment);
-    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices');
-    cdk.Tags.of(this).add('Component', 'Lambda');
   }
 
   private createCloudWatchAlarms(environment: string) {

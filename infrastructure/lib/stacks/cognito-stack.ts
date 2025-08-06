@@ -174,9 +174,5 @@ export class CognitoStack extends cdk.Stack {
       exportName: `${environment}-user-pool-domain-url`,
     });
 
-    // Tags for cost allocation and management
-    cdk.Tags.of(this).add('Environment', environment);
-    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices');
-    cdk.Tags.of(this).add('Component', 'Authentication');
   }
 }

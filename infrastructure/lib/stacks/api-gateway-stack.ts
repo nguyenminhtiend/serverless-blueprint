@@ -233,10 +233,6 @@ export class ApiGatewayStack extends cdk.Stack {
       exportName: `${environment}-api-user-pool-id`,
     });
 
-    // Tags
-    cdk.Tags.of(this).add('Environment', environment);
-    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices');
-    cdk.Tags.of(this).add('Component', 'ApiGateway');
   }
 
   private createCloudWatchAlarms(environment: string) {

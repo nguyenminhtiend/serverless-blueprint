@@ -83,9 +83,5 @@ export class DatabaseStack extends cdk.Stack {
     //   exportName: `${environment}-main-table-stream-arn`,
     // })
 
-    // Tags for cost allocation and management
-    cdk.Tags.of(this).add('Environment', environment);
-    cdk.Tags.of(this).add('Project', 'ServerlessMicroservices');
-    cdk.Tags.of(this).add('Component', 'Database');
   }
 }
