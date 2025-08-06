@@ -173,6 +173,5 @@ export class CognitoStack extends cdk.Stack {
       description: 'Cognito User Pool Domain URL',
       exportName: `${environment}-user-pool-domain-url`,
     });
-
   }
 }

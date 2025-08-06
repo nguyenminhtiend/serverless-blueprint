@@ -232,7 +232,6 @@ export class ApiGatewayStack extends cdk.Stack {
       description: 'Cognito User Pool ID used by JWT Authorizer',
       exportName: `${environment}-api-user-pool-id`,
     });
-
   }
 
   private createCloudWatchAlarms(environment: string) {

@@ -296,7 +296,6 @@ export class LambdaStack extends cdk.Stack {
       description: 'Notification service Lambda function ARN',
       exportName: `${environment}-notification-function-arn`,
     });
-
   }
 
   private createCloudWatchAlarms(environment: string) {

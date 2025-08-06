@@ -82,6 +82,5 @@ export class DatabaseStack extends cdk.Stack {
     //   description: 'DynamoDB table stream ARN',
     //   exportName: `${environment}-main-table-stream-arn`,
     // })
-
   }
 }
