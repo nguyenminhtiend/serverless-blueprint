@@ -18,8 +18,8 @@ npm run build
 echo "🔧 Ensuring CDK is bootstrapped..."
 cdk bootstrap
 
-# Deploy all stacks in order
+# Deploy the main stack (which contains all nested stacks)
 echo "🏗️  Deploying infrastructure stacks..."
-cdk deploy --all --require-approval never --context env=$ENV
+cdk deploy serverless-blueprint-$ENV --require-approval never --context environment=$ENV
 
 echo "✅ All stacks deployed successfully for environment: $ENV"

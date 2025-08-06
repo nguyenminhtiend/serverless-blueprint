@@ -21,7 +21,10 @@
     "deploy:all:prod": "./scripts/deploy-all.sh prod",
     "deploy:fast": "./scripts/fast-deploy.sh",
     "deploy:fast:prod": "./scripts/fast-deploy.sh prod",
-    "deploy:stack": "./scripts/deploy-stack.sh"
+    "deploy:stack": "./scripts/deploy-stack.sh",
+    "cleanup:all": "./scripts/cleanup-all.sh",
+    "cleanup:dev": "./scripts/cleanup-all.sh dev",
+    "cleanup:prod": "./scripts/cleanup-all.sh prod"
   },
   "devDependencies": {
     "@aws-lambda-powertools/logger": "^2.24.1",
