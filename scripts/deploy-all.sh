@@ -12,14 +12,14 @@ cd infrastructure
 
 # Build TypeScript
 echo "📦 Building infrastructure..."
-npm run build
+pnpm run build
 
 # Bootstrap CDK if needed (will skip if already bootstrapped)
 echo "🔧 Ensuring CDK is bootstrapped..."
 cdk bootstrap
 
-# Deploy the main stack (which contains all nested stacks)
+# Deploy all stacks
 echo "🏗️  Deploying infrastructure stacks..."
-cdk deploy serverless-blueprint-$ENV --require-approval never --context environment=$ENV
+cdk deploy --all --require-approval never --context environment=$ENV
 
 echo "✅ All stacks deployed successfully for environment: $ENV"
