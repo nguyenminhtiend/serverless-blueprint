@@ -20,6 +20,6 @@ cdk bootstrap
 
 # Deploy all stacks
 echo "🏗️  Deploying infrastructure stacks..."
-cdk deploy --all --require-approval never --context environment=$ENV
+cdk deploy --all --require-approval never --context environment=$ENV --verbose
 
 echo "✅ All stacks deployed successfully for environment: $ENV"

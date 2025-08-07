@@ -137,11 +137,33 @@ export class ApiGatewayStack extends cdk.Stack {
       ),
     });
 
-    // Create default stage with logging
-    const defaultStage = this.httpApi.defaultStage as apigatewayv2.HttpStage;
-    if (defaultStage) {
-      // Enable access logging
-      defaultStage.node.addDependency(logGroup);
+    // Configure access logging on the default stage
+    const accessLogFormat = JSON.stringify({
+      requestId: '$context.requestId',
+      ip: '$context.identity.sourceIp',
+      requestTime: '$context.requestTime',
+      httpMethod: '$context.httpMethod',
+      routeKey: '$context.routeKey',
+      status: '$context.status',
+      protocol: '$context.protocol',
+      responseLength: '$context.responseLength',
+      responseLatency: '$context.responseLatency',
+      integrationLatency: '$context.integrationLatency',
+      error: '$context.error.message',
+      integrationError: '$context.integrationErrorMessage',
+    });
+
+    // Update the existing default stage with logging configuration
+    const cfnDefaultStage = this.httpApi.defaultStage?.node.defaultChild as apigatewayv2.CfnStage;
+    if (cfnDefaultStage) {
+      cfnDefaultStage.addPropertyOverride('AccessLogSettings', {
+        DestinationArn: logGroup.logGroupArn,
+        Format: accessLogFormat,
+      });
+      cfnDefaultStage.addPropertyOverride('DefaultRouteSettings', {
+        DetailedMetricsEnabled: true,
+      });
+      cfnDefaultStage.node.addDependency(logGroup);
     }
 
     // Add throttling for production using route-level throttling
