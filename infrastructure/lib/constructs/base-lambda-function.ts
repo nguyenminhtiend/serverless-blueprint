@@ -22,20 +22,17 @@ export class BaseLambdaFunction extends nodejs.NodejsFunction {
   constructor(scope: Construct, id: string, props: BaseLambdaFunctionProps) {
     const { environment, config, functionName, entry, description, handler, timeout, memorySize, additionalEnvironmentVars = {} } = props;
 
-    // CloudWatch Logs retention based on environment
-    const logRetention =
-      environment === 'prod'
-        ? logs.RetentionDays.ONE_MONTH
-        : logs.RetentionDays.ONE_DAY;
+    // CloudWatch Logs retention from config
+    const logRetention = config.lambda.logRetentionDays;
 
     // Common environment variables
     const commonEnvironmentVars = {
       TABLE_NAME: config.dynamodb.tableName,
       NODE_ENV: config.lambda.nodeEnv,
-      LOG_LEVEL: environment === 'prod' ? 'WARN' : 'INFO',
+      LOG_LEVEL: config.lambda.logLevel,
       POWERTOOLS_SERVICE_NAME: 'serverless-microservices',
-      POWERTOOLS_LOG_LEVEL: environment === 'prod' ? 'WARN' : 'INFO',
-      POWERTOOLS_LOGGER_SAMPLE_RATE: environment === 'prod' ? '0.1' : '1',
+      POWERTOOLS_LOG_LEVEL: config.lambda.powertoolsLogLevel,
+      POWERTOOLS_LOGGER_SAMPLE_RATE: config.lambda.powertoolsLoggerSampleRate,
       POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
       POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
       ...additionalEnvironmentVars,

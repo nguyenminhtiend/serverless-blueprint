@@ -1,4 +1,5 @@
 import { Duration } from 'aws-cdk-lib';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 export interface EnvironmentConfig {
   environment: 'dev' | 'prod';
@@ -17,6 +18,10 @@ export interface EnvironmentConfig {
     timeout: Duration;
     enableRequestLogging: boolean;
     nodeEnv: string;
+    logRetentionDays: number;
+    logLevel: string;
+    powertoolsLogLevel: string;
+    powertoolsLoggerSampleRate: string;
   };
 
   // DynamoDB configuration
@@ -104,6 +109,10 @@ export class EnvironmentConfigFactory {
         timeout: Duration.seconds(30),
         enableRequestLogging: true,
         nodeEnv: 'production',
+        logRetentionDays: logs.RetentionDays.ONE_MONTH,
+        logLevel: 'WARN',
+        powertoolsLogLevel: 'WARN',
+        powertoolsLoggerSampleRate: '0.1',
       },
       dynamodb: {
         tableName: process.env.TABLE_NAME || 'prod-serverless-microservices',
@@ -151,6 +160,10 @@ export class EnvironmentConfigFactory {
         timeout: Duration.seconds(15),
         enableRequestLogging: process.env.ENABLE_REQUEST_LOGGING !== 'false',
         nodeEnv: 'development',
+        logRetentionDays: logs.RetentionDays.ONE_DAY,
+        logLevel: 'INFO',
+        powertoolsLogLevel: 'INFO',
+        powertoolsLoggerSampleRate: '1',
       },
       dynamodb: {
         tableName: process.env.TABLE_NAME || 'dev-serverless-microservices',
