@@ -107,7 +107,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Get and update current user's profile
     this.httpApi.addRoutes({
       path: '/users/profile',
-      methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.PUT],
+      methods: [apigatewayv2.HttpMethod.GET],
       integration: userIntegration,
       authorizer: this.jwtAuthorizer,
     });
@@ -115,19 +115,14 @@ export class ApiGatewayStack extends cdk.Stack {
     // Order routes (protected - requires JWT authorization)
     this.httpApi.addRoutes({
       path: '/orders',
-      methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.POST],
+      methods: [apigatewayv2.HttpMethod.POST],
       integration: orderIntegration,
       authorizer: this.jwtAuthorizer,
     });
 
     this.httpApi.addRoutes({
       path: '/orders/{id}',
-      methods: [
-        apigatewayv2.HttpMethod.GET,
-        apigatewayv2.HttpMethod.PUT,
-        apigatewayv2.HttpMethod.DELETE,
-        apigatewayv2.HttpMethod.PATCH,
-      ],
+      methods: [apigatewayv2.HttpMethod.GET],
       integration: orderIntegration,
       authorizer: this.jwtAuthorizer,
     });

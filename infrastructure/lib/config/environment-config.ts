@@ -76,6 +76,8 @@ export class EnvironmentConfigFactory {
 
   private static getBaseConfig(): Partial<EnvironmentConfig> {
     return {
+      region: process.env.CDK_DEFAULT_REGION || 'ap-southeast-1',
+      account: process.env.CDK_DEFAULT_ACCOUNT,
       aws: {
         region: process.env.AWS_REGION || 'ap-southeast-1',
         defaultRegion: 'ap-southeast-1',
@@ -92,18 +94,27 @@ export class EnvironmentConfigFactory {
         clientId: process.env.CLIENT_ID,
         clientSecret: process.env.CLIENT_SECRET,
       },
+      notifications: {
+        enableMock: process.env.ENABLE_MOCK_NOTIFICATIONS !== 'false',
+        email: {
+          fromAddress: process.env.FROM_EMAIL_ADDRESS || 'noreply@example.com',
+          replyToAddresses: process.env.REPLY_TO_ADDRESSES
+            ? process.env.REPLY_TO_ADDRESSES.split(',')
+            : [],
+          defaultUserEmail: process.env.DEFAULT_USER_EMAIL || 'user@example.com',
+        },
+        sms: {
+          senderId: process.env.SMS_SENDER_ID || 'ServerlessApp',
+          defaultUserPhone: process.env.DEFAULT_USER_PHONE || '',
+        },
+      },
     };
   }
 
   private static getProductionConfig(base: Partial<EnvironmentConfig>): EnvironmentConfig {
     return {
+      ...base,
       environment: 'prod',
-      region: process.env.CDK_DEFAULT_REGION || base.aws?.defaultRegion || 'ap-southeast-1',
-      account: process.env.CDK_DEFAULT_ACCOUNT,
-      aws: {
-        region: process.env.AWS_REGION || 'ap-southeast-1',
-        defaultRegion: 'ap-southeast-1',
-      },
       lambda: {
         memorySize: 1024,
         timeout: Duration.seconds(30),
@@ -117,44 +128,17 @@ export class EnvironmentConfigFactory {
       dynamodb: {
         tableName: process.env.TABLE_NAME || 'prod-serverless-microservices',
       },
-      eventBridge: {
-        eventBusName: process.env.EVENT_BUS_NAME || 'default',
-      },
-      cognito: {
-        userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.USER_POOL_ID,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-      },
       notifications: {
+        ...base.notifications!,
         enableMock: process.env.ENABLE_MOCK_NOTIFICATIONS === 'true',
-        email: {
-          fromAddress: process.env.FROM_EMAIL_ADDRESS || 'noreply@example.com',
-          replyToAddresses: process.env.REPLY_TO_ADDRESSES
-            ? process.env.REPLY_TO_ADDRESSES.split(',')
-            : [],
-          defaultUserEmail: process.env.DEFAULT_USER_EMAIL || 'user@example.com',
-        },
-        sms: {
-          senderId: process.env.SMS_SENDER_ID || 'ServerlessApp',
-          defaultUserPhone: process.env.DEFAULT_USER_PHONE || '',
-        },
-      },
-      application: {
-        version: process.env.VERSION || '1.0.0',
-        enableRequestLogging: process.env.ENABLE_REQUEST_LOGGING !== 'false',
       },
     } as EnvironmentConfig;
   }
 
   private static getDevelopmentConfig(base: Partial<EnvironmentConfig>): EnvironmentConfig {
     return {
+      ...base,
       environment: 'dev',
-      region: process.env.CDK_DEFAULT_REGION || base.aws?.defaultRegion || 'ap-southeast-1',
-      account: process.env.CDK_DEFAULT_ACCOUNT,
-      aws: {
-        region: process.env.AWS_REGION || 'ap-southeast-1',
-        defaultRegion: 'ap-southeast-1',
-      },
       lambda: {
         memorySize: 256,
         timeout: Duration.seconds(15),
@@ -167,32 +151,6 @@ export class EnvironmentConfigFactory {
       },
       dynamodb: {
         tableName: process.env.TABLE_NAME || 'dev-serverless-microservices',
-      },
-      eventBridge: {
-        eventBusName: process.env.EVENT_BUS_NAME || 'default',
-      },
-      cognito: {
-        userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.USER_POOL_ID,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-      },
-      notifications: {
-        enableMock: process.env.ENABLE_MOCK_NOTIFICATIONS !== 'false', // Default to true for dev
-        email: {
-          fromAddress: process.env.FROM_EMAIL_ADDRESS || 'noreply@example.com',
-          replyToAddresses: process.env.REPLY_TO_ADDRESSES
-            ? process.env.REPLY_TO_ADDRESSES.split(',')
-            : [],
-          defaultUserEmail: process.env.DEFAULT_USER_EMAIL || 'user@example.com',
-        },
-        sms: {
-          senderId: process.env.SMS_SENDER_ID || 'ServerlessApp',
-          defaultUserPhone: process.env.DEFAULT_USER_PHONE || '',
-        },
-      },
-      application: {
-        version: process.env.VERSION || '1.0.0',
-        enableRequestLogging: process.env.ENABLE_REQUEST_LOGGING !== 'false',
       },
     } as EnvironmentConfig;
   }
