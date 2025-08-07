@@ -17,40 +17,17 @@ if [[ ! $REPLY =~ ^yes$ ]]; then
 fi
 
 echo ""
-echo "🔍 Listing all CloudFormation stacks..."
+echo "🔧 Building CDK infrastructure..."
+cd infrastructure
+npm run build
 
-# Get all stacks that might be related to our project
-STACKS=$(aws cloudformation list-stacks \
-    --region $REGION \
-    --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
-    --query 'StackSummaries[?contains(StackName, `ServerlessMicroservices`) || contains(StackName, `serverless-blueprint`)].StackName' \
-    --output text)
+echo ""
+echo "🗑️  Using CDK destroy to remove all stacks (respects dependencies)..."
+# CDK destroy automatically handles dependency order - it destroys in reverse dependency order
+cdk destroy --all --context environment=$ENVIRONMENT --force
 
-if [ -z "$STACKS" ]; then
-    echo "✅ No CDK stacks found to clean up."
-else
-    echo "📋 Found the following stacks to delete:"
-    echo "$STACKS" | tr '\t' '\n'
-    echo ""
-    
-    # Delete each stack
-    for stack in $STACKS; do
-        echo "🗑️  Deleting stack: $stack"
-        aws cloudformation delete-stack --stack-name "$stack" --region $REGION
-        echo "   Deletion initiated for $stack"
-    done
-    
-    echo ""
-    echo "⏳ Waiting for all stacks to be deleted..."
-    
-    for stack in $STACKS; do
-        echo "   Waiting for $stack to be deleted..."
-        aws cloudformation wait stack-delete-complete --stack-name "$stack" --region $REGION || {
-            echo "   ⚠️  Stack $stack may have deletion protection or dependency issues"
-            echo "   Check the AWS console for details"
-        }
-    done
-fi
+echo "✅ CDK destroy completed!"
+cd ..
 
 echo ""
 echo "🧹 Cleaning up CDK assets and metadata..."
