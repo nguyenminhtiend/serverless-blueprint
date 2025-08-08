@@ -35,6 +35,7 @@
     { "path": "./packages/service-users" },
     { "path": "./packages/service-orders" },
     { "path": "./packages/service-notifications" },
-    { "path": "./infrastructure" }
+    { "path": "./infrastructure" },
+    { "path": "./web-app" }
   ]
 }

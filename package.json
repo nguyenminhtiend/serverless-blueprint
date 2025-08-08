@@ -24,7 +24,11 @@
     "deploy:stack": "./scripts/deploy-stack.sh",
     "cleanup:all": "./scripts/cleanup-all.sh",
     "cleanup:dev": "./scripts/cleanup-all.sh dev",
-    "cleanup:prod": "./scripts/cleanup-all.sh prod"
+    "cleanup:prod": "./scripts/cleanup-all.sh prod",
+    "web:dev": "pnpm --filter serverless-web-app dev",
+    "web:build": "pnpm --filter serverless-web-app build",
+    "web:start": "pnpm --filter serverless-web-app start",
+    "web:format": "pnpm --filter serverless-web-app format"
   },
   "devDependencies": {
     "@aws-lambda-powertools/logger": "^2.24.1",
