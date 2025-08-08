@@ -1,5 +1,5 @@
-import { PublicRoute } from '@/components/auth/protected-route'
-import { RegisterForm } from '@/components/forms/register-form'
+import { PublicRoute } from '@/components/auth/protected-route';
+import { RegisterForm } from '@/components/forms/register-form';
 
 export default function RegisterPage() {
   return (
@@ -12,5 +12,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </PublicRoute>
-  )
+  );
 }

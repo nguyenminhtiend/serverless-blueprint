@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import { ProtectedRoute } from '@/components/auth/protected-route'
-import { useAuthContext } from '@/components/providers/auth-provider'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { ProtectedRoute } from '@/components/auth/protected-route';
+import { useAuthContext } from '@/components/providers/auth-provider';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuthContext()
+  const { user, signOut } = useAuthContext();
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      await signOut();
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Sign out error:', error);
     }
-  }
+  };
 
   return (
     <ProtectedRoute>
@@ -26,9 +26,7 @@ export default function DashboardPage() {
                 <h1 className="text-xl font-semibold">Dashboard</h1>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Welcome, {user?.firstName}!
-                </span>
+                <span className="text-sm text-gray-600">Welcome, {user?.firstName}!</span>
                 <Button variant="outline" onClick={handleSignOut}>
                   Sign Out
                 </Button>
@@ -57,7 +55,9 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <label className="font-medium text-gray-700">Name:</label>
-                      <p className="text-gray-900">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-gray-900">
+                        {user?.firstName} {user?.lastName}
+                      </p>
                     </div>
                     <div>
                       <label className="font-medium text-gray-700">Email Verified:</label>
@@ -84,7 +84,9 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-green-900 mb-2">Phase 4: Order Management</h4>
+                      <h4 className="font-semibold text-green-900 mb-2">
+                        Phase 4: Order Management
+                      </h4>
                       <p className="text-green-700 text-sm">
                         Build order creation forms and lookup functionality.
                       </p>
@@ -106,5 +108,5 @@ export default function DashboardPage() {
         </main>
       </div>
     </ProtectedRoute>
-  )
+  );
 }

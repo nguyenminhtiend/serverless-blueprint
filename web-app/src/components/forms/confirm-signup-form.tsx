@@ -1,28 +1,28 @@
-'use client'
+'use client';
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, CheckCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Loader2, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
 
-import { useAuth } from '@/hooks/use-auth'
-import { confirmSignUpSchema, type ConfirmSignUpFormData } from '@/lib/validations/auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuth } from '@/hooks/use-auth';
+import { confirmSignUpSchema, type ConfirmSignUpFormData } from '@/lib/validations/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ConfirmSignUpFormProps {
-  className?: string
+  className?: string;
 }
 
 export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
-  const [isConfirmed, setIsConfirmed] = useState(false)
-  const { confirmSignUp, loading, error } = useAuth()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const emailParam = searchParams.get('email') || ''
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const { confirmSignUp, loading, error } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const emailParam = searchParams.get('email') || '';
 
   const form = useForm<ConfirmSignUpFormData>({
     resolver: zodResolver(confirmSignUpSchema),
@@ -30,45 +30,38 @@ export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
       email: emailParam,
       confirmationCode: '',
     },
-  })
+  });
 
   const onSubmit = async (data: ConfirmSignUpFormData) => {
     try {
-      await confirmSignUp(data.email, data.confirmationCode)
-      setIsConfirmed(true)
+      await confirmSignUp(data.email, data.confirmationCode);
+      setIsConfirmed(true);
     } catch (error) {
       // Error is handled by the useAuth hook
     }
-  }
+  };
 
   if (isConfirmed) {
     return (
       <div className={className}>
         <div className="flex flex-col space-y-4 text-center">
           <CheckCircle className="mx-auto h-12 w-12 text-green-600" />
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Email confirmed!
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Email confirmed!</h1>
           <p className="text-sm text-muted-foreground">
             Your email has been successfully confirmed. You can now sign in to your account.
           </p>
-          <Button
-            onClick={() => router.push('/login')}
-            className="w-full"
-          >
+          <Button onClick={() => router.push('/login')} className="w-full">
             Sign in to your account
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className={className}>
       <div className="flex flex-col space-y-2 text-center mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Confirm your email
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Confirm your email</h1>
         <p className="text-sm text-muted-foreground">
           Enter the confirmation code sent to your email address
         </p>
@@ -92,9 +85,7 @@ export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
             {...form.register('email')}
           />
           {form.formState.errors.email && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.email.message}
-            </p>
+            <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
           )}
         </div>
 
@@ -109,9 +100,9 @@ export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
             {...form.register('confirmationCode')}
             onChange={(e) => {
               // Only allow numbers
-              const value = e.target.value.replace(/\D/g, '')
-              e.target.value = value
-              form.setValue('confirmationCode', value)
+              const value = e.target.value.replace(/\D/g, '');
+              e.target.value = value;
+              form.setValue('confirmationCode', value);
             }}
           />
           {form.formState.errors.confirmationCode && (
@@ -121,11 +112,7 @@ export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
           )}
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading}
-        >
+        <Button type="submit" className="w-full" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Confirm Email
         </Button>
@@ -139,7 +126,7 @@ export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
             className="p-0 h-auto font-normal"
             onClick={() => {
               // TODO: Implement resend confirmation code
-              console.log('Resend confirmation code')
+              console.log('Resend confirmation code');
             }}
           >
             Resend code
@@ -147,5 +134,5 @@ export function ConfirmSignUpForm({ className }: ConfirmSignUpFormProps) {
         </p>
       </div>
     </div>
-  )
+  );
 }

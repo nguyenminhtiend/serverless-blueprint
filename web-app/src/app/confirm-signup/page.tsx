@@ -1,5 +1,5 @@
-import { PublicRoute } from '@/components/auth/protected-route'
-import { ConfirmSignUpForm } from '@/components/forms/confirm-signup-form'
+import { PublicRoute } from '@/components/auth/protected-route';
+import { ConfirmSignUpForm } from '@/components/forms/confirm-signup-form';
 
 export default function ConfirmSignUpPage() {
   return (
@@ -12,5 +12,5 @@ export default function ConfirmSignUpPage() {
         </div>
       </div>
     </PublicRoute>
-  )
+  );
 }
