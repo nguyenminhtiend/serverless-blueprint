@@ -1,3 +1,6 @@
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -16,12 +19,12 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-              Get Started
-            </button>
-            <button className="border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300 font-semibold py-3 px-6 rounded-lg transition-colors">
-              Learn More
-            </button>
+            <Button asChild>
+              <Link href="/register">Get Started</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 max-w-4xl mx-auto">
