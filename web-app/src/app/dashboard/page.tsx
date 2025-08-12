@@ -18,16 +18,16 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-white shadow">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
+        <nav className="bg-white shadow-lg border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold">Dashboard</h1>
+                <h1 className="text-xl font-bold text-gray-800">Dashboard</h1>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">Welcome, {user?.firstName}!</span>
-                <Button variant="outline" onClick={handleSignOut}>
+                <span className="text-sm text-gray-600 font-medium">Welcome, {user?.firstName}!</span>
+                <Button variant="outline" onClick={handleSignOut} className="hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors">
                   Sign Out
                 </Button>
               </div>
@@ -35,69 +35,85 @@ export default function DashboardPage() {
           </div>
         </nav>
 
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  🎉 Authentication Working!
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-6">
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  🎉 Welcome to Your Dashboard!
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-blue-100">
                   You have successfully signed in and reached the protected dashboard.
                 </p>
+              </div>
 
-                <div className="bg-white p-6 rounded-lg shadow mb-6">
-                  <h3 className="text-lg font-semibold mb-4">User Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                    <div>
-                      <label className="font-medium text-gray-700">Email:</label>
-                      <p className="text-gray-900">{user?.email}</p>
+              <div className="p-8">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl shadow-inner mb-8">
+                  <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    User Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                      <label className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Email:</label>
+                      <p className="text-gray-900 font-medium mt-1">{user?.email}</p>
                     </div>
-                    <div>
-                      <label className="font-medium text-gray-700">Name:</label>
-                      <p className="text-gray-900">
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                      <label className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Name:</label>
+                      <p className="text-gray-900 font-medium mt-1">
                         {user?.firstName} {user?.lastName}
                       </p>
                     </div>
-                    <div>
-                      <label className="font-medium text-gray-700">Email Verified:</label>
-                      <p className={user?.emailVerified ? 'text-green-600' : 'text-red-600'}>
-                        {user?.emailVerified ? 'Yes' : 'No'}
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                      <label className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Email Verified:</label>
+                      <p className={`font-bold mt-1 ${user?.emailVerified ? 'text-green-600' : 'text-red-600'}`}>
+                        {user?.emailVerified ? '✅ Verified' : '❌ Not Verified'}
                       </p>
                     </div>
-                    <div>
-                      <label className="font-medium text-gray-700">Token Expires:</label>
-                      <p className="text-gray-900">
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                      <label className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Token Expires:</label>
+                      <p className="text-gray-900 font-medium mt-1">
                         {user?.expiresAt ? new Date(user.expiresAt).toLocaleString() : 'Unknown'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">What's Next?</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-2">Phase 3: API Integration</h4>
-                      <p className="text-blue-700 text-sm">
-                        Connect to your serverless backend APIs with proper authentication.
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                    What's Next?
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-sm border border-blue-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center mb-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                          <span className="text-white font-bold text-sm">3</span>
+                        </div>
+                        <h4 className="font-bold text-blue-900">API Integration</h4>
+                      </div>
+                      <p className="text-blue-800 text-sm leading-relaxed">
+                        Connect to your serverless backend APIs with proper authentication and secure data handling.
                       </p>
                     </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-green-900 mb-2">
-                        Phase 4: Order Management
-                      </h4>
-                      <p className="text-green-700 text-sm">
-                        Build order creation forms and lookup functionality.
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-sm border border-green-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center mb-3">
+                        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+                          <span className="text-white font-bold text-sm">4</span>
+                        </div>
+                        <h4 className="font-bold text-green-900">Order Management</h4>
+                      </div>
+                      <p className="text-green-800 text-sm leading-relaxed">
+                        Build comprehensive order creation forms and lookup functionality with real-time updates.
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex space-x-4 justify-center mt-6">
-                    <Button asChild>
+                  <div className="flex space-x-4 justify-center mt-8 pt-6 border-t border-gray-200">
+                    <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all">
                       <Link href="/orders/new">Create Order</Link>
                     </Button>
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" asChild className="border-2 border-gray-300 hover:border-gray-400 font-semibold px-6 py-2.5 rounded-lg transition-all">
                       <Link href="/">Home</Link>
                     </Button>
                   </div>

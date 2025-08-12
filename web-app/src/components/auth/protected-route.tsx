@@ -26,10 +26,10 @@ export function ProtectedRoute({ children, redirectTo = '/login', fallback }: Pr
   if (loading) {
     return (
       fallback || (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen bg-gray-50">
           <div className="flex items-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading...</span>
+            <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+            <span className="text-gray-600">Loading...</span>
           </div>
         </div>
       )
@@ -60,9 +60,9 @@ export function PublicRoute({ children, redirectTo = '/dashboard' }: PublicRoute
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
         <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
           <span className="text-gray-600">Loading...</span>
         </div>
       </div>
@@ -71,9 +71,9 @@ export function PublicRoute({ children, redirectTo = '/dashboard' }: PublicRoute
 
   if (user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
         <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
           <span className="text-gray-600">Redirecting...</span>
         </div>
       </div>

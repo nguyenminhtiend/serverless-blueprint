@@ -93,8 +93,8 @@ export function RegisterForm({ className }: RegisterFormProps) {
   return (
     <div className={className}>
       <div className="flex flex-col space-y-2 text-center mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-800">Create your account</h1>
+        <p className="text-sm text-gray-600">
           Enter your information to create your account
         </p>
       </div>
@@ -213,15 +213,15 @@ export function RegisterForm({ className }: RegisterFormProps) {
           )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Create Account
         </Button>
       </form>
 
       <div className="mt-6 text-center text-sm">
-        <span className="text-muted-foreground">Already have an account? </span>
-        <Link href="/login" className="text-primary underline-offset-4 hover:underline">
+        <span className="text-gray-600">Already have an account? </span>
+        <Link href="/login" className="text-blue-600 font-medium underline-offset-4 hover:underline hover:text-blue-700">
           Sign in
         </Link>
       </div>

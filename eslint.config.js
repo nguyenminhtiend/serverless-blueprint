@@ -70,10 +70,13 @@ export default [
         console: 'readonly',
         process: 'readonly',
         setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        localStorage: 'readonly',
         Buffer: 'readonly',
         window: 'readonly',
         document: 'readonly',
         fetch: 'readonly',
+        crypto: 'readonly',
       },
     },
     plugins: {

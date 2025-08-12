@@ -5,10 +5,6 @@ import {
   ConfirmSignUpCommand,
   GetUserCommand,
   GlobalSignOutCommand,
-  type InitiateAuthResponse,
-  type SignUpResponse,
-  type ConfirmSignUpResponse,
-  type GetUserResponse,
 } from '@aws-sdk/client-cognito-identity-provider';
 
 export interface SignInResult {

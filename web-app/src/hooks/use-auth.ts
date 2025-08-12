@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { cognitoAuthClient, type SignInResult, type UserInfo } from '@/lib/auth/cognito-client';
+import { cognitoAuthClient } from '@/lib/auth/cognito-client';
+import { secureStorage } from '@/lib/auth/secure-storage';
 
 export interface AuthUser {
   email: string;
@@ -20,7 +21,6 @@ interface AuthState {
   error: string | null;
 }
 
-const AUTH_STORAGE_KEY = 'auth_user';
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
 
 export function useAuth() {
@@ -44,29 +44,39 @@ export function useAuth() {
       loading: false,
       error: null,
     });
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    secureStorage.clearUser();
   }, []);
 
-  const setUser = useCallback((user: AuthUser) => {
+  const setUser = useCallback(async (user: AuthUser) => {
     setState({
       user,
       loading: false,
       error: null,
     });
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    try {
+      await secureStorage.setUser(user);
+    } catch (error) {
+      console.error('Failed to store user data securely:', error);
+      setState(prev => ({ ...prev, error: 'Failed to store authentication data' }));
+    }
   }, []);
 
   const loadUserFromStorage = useCallback(async () => {
     try {
       setLoading(true);
-      const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-
-      if (!storedUser) {
+      
+      if (!secureStorage.isAvailable()) {
         setLoading(false);
+        setError('Secure storage not available');
         return;
       }
 
-      const user: AuthUser = JSON.parse(storedUser);
+      const user = await secureStorage.getUser();
+
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       // Check if token is expired
       if (Date.now() >= user.expiresAt) {
@@ -83,14 +93,14 @@ export function useAuth() {
             expiresAt: Date.now() + refreshResult.expiresIn * 1000,
           };
 
-          setUser(updatedUser);
+          await setUser(updatedUser);
         } catch (error) {
           // Refresh failed, clear user
           clearUser();
         }
       } else {
         // Token is still valid
-        setUser(user);
+        await setUser(user);
       }
     } catch (error) {
       clearUser();
@@ -108,7 +118,7 @@ export function useAuth() {
       }
 
       const timeout = setTimeout(async () => {
-        const currentUser = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || 'null');
+        const currentUser = await secureStorage.getUser();
         if (!currentUser) return;
 
         try {
@@ -123,7 +133,7 @@ export function useAuth() {
             expiresAt: Date.now() + refreshResult.expiresIn * 1000,
           };
 
-          setUser(updatedUser);
+          await setUser(updatedUser);
           scheduleTokenRefresh(updatedUser.expiresAt);
         } catch (error) {
           clearUser();
@@ -163,7 +173,7 @@ export function useAuth() {
           expiresAt: Date.now() + authResult.expiresIn * 1000,
         };
 
-        setUser(user);
+        await setUser(user);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Sign in failed';
         setError(message);
@@ -250,7 +260,7 @@ export function useAuth() {
         expiresAt: Date.now() + refreshResult.expiresIn * 1000,
       };
 
-      setUser(updatedUser);
+      await setUser(updatedUser);
     } catch (error) {
       clearUser();
       throw error;
