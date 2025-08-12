@@ -57,14 +57,14 @@ export function useAuth() {
       await secureStorage.setUser(user);
     } catch (error) {
       console.error('Failed to store user data securely:', error);
-      setState(prev => ({ ...prev, error: 'Failed to store authentication data' }));
+      setState((prev) => ({ ...prev, error: 'Failed to store authentication data' }));
     }
   }, []);
 
   const loadUserFromStorage = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       if (!secureStorage.isAvailable()) {
         setLoading(false);
         setError('Secure storage not available');
