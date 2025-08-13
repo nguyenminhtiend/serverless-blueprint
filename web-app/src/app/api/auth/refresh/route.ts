@@ -36,10 +36,6 @@ export async function POST(request: NextRequest) {
   try {
     // Get refresh token from secure cookie
     const refreshToken = await getRefreshTokenCookie();
-    
-    // Debug: Log all cookies to see what's available
-    console.log('All cookies:', request.cookies.getAll().map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })));
-    console.log('Refresh token found:', !!refreshToken);
 
     if (!refreshToken) {
       return NextResponse.json(

@@ -39,14 +39,8 @@ export async function setRefreshTokenCookie(
   expiresIn?: number,
 ): Promise<void> {
   const cookieStore = await cookies();
-  const options = getSecureCookieOptions(expiresIn);
-  
-  console.log('Setting refresh token cookie with options:', {
-    ...options,
-    refreshToken: refreshToken.substring(0, 20) + '...',
-  });
 
-  cookieStore.set(COOKIE_CONFIG.REFRESH_TOKEN, refreshToken, options);
+  cookieStore.set(COOKIE_CONFIG.REFRESH_TOKEN, refreshToken, getSecureCookieOptions(expiresIn));
 }
 
 /**
@@ -58,11 +52,6 @@ export async function getRefreshTokenCookie(): Promise<string | null> {
 
   try {
     const cookie = cookieStore.get(COOKIE_CONFIG.REFRESH_TOKEN);
-    console.log('Getting refresh token cookie:', {
-      found: !!cookie,
-      hasValue: !!cookie?.value,
-      cookieName: COOKIE_CONFIG.REFRESH_TOKEN
-    });
     return cookie?.value || null;
   } catch (error) {
     console.error('Failed to retrieve refresh token cookie:', error);

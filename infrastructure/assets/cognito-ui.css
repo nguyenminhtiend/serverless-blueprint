@@ -1,0 +1,288 @@
+/* Custom Cognito Hosted UI Styling */
+
+/* Root variables for consistent theming */
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary-color: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --border-radius: 8px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Overall page styling */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main container */
+.amplify-container,
+#app {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  margin: 1rem;
+}
+
+/* Header and logo area */
+.amplify-authenticator__header,
+.authenticator-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Logo styling */
+.amplify-image,
+.logo {
+  max-width: 120px;
+  height: auto;
+  margin: 0 auto 1rem;
+  display: block;
+}
+
+/* Headings */
+h1, h2, h3,
+.amplify-heading,
+.amplify-text--primary {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+
+/* Form elements */
+.amplify-form,
+.amplify-authenticator__form {
+  margin: 0;
+}
+
+/* Input fields */
+.amplify-input,
+.amplify-field-group__control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+}
+
+.amplify-input:focus,
+.amplify-field-group__control:focus,
+input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Labels */
+.amplify-label,
+.amplify-field-group__label,
+label {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* Primary buttons */
+.amplify-button--primary,
+.amplify-button[data-variation="primary"],
+button[type="submit"],
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.amplify-button--primary:hover,
+.amplify-button[data-variation="primary"]:hover,
+button[type="submit"]:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.amplify-button--primary:active,
+button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+/* Secondary buttons */
+.amplify-button--link,
+.amplify-button[data-variation="link"],
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.amplify-button--link:hover,
+.amplify-button[data-variation="link"]:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Error messages */
+.amplify-alert,
+.amplify-alert--error,
+.error,
+.alert-danger {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+/* Success messages */
+.amplify-alert--info,
+.alert-success {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+/* Field groups */
+.amplify-field-group,
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* Footer links */
+.amplify-tabs,
+.amplify-tabs__panel,
+.tab-links {
+  margin-top: 1.5rem;
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.amplify-tabs__item,
+.tab-link {
+  display: inline-block;
+  margin: 0 0.5rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.amplify-tabs__item:hover {
+  color: var(--primary-color);
+}
+
+/* Loading states */
+.amplify-loader,
+.spinner {
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .amplify-container,
+  #app {
+    margin: 0.5rem;
+    padding: 1.5rem;
+  }
+
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.125rem; }
+}
+
+/* Additional modern touches */
+.amplify-container::before,
+#app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+  border-radius: 12px 12px 0 0;
+}
+
+/* Custom checkbox styling */
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+  accent-color: var(--primary-color);
+}
+
+/* Password visibility toggle */
+.amplify-field-group__icon,
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+/* Social provider buttons (if used) */
+.amplify-button--fullWidth[data-amplify-socialProvider] {
+  margin: 0.25rem 0;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--text-primary);
+}
+
+.amplify-button--fullWidth[data-amplify-socialProvider]:hover {
+  background: var(--secondary-color);
+  border-color: var(--primary-color);
+}

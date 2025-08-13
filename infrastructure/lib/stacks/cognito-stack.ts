@@ -7,6 +7,8 @@ export interface CognitoStackProps extends cdk.StackProps {
   readonly webAppDomain?: string;
   readonly additionalCallbackUrls?: string[];
   readonly additionalLogoutUrls?: string[];
+  readonly cssUrl?: string;
+  readonly logoUrl?: string;
 }
 
 export class CognitoStack extends cdk.Stack {
@@ -21,6 +23,8 @@ export class CognitoStack extends cdk.Stack {
     const webAppDomain = props?.webAppDomain || 'http://localhost:3000';
     const additionalCallbackUrls = props?.additionalCallbackUrls || [];
     const additionalLogoutUrls = props?.additionalLogoutUrls || [];
+    const cssUrl = props?.cssUrl;
+    const logoUrl = props?.logoUrl;
 
     // Cognito User Pool with email/password authentication
     this.userPool = new cognito.UserPool(this, 'UserPool', {
@@ -121,8 +125,8 @@ export class CognitoStack extends cdk.Stack {
         },
         scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
         callbackUrls: [
-          `${webAppDomain}/auth/callback`, // OAuth callback endpoint
-          'http://localhost:3000/auth/callback', // Development callback
+          `${webAppDomain}/api/auth/callback`, // OAuth callback API endpoint
+          'http://localhost:3000/api/auth/callback', // Development callback API
           ...additionalCallbackUrls,
         ],
         logoutUrls: [
@@ -157,13 +161,32 @@ export class CognitoStack extends cdk.Stack {
       }),
     });
 
-    // User Pool Domain for hosted UI (optional, for future use)
+    // User Pool Domain for hosted UI with custom styling
     this.userPoolDomain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
       userPool: this.userPool,
       cognitoDomain: {
         domainPrefix: `${environment}-serverless-microservices-${cdk.Aws.ACCOUNT_ID}`,
       },
     });
+
+    // Add UI customization if CSS URL is provided
+    if (cssUrl) {
+      new cognito.CfnUserPoolUICustomizationAttachment(this, 'UICustomization', {
+        userPoolId: this.userPool.userPoolId,
+        clientId: 'ALL', // Apply to all clients
+        css: `@import url('${cssUrl}');${
+          logoUrl
+            ? `
+/* Logo customization */
+.amplify-image, .logo {
+  content: url('${logoUrl}');
+  max-width: 120px;
+  height: auto;
+}`
+            : ''
+        }`,
+      });
+    }
 
     // CloudFormation outputs
     new cdk.CfnOutput(this, 'UserPoolId', {
@@ -197,8 +220,8 @@ export class CognitoStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'OAuthCallbackUrl', {
-      value: `${webAppDomain}/auth/callback`,
-      description: 'OAuth Callback URL',
+      value: `${webAppDomain}/api/auth/callback`,
+      description: 'OAuth Callback API URL',
       exportName: `${environment}-oauth-callback-url`,
     });
 
