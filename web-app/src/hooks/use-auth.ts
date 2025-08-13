@@ -172,25 +172,28 @@ export function useAuth() {
     }
   }, [state.isAuthenticated, scheduleTokenRefresh]);
 
-  const signIn = useCallback(async (returnTo?: string): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
+  const signIn = useCallback(
+    async (returnTo?: string): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      // Redirect to OAuth login API route
-      const loginUrl = new URL('/api/auth/login', window.location.origin);
-      if (returnTo) {
-        loginUrl.searchParams.set('returnTo', returnTo);
+        // Redirect to OAuth login API route
+        const loginUrl = new URL('/api/auth/login', window.location.origin);
+        if (returnTo) {
+          loginUrl.searchParams.set('returnTo', returnTo);
+        }
+
+        window.location.href = loginUrl.toString();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Sign in failed';
+        setError(message);
+        setLoading(false);
+        throw new Error(message);
       }
-
-      window.location.href = loginUrl.toString();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sign in failed';
-      setError(message);
-      setLoading(false);
-      throw new Error(message);
-    }
-  }, [setError, setLoading]);
+    },
+    [setError, setLoading],
+  );
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
