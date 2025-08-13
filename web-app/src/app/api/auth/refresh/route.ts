@@ -11,28 +11,9 @@ import {
 } from '@/lib/auth/cookie-manager';
 import { oauthService } from '@/lib/auth/oauth-service';
 import { AuthErrorCode, createAuthError, type RefreshResponse } from '@/lib/auth/oauth-types';
-import { checkRateLimit } from '@/lib/auth/rate-limiter';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check rate limit first
-    const rateLimitResult = checkRateLimit('refresh', request);
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          retryAfter: rateLimitResult.retryAfter,
-          requiresLogin: false,
-        },
-        {
-          status: 429,
-          headers: rateLimitResult.retryAfter
-            ? { 'Retry-After': rateLimitResult.retryAfter.toString() }
-            : {},
-        },
-      );
-    }
-
     // Get refresh token from secure cookie
     const refreshToken = await getRefreshTokenCookie();
 

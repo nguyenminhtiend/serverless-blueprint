@@ -14,27 +14,9 @@ import { createPKCESession } from '@/lib/auth/pkce-utils';
 import { setSessionCookie, generateSessionId } from '@/lib/auth/cookie-manager';
 import { encryptPKCESession, validateEncryptionConfig } from '@/lib/auth/session-encryption';
 import { createAuthError, AuthErrorCode } from '@/lib/auth/oauth-types';
-import { checkRateLimit } from '@/lib/auth/rate-limiter';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check rate limit first
-    const rateLimitResult = checkRateLimit('login', request);
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          retryAfter: rateLimitResult.retryAfter,
-        },
-        {
-          status: 429,
-          headers: rateLimitResult.retryAfter
-            ? { 'Retry-After': rateLimitResult.retryAfter.toString() }
-            : {},
-        },
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const returnTo = searchParams.get('returnTo') || '/dashboard';
 

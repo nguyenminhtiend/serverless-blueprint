@@ -10,21 +10,9 @@ import { oauthService } from '@/lib/auth/oauth-service';
 import { AuthErrorCode, createAuthError } from '@/lib/auth/oauth-types';
 import { decryptPKCESession, validateEncryptionConfig } from '@/lib/auth/session-encryption';
 import { authLogger, AuthEventType } from '@/lib/auth/auth-logger';
-import { checkRateLimit } from '@/lib/auth/rate-limiter';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check rate limit first
-    const rateLimitResult = checkRateLimit('callback', request);
-    if (!rateLimitResult.allowed) {
-      return NextResponse.redirect(
-        new URL(
-          `/login?error=rate_limit_exceeded&retry=${rateLimitResult.retryAfter}`,
-          request.url,
-        ),
-      );
-    }
-
     const { searchParams } = new URL(request.url);
 
     // Check for OAuth errors first
