@@ -1,9 +1,0 @@
-{
-  "ServerlessMicroservices-UiAssets-dev": {
-    "CognitoLogoUrl": "https://dev-cognito-ui-assets-471112781233-ap-southeast-1.s3.ap-southeast-1.amazonaws.com/ui/logo.svg",
-    "UiAssetsBucketName": "dev-cognito-ui-assets-471112781233-ap-southeast-1",
-    "UiAssetsBucketUrl": "https://dev-cognito-ui-assets-471112781233-ap-southeast-1.s3.ap-southeast-1.amazonaws.com",
-    "ExportsOutputRefUiAssetsBucket6A6D6F46005EFF13": "dev-cognito-ui-assets-471112781233-ap-southeast-1",
-    "CognitoCssUrl": "https://dev-cognito-ui-assets-471112781233-ap-southeast-1.s3.ap-southeast-1.amazonaws.com/ui/cognito-ui.css"
-  }
-}
