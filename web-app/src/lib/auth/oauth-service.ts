@@ -9,7 +9,6 @@ import type {
   OAuthError,
   TokenExchangeParams,
   RefreshTokenParams,
-  AuthError,
 } from './oauth-types';
 import { createAuthError, AuthErrorCode } from './oauth-types';
 
