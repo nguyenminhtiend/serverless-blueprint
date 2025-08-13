@@ -1,5 +1,6 @@
 /**
  * OAuth 2.0 client for Cognito Hosted UI with PKCE support
+ * Handles client-side OAuth flow initiation and logout
  */
 
 import {
@@ -15,59 +16,24 @@ import {
   clearPKCESession,
   type PKCESession,
 } from './pkce-utils';
-
-/**
- * OAuth authorization URL parameters
- */
-interface AuthorizeParams {
-  response_type: string;
-  client_id: string;
-  redirect_uri: string;
-  scope: string;
-  state: string;
-  code_challenge: string;
-  code_challenge_method: string;
-}
-
-/**
- * OAuth token exchange parameters
- */
-interface TokenParams {
-  grant_type: 'authorization_code';
-  client_id: string;
-  code: string;
-  redirect_uri: string;
-  code_verifier: string;
-}
-
-/**
- * OAuth token response
- */
-interface TokenResponse {
-  access_token: string;
-  id_token: string;
-  refresh_token: string;
-  token_type: 'Bearer';
-  expires_in: number;
-}
-
-/**
- * OAuth error response
- */
-interface OAuthError {
-  error: string;
-  error_description?: string;
-  error_uri?: string;
-}
+import { oauthService } from './oauth-service';
+import type {
+  AuthorizeParams,
+  TokenResponse,
+  OAuthError,
+  AuthError,
+  AuthErrorCode,
+} from './oauth-types';
+import { createAuthError } from './oauth-types';
 
 /**
  * Initiates OAuth 2.0 authorization flow with PKCE
  * Creates PKCE session and redirects to Cognito Hosted UI
+ * @param returnTo Optional path to return to after authentication
  */
-export async function initiateOAuthFlow(): Promise<void> {
+export async function initiateOAuthFlow(returnTo?: string): Promise<void> {
   try {
     const config = getAuthConfig();
-    const endpoints = getOAuthEndpoints(config.domain);
 
     // Create PKCE session
     const pkceSession = await createPKCESession(config.redirectUri);
@@ -79,8 +45,14 @@ export async function initiateOAuthFlow(): Promise<void> {
     // Redirect to Cognito Hosted UI
     window.location.href = authUrl;
   } catch (error) {
-    console.error('Failed to initiate OAuth flow:', error);
-    throw new Error('Authentication initialization failed');
+    const authError = createAuthError(
+      'AUTHENTICATION_INIT_FAILED' as AuthErrorCode,
+      'Failed to initiate OAuth flow',
+      { returnTo },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    console.error('OAuth flow initiation failed:', authError);
+    throw authError;
   }
 }
 
@@ -90,7 +62,7 @@ export async function initiateOAuthFlow(): Promise<void> {
  * @param session PKCE session data
  * @returns Complete authorization URL
  */
-function buildAuthorizationUrl(config: AuthConfig, session: PKCESession): string {
+function buildAuthorizationUrl(config: any, session: PKCESession): string {
   const endpoints = getOAuthEndpoints(config.domain);
 
   const params: AuthorizeParams = {
@@ -103,12 +75,13 @@ function buildAuthorizationUrl(config: AuthConfig, session: PKCESession): string
     code_challenge_method: CODE_CHALLENGE_METHOD,
   };
 
-  const urlParams = new URLSearchParams(params);
+  const urlParams = new URLSearchParams(params as any);
   return `${endpoints.authorize}?${urlParams.toString()}`;
 }
 
 /**
  * Handles OAuth callback and exchanges authorization code for tokens
+ * Note: This is primarily for client-side handling. Server-side callback is preferred.
  * @param code Authorization code from callback
  * @param state State parameter from callback
  * @returns Promise resolving to token response
@@ -118,16 +91,28 @@ export async function handleOAuthCallback(code: string, state: string): Promise<
     // Retrieve and validate PKCE session
     const pkceSession = retrievePKCESession();
     if (!pkceSession) {
-      throw new Error('No valid PKCE session found');
+      throw createAuthError(
+        'MISSING_PKCE_SESSION' as AuthErrorCode,
+        'No valid PKCE session found in storage',
+        { hasCode: !!code, hasState: !!state },
+      );
     }
 
     // Validate state parameter (CSRF protection)
     if (state !== pkceSession.state) {
-      throw new Error('Invalid state parameter - possible CSRF attack');
+      throw createAuthError(
+        'INVALID_STATE' as AuthErrorCode,
+        'State parameter mismatch - possible CSRF attack',
+        { expected: pkceSession.state, received: state },
+      );
     }
 
-    // Exchange authorization code for tokens
-    const tokens = await exchangeCodeForTokens(code, pkceSession);
+    // Exchange authorization code for tokens using the service
+    const tokens = await oauthService.exchangeCodeForTokens(
+      code,
+      pkceSession.codeVerifier,
+      pkceSession.redirectUri,
+    );
 
     // Clean up PKCE session
     clearPKCESession();
@@ -135,50 +120,28 @@ export async function handleOAuthCallback(code: string, state: string): Promise<
     return tokens;
   } catch (error) {
     clearPKCESession();
-    console.error('OAuth callback handling failed:', error);
-    throw error;
+
+    if (error instanceof Error && 'code' in error) {
+      throw error; // Re-throw auth errors
+    }
+
+    const authError = createAuthError(
+      'CALLBACK_FAILED' as AuthErrorCode,
+      'OAuth callback handling failed',
+      { code, state },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    console.error('OAuth callback handling failed:', authError);
+    throw authError;
   }
-}
-
-/**
- * Exchanges authorization code for access and refresh tokens
- * @param code Authorization code
- * @param session PKCE session data
- * @returns Promise resolving to token response
- */
-async function exchangeCodeForTokens(code: string, session: PKCESession): Promise<TokenResponse> {
-  const config = getAuthConfig();
-  const endpoints = getOAuthEndpoints(config.domain);
-
-  const params: TokenParams = {
-    grant_type: 'authorization_code',
-    client_id: config.clientId,
-    code,
-    redirect_uri: session.redirectUri,
-    code_verifier: session.codeVerifier,
-  };
-
-  const response = await fetch(endpoints.token, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams(params),
-  });
-
-  if (!response.ok) {
-    const errorData: OAuthError = await response.json();
-    throw new Error(`Token exchange failed: ${errorData.error_description || errorData.error}`);
-  }
-
-  return response.json();
 }
 
 /**
  * Initiates logout flow
  * Redirects to Cognito logout endpoint and clears local session
+ * @param returnTo Optional path to return to after logout
  */
-export function initiateLogout(): void {
+export function initiateLogout(returnTo: string = '/'): void {
   try {
     const config = getAuthConfig();
     const endpoints = getOAuthEndpoints(config.domain);
@@ -186,7 +149,7 @@ export function initiateLogout(): void {
     // Build logout URL
     const logoutParams = new URLSearchParams({
       client_id: config.clientId,
-      logout_uri: config.logoutUri,
+      logout_uri: new URL(returnTo, window.location.origin).toString(),
     });
 
     const logoutUrl = `${endpoints.logout}?${logoutParams.toString()}`;
@@ -197,43 +160,29 @@ export function initiateLogout(): void {
     // Redirect to Cognito logout
     window.location.href = logoutUrl;
   } catch (error) {
-    console.error('Logout failed:', error);
-    // Fallback: clear session and redirect to home
+    const authError = createAuthError(
+      'LOGOUT_FAILED' as AuthErrorCode,
+      'Failed to initiate logout flow',
+      { returnTo },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    console.error('Logout failed:', authError);
+
+    // Fallback: clear session and redirect
     clearPKCESession();
-    window.location.href = '/';
+    window.location.href = returnTo;
   }
 }
 
 /**
  * Refreshes access token using refresh token
- * Note: This will be handled server-side in API routes
+ * Note: This is deprecated in favor of server-side token refresh
  * @param refreshToken Refresh token
  * @returns Promise resolving to new token response
+ * @deprecated Use server-side /api/auth/refresh endpoint instead
  */
 export async function refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
-  const config = getAuthConfig();
-  const endpoints = getOAuthEndpoints(config.domain);
-
-  const params = new URLSearchParams({
-    grant_type: 'refresh_token',
-    client_id: config.clientId,
-    refresh_token: refreshToken,
-  });
-
-  const response = await fetch(endpoints.token, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params,
-  });
-
-  if (!response.ok) {
-    const errorData: OAuthError = await response.json();
-    throw new Error(`Token refresh failed: ${errorData.error_description || errorData.error}`);
-  }
-
-  return response.json();
+  return oauthService.refreshAccessToken(refreshToken);
 }
 
 /**

@@ -4,40 +4,46 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthConfig, getOAuthEndpoints } from '@/lib/auth/auth-config';
 import {
   getRefreshTokenCookie,
   setRefreshTokenCookie,
   clearAllAuthCookies,
 } from '@/lib/auth/cookie-manager';
-
-interface TokenResponse {
-  access_token: string;
-  id_token: string;
-  refresh_token?: string;
-  token_type: 'Bearer';
-  expires_in: number;
-}
-
-interface RefreshTokenResponse {
-  accessToken: string;
-  idToken: string;
-  expiresIn: number;
-  refreshed: boolean;
-}
-
-interface OAuthError {
-  error: string;
-  error_description?: string;
-  error_uri?: string;
-}
+import { oauthService } from '@/lib/auth/oauth-service';
+import { AuthErrorCode, createAuthError, type RefreshResponse } from '@/lib/auth/oauth-types';
+import { checkRateLimit } from '@/lib/auth/rate-limiter';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check rate limit first
+    const rateLimitResult = checkRateLimit('refresh', request);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter,
+          requiresLogin: false,
+        },
+        {
+          status: 429,
+          headers: rateLimitResult.retryAfter
+            ? { 'Retry-After': rateLimitResult.retryAfter.toString() }
+            : {},
+        },
+      );
+    }
+
     // Get refresh token from secure cookie
     const refreshToken = await getRefreshTokenCookie();
 
     if (!refreshToken) {
+      const authError = createAuthError(
+        AuthErrorCode.TOKEN_REFRESH_FAILED,
+        'No refresh token available in secure cookie',
+        { hasToken: false },
+      );
+      console.error('Refresh token missing:', authError);
+
       return NextResponse.json(
         {
           error: 'No refresh token available',
@@ -49,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Attempt to refresh tokens
-      const tokens = await refreshAccessToken(refreshToken);
+      const tokens = await oauthService.refreshAccessToken(refreshToken);
 
       // Update refresh token if a new one was provided
       if (tokens.refresh_token) {
@@ -57,7 +63,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Return new access token and ID token
-      const response: RefreshTokenResponse = {
+      const response: RefreshResponse = {
         accessToken: tokens.access_token,
         idToken: tokens.id_token,
         expiresIn: tokens.expires_in,
@@ -66,7 +72,13 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(response);
     } catch (refreshError) {
-      console.error('Token refresh failed:', refreshError);
+      const authError = createAuthError(
+        AuthErrorCode.TOKEN_REFRESH_FAILED,
+        'Token refresh operation failed',
+        {},
+        refreshError instanceof Error ? refreshError : new Error(String(refreshError)),
+      );
+      console.error('Token refresh failed:', authError);
 
       // Clear invalid refresh token
       await clearAllAuthCookies();
@@ -75,18 +87,24 @@ export async function POST(request: NextRequest) {
         {
           error: 'Token refresh failed',
           requiresLogin: true,
-          details: refreshError instanceof Error ? refreshError.message : 'Unknown error',
+          details: authError.message,
         },
         { status: 401 },
       );
     }
   } catch (error) {
-    console.error('Refresh endpoint error:', error);
+    const authError = createAuthError(
+      AuthErrorCode.TOKEN_REFRESH_FAILED,
+      'Refresh endpoint internal error',
+      { url: request.url },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    console.error('Refresh endpoint error:', authError);
 
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: authError.message,
       },
       { status: 500 },
     );
@@ -103,49 +121,17 @@ export async function GET(request: NextRequest) {
       authenticated: !!refreshToken,
     });
   } catch (error) {
-    console.error('Refresh status check failed:', error);
+    const authError = createAuthError(
+      AuthErrorCode.TOKEN_REFRESH_FAILED,
+      'Refresh token status check failed',
+      { url: request.url },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    console.error('Refresh status check failed:', authError);
 
     return NextResponse.json({
       hasRefreshToken: false,
       authenticated: false,
     });
   }
-}
-
-/**
- * Refreshes access token using refresh token
- */
-async function refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
-  const config = getAuthConfig();
-  const endpoints = getOAuthEndpoints(config.domain);
-
-  const params = new URLSearchParams({
-    grant_type: 'refresh_token',
-    client_id: config.clientId,
-    refresh_token: refreshToken,
-  });
-
-  const response = await fetch(endpoints.token, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params,
-  });
-
-  if (!response.ok) {
-    let errorMessage = 'Token refresh failed';
-
-    try {
-      const errorData: OAuthError = await response.json();
-      errorMessage = errorData.error_description || errorData.error || errorMessage;
-    } catch {
-      // Fallback to status text if JSON parsing fails
-      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-    }
-
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
 }

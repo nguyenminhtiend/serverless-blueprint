@@ -4,33 +4,39 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthConfig, getOAuthEndpoints } from '@/lib/auth/auth-config';
 import { PKCESession } from '@/lib/auth/pkce-utils';
 import { setRefreshTokenCookie, getSessionCookie } from '@/lib/auth/cookie-manager';
-
-interface TokenResponse {
-  access_token: string;
-  id_token: string;
-  refresh_token: string;
-  token_type: 'Bearer';
-  expires_in: number;
-}
-
-interface OAuthError {
-  error: string;
-  error_description?: string;
-  error_uri?: string;
-}
+import { oauthService } from '@/lib/auth/oauth-service';
+import { AuthErrorCode, createAuthError } from '@/lib/auth/oauth-types';
+import { decryptPKCESession, validateEncryptionConfig } from '@/lib/auth/session-encryption';
+import { authLogger, AuthEventType } from '@/lib/auth/auth-logger';
+import { checkRateLimit } from '@/lib/auth/rate-limiter';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check rate limit first
+    const rateLimitResult = checkRateLimit('callback', request);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.redirect(
+        new URL(
+          `/login?error=rate_limit_exceeded&retry=${rateLimitResult.retryAfter}`,
+          request.url,
+        ),
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     // Check for OAuth errors first
     const error = searchParams.get('error');
     if (error) {
       const errorDescription = searchParams.get('error_description');
-      console.error('OAuth error:', { error, errorDescription });
+      authLogger.logAuthFailure(
+        AuthEventType.LOGIN_FAILED,
+        new Error(errorDescription || error),
+        { error, errorDescription, source: 'oauth_provider' },
+        request,
+      );
 
       return NextResponse.redirect(
         new URL(`/login?error=${encodeURIComponent(errorDescription || error)}`, request.url),
@@ -42,6 +48,17 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
 
     if (!code || !state) {
+      const authError = createAuthError(
+        AuthErrorCode.MISSING_PARAMETERS,
+        'Missing authorization code or state parameter',
+        { code: !!code, state: !!state },
+      );
+      authLogger.logAuthFailure(
+        AuthEventType.LOGIN_FAILED,
+        authError,
+        { code: !!code, state: !!state },
+        request,
+      );
       return NextResponse.redirect(new URL('/login?error=missing_parameters', request.url));
     }
 
@@ -51,42 +68,116 @@ export async function GET(request: NextRequest) {
     // Validate session ID
     const currentSessionId = await getSessionCookie();
     if (expectedSessionId !== currentSessionId) {
-      console.error('Session ID mismatch:', {
-        expected: expectedSessionId,
-        current: currentSessionId,
-      });
+      const authError = createAuthError(
+        AuthErrorCode.INVALID_SESSION,
+        'Session ID mismatch - possible security issue',
+        { expected: expectedSessionId, current: currentSessionId },
+      );
+      authLogger.logSecurityViolation('Session ID mismatch detected', authError.details, request);
       return NextResponse.redirect(new URL('/login?error=invalid_session', request.url));
     }
 
     // Retrieve PKCE session from cookie
     const pkceSessionCookie = request.cookies.get('pkce_session');
-    if (!pkceSessionCookie) {
+    if (!pkceSessionCookie?.value) {
+      const authError = createAuthError(
+        AuthErrorCode.MISSING_PKCE_SESSION,
+        'PKCE session cookie not found',
+        { hasCookie: !!pkceSessionCookie },
+      );
+      authLogger.logAuthFailure(
+        AuthEventType.PKCE_SESSION_INVALID,
+        authError,
+        authError.details,
+        request,
+      );
       return NextResponse.redirect(new URL('/login?error=missing_pkce_session', request.url));
     }
 
     let pkceSession: PKCESession;
     try {
-      pkceSession = JSON.parse(pkceSessionCookie.value);
-    } catch {
+      // Try to decrypt session data if encryption is available
+      if (validateEncryptionConfig()) {
+        pkceSession = await decryptPKCESession<PKCESession>(pkceSessionCookie.value);
+      } else {
+        // Fallback to JSON parsing for development
+        pkceSession = JSON.parse(pkceSessionCookie.value);
+      }
+
+      // Validate PKCE session structure
+      if (
+        !pkceSession.codeVerifier ||
+        !pkceSession.state ||
+        !pkceSession.redirectUri ||
+        !pkceSession.timestamp
+      ) {
+        throw new Error('Invalid PKCE session structure');
+      }
+    } catch (parseError) {
+      const authError = createAuthError(
+        AuthErrorCode.INVALID_PKCE_SESSION,
+        'Failed to parse or decrypt PKCE session',
+        { hasSessionData: !!pkceSessionCookie.value },
+        parseError instanceof Error ? parseError : new Error(String(parseError)),
+      );
+      authLogger.logAuthFailure(
+        AuthEventType.PKCE_SESSION_INVALID,
+        authError,
+        authError.details,
+        request,
+      );
       return NextResponse.redirect(new URL('/login?error=invalid_pkce_session', request.url));
     }
 
     // Validate state parameter (CSRF protection)
     if (pkceState !== pkceSession.state) {
-      console.error('State mismatch:', { expected: pkceSession.state, received: pkceState });
+      const authError = createAuthError(
+        AuthErrorCode.INVALID_STATE,
+        'State parameter mismatch - possible CSRF attack',
+        { expected: pkceSession.state, received: pkceState },
+      );
+      authLogger.logSecurityViolation(
+        'CSRF attack detected - state parameter mismatch',
+        authError.details,
+        request,
+      );
       return NextResponse.redirect(new URL('/login?error=invalid_state', request.url));
     }
 
     // Validate PKCE session age (should be within 10 minutes)
-    if (Date.now() - pkceSession.timestamp > 10 * 60 * 1000) {
+    const sessionAge = Date.now() - pkceSession.timestamp;
+    const maxAge = 10 * 60 * 1000; // 10 minutes
+    if (sessionAge > maxAge) {
+      const authError = createAuthError(AuthErrorCode.SESSION_EXPIRED, 'PKCE session has expired', {
+        sessionAge,
+        maxAge,
+        timestamp: pkceSession.timestamp,
+      });
+      authLogger.logAuthFailure(
+        AuthEventType.SESSION_EXPIRED,
+        authError,
+        authError.details,
+        request,
+      );
       return NextResponse.redirect(new URL('/login?error=session_expired', request.url));
     }
 
     // Exchange authorization code for tokens
-    const tokens = await exchangeCodeForTokens(code, pkceSession);
+    const tokens = await oauthService.exchangeCodeForTokens(
+      code,
+      pkceSession.codeVerifier,
+      pkceSession.redirectUri,
+    );
 
     // Store refresh token in secure cookie
     await setRefreshTokenCookie(tokens.refresh_token, tokens.expires_in);
+
+    // Log successful authentication
+    authLogger.logAuthSuccess(AuthEventType.LOGIN_SUCCESS, undefined, {
+      returnTo,
+      sessionId: expectedSessionId,
+      tokenExpiry: tokens.expires_in,
+    });
 
     // Create response with redirect
     const redirectUrl = new URL(returnTo, request.url);
@@ -121,39 +212,14 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('OAuth callback failed:', error);
+    const authError = createAuthError(
+      AuthErrorCode.CALLBACK_FAILED,
+      'OAuth callback processing failed',
+      { url: request.url },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    authLogger.logAuthFailure(AuthEventType.LOGIN_FAILED, authError, authError.details, request);
 
     return NextResponse.redirect(new URL('/login?error=callback_failed', request.url));
   }
-}
-
-/**
- * Exchanges authorization code for access and refresh tokens
- */
-async function exchangeCodeForTokens(code: string, session: PKCESession): Promise<TokenResponse> {
-  const config = getAuthConfig();
-  const endpoints = getOAuthEndpoints(config.domain);
-
-  const params = new URLSearchParams({
-    grant_type: 'authorization_code',
-    client_id: config.clientId,
-    code,
-    redirect_uri: session.redirectUri,
-    code_verifier: session.codeVerifier,
-  });
-
-  const response = await fetch(endpoints.token, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params,
-  });
-
-  if (!response.ok) {
-    const errorData: OAuthError = await response.json();
-    throw new Error(`Token exchange failed: ${errorData.error_description || errorData.error}`);
-  }
-
-  return response.json();
 }

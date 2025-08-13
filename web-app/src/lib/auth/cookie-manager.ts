@@ -1,33 +1,53 @@
 /**
  * Secure cookie management for authentication tokens
- * Implements secure, HttpOnly cookies for refresh token storage
+ * Implements secure, HttpOnly cookies for refresh token storage with proper configuration
  */
 
 import { cookies } from 'next/headers';
 
 /**
- * Cookie configuration constants
+ * Cookie configuration with environment-aware settings
  */
 export const COOKIE_CONFIG = {
-  REFRESH_TOKEN: 'auth_refresh_token',
-  SESSION_ID: 'auth_session_id',
-  MAX_AGE: 30 * 24 * 60 * 60, // 30 days in seconds
-  SECURE: process.env.NODE_ENV === 'production',
-  SAME_SITE: 'lax' as const,
+  /** Refresh token cookie name */
+  REFRESH_TOKEN: process.env.AUTH_REFRESH_TOKEN_COOKIE_NAME || 'auth_refresh_token',
+  /** Session ID cookie name */
+  SESSION_ID: process.env.AUTH_SESSION_COOKIE_NAME || 'auth_session_id',
+  /** Maximum age in seconds (default: 30 days) */
+  MAX_AGE: parseInt(process.env.AUTH_REFRESH_TOKEN_MAX_AGE || '2592000', 10),
+  /** Secure flag - always true in production */
+  SECURE: process.env.NODE_ENV === 'production' || process.env.AUTH_FORCE_SECURE_COOKIES === 'true',
+  /** SameSite policy */
+  SAME_SITE: (process.env.AUTH_COOKIE_SAME_SITE as 'strict' | 'lax' | 'none') || 'lax',
+  /** HttpOnly flag for security */
   HTTP_ONLY: true,
-  PATH: '/',
-};
+  /** Cookie path */
+  PATH: process.env.AUTH_COOKIE_PATH || '/',
+  /** Cookie domain (optional) */
+  DOMAIN: process.env.AUTH_COOKIE_DOMAIN,
+} as const;
 
 /**
  * Cookie options for secure token storage
+ * @param maxAge - Optional maximum age in seconds
+ * @returns Cookie options object with security settings
  */
-const getSecureCookieOptions = (maxAge?: number) => ({
-  httpOnly: COOKIE_CONFIG.HTTP_ONLY,
-  secure: COOKIE_CONFIG.SECURE,
-  sameSite: COOKIE_CONFIG.SAME_SITE,
-  maxAge: maxAge || COOKIE_CONFIG.MAX_AGE,
-  path: COOKIE_CONFIG.PATH,
-});
+const getSecureCookieOptions = (maxAge?: number) => {
+  const options: Record<string, any> = {
+    httpOnly: COOKIE_CONFIG.HTTP_ONLY,
+    secure: COOKIE_CONFIG.SECURE,
+    sameSite: COOKIE_CONFIG.SAME_SITE,
+    maxAge: maxAge || COOKIE_CONFIG.MAX_AGE,
+    path: COOKIE_CONFIG.PATH,
+  };
+
+  // Add domain if configured
+  if (COOKIE_CONFIG.DOMAIN) {
+    options.domain = COOKIE_CONFIG.DOMAIN;
+  }
+
+  return options;
+};
 
 /**
  * Sets refresh token in secure HttpOnly cookie

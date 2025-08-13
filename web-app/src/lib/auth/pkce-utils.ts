@@ -43,6 +43,15 @@ export function generateState(length: number = 32): string {
  * @returns Base64 URL-encoded string
  */
 function base64URLEncode(data: Uint8Array): string {
+  if (typeof btoa === 'undefined') {
+    // Node.js environment
+    return Buffer.from(data)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  }
+  // Browser environment
   const base64 = btoa(String.fromCharCode(...data));
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
@@ -92,24 +101,35 @@ export function isValidPKCESession(
 
 /**
  * Storage keys for PKCE session data
+ * Note: PKCE sessions are now primarily handled server-side via secure cookies
  */
 export const PKCE_STORAGE_KEYS = {
   SESSION: 'pkce_session',
 } as const;
 
 /**
- * Stores PKCE session in sessionStorage
+ * Stores PKCE session in sessionStorage (legacy client-side support)
  * @param session PKCE session data
+ * @deprecated Server-side PKCE session handling is preferred
  */
 export function storePKCESession(session: PKCESession): void {
-  sessionStorage.setItem(PKCE_STORAGE_KEYS.SESSION, JSON.stringify(session));
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return;
+
+  try {
+    sessionStorage.setItem(PKCE_STORAGE_KEYS.SESSION, JSON.stringify(session));
+  } catch (error) {
+    console.error('Failed to store PKCE session:', error);
+  }
 }
 
 /**
- * Retrieves PKCE session from sessionStorage
+ * Retrieves PKCE session from sessionStorage (legacy client-side support)
  * @returns PKCE session or null if not found/invalid
+ * @deprecated Server-side PKCE session handling is preferred
  */
 export function retrievePKCESession(): PKCESession | null {
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return null;
+
   try {
     const stored = sessionStorage.getItem(PKCE_STORAGE_KEYS.SESSION);
     if (!stored) return null;
@@ -117,7 +137,8 @@ export function retrievePKCESession(): PKCESession | null {
     const session: PKCESession = JSON.parse(stored);
 
     // Validate session structure
-    if (!session.codeVerifier || !session.codeChallenge || !session.state) {
+    if (!session.codeVerifier || !session.codeChallenge || !session.state || !session.redirectUri) {
+      clearPKCESession();
       return null;
     }
 
@@ -128,8 +149,8 @@ export function retrievePKCESession(): PKCESession | null {
     }
 
     return session;
-  } catch {
-    // Clear invalid session data
+  } catch (error) {
+    console.error('Failed to retrieve PKCE session:', error);
     clearPKCESession();
     return null;
   }
@@ -139,5 +160,11 @@ export function retrievePKCESession(): PKCESession | null {
  * Clears PKCE session from sessionStorage
  */
 export function clearPKCESession(): void {
-  sessionStorage.removeItem(PKCE_STORAGE_KEYS.SESSION);
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return;
+
+  try {
+    sessionStorage.removeItem(PKCE_STORAGE_KEYS.SESSION);
+  } catch (error) {
+    console.error('Failed to clear PKCE session:', error);
+  }
 }

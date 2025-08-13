@@ -12,11 +12,35 @@ import {
 } from '@/lib/auth/auth-config';
 import { createPKCESession } from '@/lib/auth/pkce-utils';
 import { setSessionCookie, generateSessionId } from '@/lib/auth/cookie-manager';
+import { encryptPKCESession, validateEncryptionConfig } from '@/lib/auth/session-encryption';
+import { createAuthError, AuthErrorCode } from '@/lib/auth/oauth-types';
+import { checkRateLimit } from '@/lib/auth/rate-limiter';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check rate limit first
+    const rateLimitResult = checkRateLimit('login', request);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: rateLimitResult.retryAfter
+            ? { 'Retry-After': rateLimitResult.retryAfter.toString() }
+            : {},
+        },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const returnTo = searchParams.get('returnTo') || '/dashboard';
+
+    // Validate returnTo parameter to prevent open redirects
+    const allowedPaths = ['/dashboard', '/orders', '/profile', '/'];
+    const sanitizedReturnTo = allowedPaths.includes(returnTo) ? returnTo : '/dashboard';
 
     // Get auth configuration
     const config = getAuthConfig();
@@ -35,33 +59,71 @@ export async function GET(request: NextRequest) {
       client_id: config.clientId,
       redirect_uri: config.redirectUri,
       scope: config.scopes.join(' '),
-      state: `${pkceSession.state}:${returnTo}:${sessionId}`,
+      state: `${pkceSession.state}:${sanitizedReturnTo}:${sessionId}`,
       code_challenge: pkceSession.codeChallenge,
       code_challenge_method: CODE_CHALLENGE_METHOD,
     });
 
     const authUrl = `${endpoints.authorize}?${authParams.toString()}`;
 
-    // Store PKCE session in a secure way (you might want to use server-side storage in production)
+    // Create response with redirect
     const response = NextResponse.redirect(authUrl);
 
-    // Store PKCE session data in a temporary cookie (encrypted in production)
-    response.cookies.set('pkce_session', JSON.stringify(pkceSession), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600, // 10 minutes
-      path: '/',
-    });
+    // Store PKCE session data securely
+    try {
+      let sessionData: string;
+
+      if (validateEncryptionConfig()) {
+        // Encrypt PKCE session in production
+        sessionData = await encryptPKCESession(pkceSession);
+      } else {
+        // Fallback to JSON for development
+        sessionData = JSON.stringify(pkceSession);
+      }
+
+      response.cookies.set('pkce_session', sessionData, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 600, // 10 minutes
+        path: '/',
+      });
+    } catch (encryptionError) {
+      console.error('PKCE session encryption failed:', encryptionError);
+
+      // Fallback to unencrypted for development only
+      if (process.env.NODE_ENV !== 'production') {
+        response.cookies.set('pkce_session', JSON.stringify(pkceSession), {
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 600,
+          path: '/',
+        });
+      } else {
+        throw createAuthError(
+          AuthErrorCode.SESSION_EXPIRED,
+          'Failed to secure PKCE session',
+          { sessionId },
+          encryptionError instanceof Error ? encryptionError : new Error(String(encryptionError)),
+        );
+      }
+    }
 
     return response;
   } catch (error) {
-    console.error('Login initiation failed:', error);
+    const authError = createAuthError(
+      AuthErrorCode.TOKEN_EXCHANGE_FAILED,
+      'Login initiation failed',
+      { url: request.url },
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    console.error('Login initiation failed:', authError);
 
     return NextResponse.json(
       {
         error: 'Authentication initialization failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: authError.message,
       },
       { status: 500 },
     );
