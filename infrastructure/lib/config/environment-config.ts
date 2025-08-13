@@ -36,6 +36,13 @@ export interface EnvironmentConfig {
     clientSecret?: string;
   };
 
+  // Web App configuration for OAuth redirects
+  webApp: {
+    domain: string;
+    additionalCallbackUrls?: string[];
+    additionalLogoutUrls?: string[];
+  };
+
   // EventBridge configuration
   eventBridge: {
     eventBusName: string;
@@ -128,6 +135,11 @@ export class EnvironmentConfigFactory {
       dynamodb: {
         tableName: process.env.TABLE_NAME || 'prod-serverless-microservices',
       },
+      webApp: {
+        domain: process.env.WEB_APP_DOMAIN || 'https://your-production-domain.com',
+        additionalCallbackUrls: process.env.ADDITIONAL_CALLBACK_URLS?.split(',') || [],
+        additionalLogoutUrls: process.env.ADDITIONAL_LOGOUT_URLS?.split(',') || [],
+      },
       notifications: {
         ...base.notifications!,
         enableMock: process.env.ENABLE_MOCK_NOTIFICATIONS === 'true',
@@ -151,6 +163,11 @@ export class EnvironmentConfigFactory {
       },
       dynamodb: {
         tableName: process.env.TABLE_NAME || 'dev-serverless-microservices',
+      },
+      webApp: {
+        domain: process.env.WEB_APP_DOMAIN || 'http://localhost:3000',
+        additionalCallbackUrls: process.env.ADDITIONAL_CALLBACK_URLS?.split(',') || [],
+        additionalLogoutUrls: process.env.ADDITIONAL_LOGOUT_URLS?.split(',') || [],
       },
     } as EnvironmentConfig;
   }

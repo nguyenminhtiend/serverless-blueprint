@@ -78,6 +78,9 @@ export class StackOrchestrator {
       {
         ...this.stackProps,
         environment: this.environment,
+        webAppDomain: this.config.webApp.domain,
+        additionalCallbackUrls: this.config.webApp.additionalCallbackUrls,
+        additionalLogoutUrls: this.config.webApp.additionalLogoutUrls,
         description: `Cognito authentication infrastructure for ${this.environment} environment`,
       }
     );

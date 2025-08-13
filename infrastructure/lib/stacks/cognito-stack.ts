@@ -4,6 +4,9 @@ import { Construct } from 'constructs';
 
 export interface CognitoStackProps extends cdk.StackProps {
   readonly environment?: string;
+  readonly webAppDomain?: string;
+  readonly additionalCallbackUrls?: string[];
+  readonly additionalLogoutUrls?: string[];
 }
 
 export class CognitoStack extends cdk.Stack {
@@ -15,6 +18,9 @@ export class CognitoStack extends cdk.Stack {
     super(scope, id, props);
 
     const environment = props?.environment || 'dev';
+    const webAppDomain = props?.webAppDomain || 'http://localhost:3000';
+    const additionalCallbackUrls = props?.additionalCallbackUrls || [];
+    const additionalLogoutUrls = props?.additionalLogoutUrls || [];
 
     // Cognito User Pool with email/password authentication
     this.userPool = new cognito.UserPool(this, 'UserPool', {
@@ -88,33 +94,44 @@ export class CognitoStack extends cdk.Stack {
       removalPolicy: environment === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
-    // User Pool App Client for JWT token generation
+    // User Pool App Client for PKCE OAuth flow
     this.userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
       userPool: this.userPool,
       userPoolClientName: `${environment}-serverless-microservices-client`,
 
-      // Auth flows
+      // Auth flows - Updated for PKCE OAuth flow
       authFlows: {
-        userSrp: true, // Secure Remote Password protocol
-        userPassword: true, // Enable direct password auth for simple API usage
+        userSrp: false, // Disable SRP for OAuth-only flow
+        userPassword: false, // Disable password auth for security
         adminUserPassword: false, // Admin auth disabled
         custom: false, // Custom auth disabled for now
       },
 
-      // OAuth configuration for future use
+      // Enable PKCE for enhanced security
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
+      
+      // Generate client secret: false for PKCE (public clients)
+      generateSecret: false,
+
+      // OAuth configuration for PKCE flow
       oAuth: {
         flows: {
-          authorizationCodeGrant: true,
-          implicitCodeGrant: false,
+          authorizationCodeGrant: true, // Required for PKCE
+          implicitCodeGrant: false, // Disabled for security
         },
-        scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
+        scopes: [
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.PROFILE,
+        ],
         callbackUrls: [
-          'http://localhost:3000/auth/callback', // For local development
-          // Production URLs can be added via context or environment variables
+          `${webAppDomain}/auth/callback`, // OAuth callback endpoint
+          ...additionalCallbackUrls,
         ],
         logoutUrls: [
-          'http://localhost:3000/auth/logout',
-          // Production URLs can be added via context or environment variables
+          `${webAppDomain}/auth/logout`, // Post-logout redirect
+          `${webAppDomain}/`, // Also allow redirect to home
+          ...additionalLogoutUrls,
         ],
       },
 
@@ -158,7 +175,7 @@ export class CognitoStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'UserPoolClientId', {
       value: this.userPoolClient.userPoolClientId,
-      description: 'Cognito User Pool Client ID',
+      description: 'Cognito User Pool Client ID (PKCE OAuth)',
       exportName: `${environment}-user-pool-client-id`,
     });
 
@@ -172,6 +189,24 @@ export class CognitoStack extends cdk.Stack {
       value: `https://${this.userPoolDomain.domainName}.auth.${cdk.Aws.REGION}.amazoncognito.com`,
       description: 'Cognito User Pool Domain URL',
       exportName: `${environment}-user-pool-domain-url`,
+    });
+
+    new cdk.CfnOutput(this, 'CognitoDomainName', {
+      value: this.userPoolDomain.domainName,
+      description: 'Cognito Domain Name for OAuth URLs',
+      exportName: `${environment}-cognito-domain-name`,
+    });
+
+    new cdk.CfnOutput(this, 'OAuthCallbackUrl', {
+      value: `${webAppDomain}/auth/callback`,
+      description: 'OAuth Callback URL',
+      exportName: `${environment}-oauth-callback-url`,
+    });
+
+    new cdk.CfnOutput(this, 'OAuthLogoutUrl', {
+      value: `${webAppDomain}/auth/logout`,
+      description: 'OAuth Logout URL',
+      exportName: `${environment}-oauth-logout-url`,
     });
   }
 }
