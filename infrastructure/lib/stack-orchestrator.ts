@@ -4,7 +4,7 @@ import { CognitoStack } from './stacks/cognito-stack';
 import { DatabaseStack } from './stacks/database-stack';
 import { EventsStack } from './stacks/events-stack';
 import { LambdaStack } from './stacks/lambda-stack';
-import { UiAssetsStack } from './stacks/ui-assets-stack';
+
 import { TaggingAspect } from './aspects/tagging-aspect';
 import { TaggingConfigFactory } from './config/tagging-config';
 import { EnvironmentConfigFactory } from './config/environment-config';
@@ -25,11 +25,8 @@ export class StackOrchestrator {
   }
 
   public deployStacks(): void {
-    // Phase 0: Create UI assets stack first
-    const uiAssetsStack = this.createUiAssetsStack();
-
     // Phase 1: Create foundational stacks
-    const foundationalStacks = this.createFoundationalStacks(uiAssetsStack);
+    const foundationalStacks = this.createFoundationalStacks();
 
     // Phase 2: Create compute stack
     const lambdaStack = this.createLambdaStack(foundationalStacks);
@@ -41,7 +38,7 @@ export class StackOrchestrator {
     );
 
     // Configure stack dependencies
-    this.configureDependencies(foundationalStacks, lambdaStack, apiGatewayStack, uiAssetsStack);
+    this.configureDependencies(foundationalStacks, lambdaStack, apiGatewayStack);
 
     // Apply tagging
     this.applyTagging();
@@ -65,15 +62,7 @@ export class StackOrchestrator {
     };
   }
 
-  private createUiAssetsStack(): UiAssetsStack {
-    return new UiAssetsStack(this.app, `ServerlessMicroservices-UiAssets-${this.environment}`, {
-      ...this.stackProps,
-      environment: this.environment,
-      description: `UI assets infrastructure for ${this.environment} environment`,
-    });
-  }
-
-  private createFoundationalStacks(uiAssetsStack: UiAssetsStack) {
+  private createFoundationalStacks() {
     const databaseStack = new DatabaseStack(
       this.app,
       `ServerlessMicroservices-Database-${this.environment}`,
@@ -93,8 +82,6 @@ export class StackOrchestrator {
         webAppDomain: this.config.webApp.domain,
         additionalCallbackUrls: this.config.webApp.additionalCallbackUrls,
         additionalLogoutUrls: this.config.webApp.additionalLogoutUrls,
-        cssUrl: uiAssetsStack.cssUrl,
-        logoUrl: uiAssetsStack.logoUrl,
         description: `Cognito authentication infrastructure for ${this.environment} environment`,
       }
     );
@@ -145,12 +132,8 @@ export class StackOrchestrator {
   private configureDependencies(
     foundationalStacks: any,
     lambdaStack: LambdaStack,
-    apiGatewayStack: ApiGatewayStack,
-    uiAssetsStack: UiAssetsStack
+    apiGatewayStack: ApiGatewayStack
   ): void {
-    // Phase 0: Cognito depends on UI assets
-    foundationalStacks.cognitoStack.addDependency(uiAssetsStack);
-
     // Phase 1: Lambda depends on all foundational stacks
     lambdaStack.addDependency(foundationalStacks.databaseStack);
     lambdaStack.addDependency(foundationalStacks.cognitoStack);

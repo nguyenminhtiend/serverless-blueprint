@@ -7,8 +7,6 @@ export interface CognitoStackProps extends cdk.StackProps {
   readonly webAppDomain?: string;
   readonly additionalCallbackUrls?: string[];
   readonly additionalLogoutUrls?: string[];
-  readonly cssUrl?: string;
-  readonly logoUrl?: string;
 }
 
 export class CognitoStack extends cdk.Stack {
@@ -23,8 +21,6 @@ export class CognitoStack extends cdk.Stack {
     const webAppDomain = props?.webAppDomain || 'http://localhost:3000';
     const additionalCallbackUrls = props?.additionalCallbackUrls || [];
     const additionalLogoutUrls = props?.additionalLogoutUrls || [];
-    const cssUrl = props?.cssUrl;
-    const logoUrl = props?.logoUrl;
 
     // Cognito User Pool with email/password authentication
     this.userPool = new cognito.UserPool(this, 'UserPool', {
@@ -161,7 +157,7 @@ export class CognitoStack extends cdk.Stack {
       }),
     });
 
-    // User Pool Domain for hosted UI with custom styling
+    // User Pool Domain with Managed Login enabled
     this.userPoolDomain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
       userPool: this.userPool,
       cognitoDomain: {
@@ -169,24 +165,9 @@ export class CognitoStack extends cdk.Stack {
       },
     });
 
-    // Add UI customization if CSS URL is provided
-    if (cssUrl) {
-      new cognito.CfnUserPoolUICustomizationAttachment(this, 'UICustomization', {
-        userPoolId: this.userPool.userPoolId,
-        clientId: 'ALL', // Apply to all clients
-        css: `@import url('${cssUrl}');${
-          logoUrl
-            ? `
-/* Logo customization */
-.amplify-image, .logo {
-  content: url('${logoUrl}');
-  max-width: 120px;
-  height: auto;
-}`
-            : ''
-        }`,
-      });
-    }
+    // Managed Login Branding will be configured via AWS Console
+    // This is the recommended approach as it provides a visual branding editor
+    // See the ConsoleConfigurationUrl output for the direct link
 
     // CloudFormation outputs
     new cdk.CfnOutput(this, 'UserPoolId', {
@@ -229,6 +210,17 @@ export class CognitoStack extends cdk.Stack {
       value: `${webAppDomain}/auth/logout`,
       description: 'OAuth Logout URL',
       exportName: `${environment}-oauth-logout-url`,
+    });
+
+    new cdk.CfnOutput(this, 'ManagedLoginUrl', {
+      value: `https://${this.userPoolDomain.domainName}.auth.${cdk.Aws.REGION}.amazoncognito.com`,
+      description: 'Managed Login Base URL',
+      exportName: `${environment}-managed-login-url`,
+    });
+
+    new cdk.CfnOutput(this, 'ConsoleConfigurationUrl', {
+      value: `https://${cdk.Aws.REGION}.console.aws.amazon.com/cognito/v2/idp/user-pools/${this.userPool.userPoolId}/managed-login/branding`,
+      description: 'AWS Console URL for Managed Login Branding Configuration',
     });
   }
 }
