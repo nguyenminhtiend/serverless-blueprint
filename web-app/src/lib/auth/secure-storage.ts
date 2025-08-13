@@ -1,119 +1,172 @@
-import { AuthUser } from '@/hooks/use-auth';
+/**
+ * Simplified secure storage for OAuth tokens (access tokens only)
+ * Refresh tokens are now handled server-side via HttpOnly cookies
+ */
+
+export interface AuthTokens {
+  accessToken: string;
+  idToken: string;
+  expiresAt: number;
+}
+
+export interface AuthUser {
+  email: string;
+  firstName: string;
+  lastName: string;
+  emailVerified: boolean;
+}
 
 class SecureStorage {
-  private readonly STORAGE_KEY = 'auth_enc_data';
-  private readonly ENCRYPTION_KEY = 'auth_app_key_v1';
+  private accessToken: string | null = null;
+  private idToken: string | null = null;
+  private expiresAt: number = 0;
 
-  private async generateKey(password: string): Promise<CryptoKey> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    
-    return crypto.subtle.importKey(
-      'raw',
-      hash,
-      { name: 'AES-GCM' },
-      false,
-      ['encrypt', 'decrypt']
-    );
+  /**
+   * Sets access token and ID token in memory only
+   * No persistent storage - tokens are lost on page refresh (by design)
+   */
+  setTokens(tokens: AuthTokens): void {
+    this.accessToken = tokens.accessToken;
+    this.idToken = tokens.idToken;
+    this.expiresAt = tokens.expiresAt;
   }
 
-  private async encrypt(text: string): Promise<string> {
-    try {
-      const key = await this.generateKey(this.ENCRYPTION_KEY);
-      const encoder = new TextEncoder();
-      const data = encoder.encode(text);
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      
-      const encrypted = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        data
-      );
-
-      const combined = new Uint8Array(iv.length + encrypted.byteLength);
-      combined.set(iv);
-      combined.set(new Uint8Array(encrypted), iv.length);
-      
-      return btoa(String.fromCharCode.apply(null, Array.from(combined)));
-    } catch (error) {
-      console.error('Encryption failed:', error);
-      throw new Error('Failed to encrypt data');
+  /**
+   * Gets current access token if not expired
+   */
+  getAccessToken(): string | null {
+    if (!this.accessToken || Date.now() >= this.expiresAt) {
+      return null;
     }
+    return this.accessToken;
   }
 
-  private async decrypt(encryptedText: string): Promise<string> {
-    try {
-      const key = await this.generateKey(this.ENCRYPTION_KEY);
-      const combined = new Uint8Array(
-        atob(encryptedText).split('').map(char => char.charCodeAt(0))
-      );
-      
-      const iv = combined.slice(0, 12);
-      const encrypted = combined.slice(12);
-      
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        encrypted
-      );
-      
-      const decoder = new TextDecoder();
-      return decoder.decode(decrypted);
-    } catch (error) {
-      console.error('Decryption failed:', error);
-      throw new Error('Failed to decrypt data');
+  /**
+   * Gets current ID token if not expired
+   */
+  getIdToken(): string | null {
+    if (!this.idToken || Date.now() >= this.expiresAt) {
+      return null;
     }
+    return this.idToken;
   }
 
-  async setUser(user: AuthUser): Promise<void> {
-    try {
-      const userData = JSON.stringify(user);
-      const encryptedData = await this.encrypt(userData);
-      
-      // Use sessionStorage instead of localStorage for better security
-      sessionStorage.setItem(this.STORAGE_KEY, encryptedData);
-    } catch (error) {
-      console.error('Failed to store user data:', error);
-      throw new Error('Failed to store authentication data');
-    }
+  /**
+   * Checks if tokens are available and not expired
+   */
+  hasValidTokens(): boolean {
+    return !!(this.accessToken && this.idToken && Date.now() < this.expiresAt);
   }
 
-  async getUser(): Promise<AuthUser | null> {
+  /**
+   * Gets token expiration time
+   */
+  getExpiresAt(): number {
+    return this.expiresAt;
+  }
+
+  /**
+   * Clears all tokens from memory
+   */
+  clearTokens(): void {
+    this.accessToken = null;
+    this.idToken = null;
+    this.expiresAt = 0;
+  }
+
+  /**
+   * Picks up temporary tokens from cookies (set by OAuth callback)
+   * These are short-lived cookies that client picks up once
+   */
+  pickupTemporaryTokens(): AuthTokens | null {
     try {
-      const encryptedData = sessionStorage.getItem(this.STORAGE_KEY);
-      
-      if (!encryptedData) {
+      if (typeof window === 'undefined') return null;
+
+      const accessToken = this.getCookie('access_token_temp');
+      const idToken = this.getCookie('id_token_temp');
+
+      if (!accessToken || !idToken) {
         return null;
       }
-      
-      const decryptedData = await this.decrypt(encryptedData);
-      return JSON.parse(decryptedData) as AuthUser;
+
+      // Clear the temporary cookies immediately
+      this.clearCookie('access_token_temp');
+      this.clearCookie('id_token_temp');
+
+      // Decode ID token to get expiration (basic parsing, no verification needed here)
+      const payload = this.parseJWTPayload(accessToken);
+      const exp = payload?.exp;
+      const expiresAt = typeof exp === 'number' ? exp * 1000 : Date.now() + 3600000; // 1 hour fallback
+
+      return {
+        accessToken,
+        idToken,
+        expiresAt,
+      };
     } catch (error) {
-      console.error('Failed to retrieve user data:', error);
-      // Remove corrupted data
-      this.clearUser();
+      console.error('Failed to pickup temporary tokens:', error);
       return null;
     }
   }
 
-  clearUser(): void {
-    sessionStorage.removeItem(this.STORAGE_KEY);
-    // Also clear from localStorage in case there's old data
-    localStorage.removeItem('auth_user');
+  /**
+   * Helper to get cookie value
+   */
+  private getCookie(name: string): string | null {
+    if (typeof window === 'undefined') return null;
+
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop()?.split(';').shift() || null;
+    }
+    return null;
   }
 
-  // Check if secure storage is available
-  isAvailable(): boolean {
+  /**
+   * Helper to clear a cookie
+   */
+  private clearCookie(name: string): void {
+    if (typeof window === 'undefined') return;
+
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  }
+
+  /**
+   * Basic JWT payload parsing (no verification)
+   */
+  private parseJWTPayload(token: string): Record<string, unknown> | null {
     try {
-      return (
-        typeof window !== 'undefined' &&
-        'sessionStorage' in window &&
-        'crypto' in window &&
-        'subtle' in window.crypto
+      if (typeof window === 'undefined') {
+        return null;
+      }
+
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        window
+          .atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(''),
       );
+      return JSON.parse(jsonPayload);
     } catch {
-      return false;
+      return null;
+    }
+  }
+
+  /**
+   * Legacy cleanup - removes old encrypted storage
+   */
+  clearLegacyStorage(): void {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage && window.localStorage) {
+        window.sessionStorage.removeItem('auth_enc_data');
+        window.localStorage.removeItem('auth_user');
+      }
+    } catch {
+      // Ignore errors during cleanup
     }
   }
 }

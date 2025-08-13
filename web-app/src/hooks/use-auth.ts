@@ -1,24 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { cognitoAuthClient } from '@/lib/auth/cognito-client';
-import { secureStorage } from '@/lib/auth/secure-storage';
-
-export interface AuthUser {
-  email: string;
-  firstName: string;
-  lastName: string;
-  emailVerified: boolean;
-  accessToken: string;
-  refreshToken: string;
-  idToken: string;
-  expiresAt: number;
-}
+import { secureStorage, type AuthUser, type AuthTokens } from '@/lib/auth/secure-storage';
 
 interface AuthState {
   user: AuthUser | null;
   loading: boolean;
   error: string | null;
+  isAuthenticated: boolean;
+}
+
+interface RefreshResponse {
+  accessToken: string;
+  idToken: string;
+  expiresIn: number;
+  refreshed: boolean;
 }
 
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
@@ -28,6 +24,7 @@ export function useAuth() {
     user: null,
     loading: true,
     error: null,
+    isAuthenticated: false,
   });
 
   const setError = useCallback((error: string | null) => {
@@ -43,66 +40,74 @@ export function useAuth() {
       user: null,
       loading: false,
       error: null,
+      isAuthenticated: false,
     });
-    secureStorage.clearUser();
+    secureStorage.clearTokens();
+    secureStorage.clearLegacyStorage();
   }, []);
 
-  const setUser = useCallback(async (user: AuthUser) => {
+  const setUser = useCallback((user: AuthUser) => {
     setState({
       user,
       loading: false,
       error: null,
+      isAuthenticated: true,
     });
-    try {
-      await secureStorage.setUser(user);
-    } catch (error) {
-      console.error('Failed to store user data securely:', error);
-      setState((prev) => ({ ...prev, error: 'Failed to store authentication data' }));
-    }
   }, []);
 
-  const loadUserFromStorage = useCallback(async () => {
+  const loadUserFromTokens = useCallback(async () => {
     try {
       setLoading(true);
 
-      if (!secureStorage.isAvailable()) {
-        setLoading(false);
-        setError('Secure storage not available');
-        return;
+      // First check for temporary tokens from OAuth callback
+      const tempTokens = secureStorage.pickupTemporaryTokens();
+      if (tempTokens) {
+        secureStorage.setTokens(tempTokens);
       }
 
-      const user = await secureStorage.getUser();
-
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Check if token is expired
-      if (Date.now() >= user.expiresAt) {
-        // Try to refresh token
+      // Check if we have valid tokens
+      if (!secureStorage.hasValidTokens()) {
+        // Try to refresh tokens using server-side refresh token
         try {
-          const refreshResult = await cognitoAuthClient.refreshToken(user.refreshToken);
-          const userInfo = await cognitoAuthClient.getUser(refreshResult.accessToken);
+          const refreshResponse = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            credentials: 'include',
+          });
 
-          const updatedUser: AuthUser = {
-            ...userInfo,
-            accessToken: refreshResult.accessToken,
-            refreshToken: refreshResult.refreshToken,
-            idToken: refreshResult.idToken,
-            expiresAt: Date.now() + refreshResult.expiresIn * 1000,
-          };
-
-          await setUser(updatedUser);
+          if (refreshResponse.ok) {
+            const data: RefreshResponse = await refreshResponse.json();
+            const tokens: AuthTokens = {
+              accessToken: data.accessToken,
+              idToken: data.idToken,
+              expiresAt: Date.now() + data.expiresIn * 1000,
+            };
+            secureStorage.setTokens(tokens);
+          } else {
+            // No valid refresh token, user needs to login
+            clearUser();
+            return;
+          }
         } catch (error) {
-          // Refresh failed, clear user
+          console.error('Token refresh failed:', error);
+          clearUser();
+          return;
+        }
+      }
+
+      // Extract user info from ID token
+      const idToken = secureStorage.getIdToken();
+      if (idToken) {
+        const user = parseUserFromIdToken(idToken);
+        if (user) {
+          setUser(user);
+        } else {
           clearUser();
         }
       } else {
-        // Token is still valid
-        await setUser(user);
+        clearUser();
       }
     } catch (error) {
+      console.error('Failed to load user from tokens:', error);
       clearUser();
     }
   }, [setUser, clearUser, setLoading]);
@@ -118,24 +123,32 @@ export function useAuth() {
       }
 
       const timeout = setTimeout(async () => {
-        const currentUser = await secureStorage.getUser();
-        if (!currentUser) return;
-
         try {
-          const refreshResult = await cognitoAuthClient.refreshToken(currentUser.refreshToken);
-          const userInfo = await cognitoAuthClient.getUser(refreshResult.accessToken);
+          const refreshResponse = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            credentials: 'include',
+          });
 
-          const updatedUser: AuthUser = {
-            ...userInfo,
-            accessToken: refreshResult.accessToken,
-            refreshToken: refreshResult.refreshToken,
-            idToken: refreshResult.idToken,
-            expiresAt: Date.now() + refreshResult.expiresIn * 1000,
-          };
+          if (refreshResponse.ok) {
+            const data: RefreshResponse = await refreshResponse.json();
+            const tokens: AuthTokens = {
+              accessToken: data.accessToken,
+              idToken: data.idToken,
+              expiresAt: Date.now() + data.expiresIn * 1000,
+            };
+            secureStorage.setTokens(tokens);
 
-          await setUser(updatedUser);
-          scheduleTokenRefresh(updatedUser.expiresAt);
+            // Update user info from new ID token
+            const user = parseUserFromIdToken(data.idToken);
+            if (user) {
+              setUser(user);
+              scheduleTokenRefresh(tokens.expiresAt);
+            }
+          } else {
+            clearUser();
+          }
         } catch (error) {
+          console.error('Automatic token refresh failed:', error);
           clearUser();
         }
       }, refreshTime - now);
@@ -146,136 +159,122 @@ export function useAuth() {
   );
 
   useEffect(() => {
-    loadUserFromStorage();
-  }, [loadUserFromStorage]);
+    loadUserFromTokens();
+  }, [loadUserFromTokens]);
 
   useEffect(() => {
-    if (state.user) {
-      const cleanup = scheduleTokenRefresh(state.user.expiresAt);
-      return cleanup;
+    if (state.isAuthenticated) {
+      const expiresAt = secureStorage.getExpiresAt();
+      if (expiresAt > 0) {
+        const cleanup = scheduleTokenRefresh(expiresAt);
+        return cleanup;
+      }
     }
-  }, [state.user, scheduleTokenRefresh]);
+  }, [state.isAuthenticated, scheduleTokenRefresh]);
 
-  const signIn = useCallback(
-    async (email: string, password: string): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+  const signIn = useCallback(async (returnTo?: string): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const authResult = await cognitoAuthClient.signIn(email, password);
-        const userInfo = await cognitoAuthClient.getUser(authResult.accessToken);
-
-        const user: AuthUser = {
-          ...userInfo,
-          accessToken: authResult.accessToken,
-          refreshToken: authResult.refreshToken,
-          idToken: authResult.idToken,
-          expiresAt: Date.now() + authResult.expiresIn * 1000,
-        };
-
-        await setUser(user);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Sign in failed';
-        setError(message);
-        setLoading(false);
-        throw new Error(message);
+      // Redirect to OAuth login API route
+      const loginUrl = new URL('/api/auth/login', window.location.origin);
+      if (returnTo) {
+        loginUrl.searchParams.set('returnTo', returnTo);
       }
-    },
-    [setUser, setError, setLoading],
-  );
 
-  const signUp = useCallback(
-    async (
-      email: string,
-      password: string,
-      firstName: string,
-      lastName: string,
-    ): Promise<{ requiresConfirmation: boolean; destination?: string }> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const result = await cognitoAuthClient.signUp(email, password, firstName, lastName);
-
-        setLoading(false);
-        return {
-          requiresConfirmation: !!result.codeDeliveryDetails,
-          destination: result.codeDeliveryDetails?.destination,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Sign up failed';
-        setError(message);
-        setLoading(false);
-        throw new Error(message);
-      }
-    },
-    [setError, setLoading],
-  );
-
-  const confirmSignUp = useCallback(
-    async (email: string, confirmationCode: string): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        await cognitoAuthClient.confirmSignUp(email, confirmationCode);
-        setLoading(false);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Email confirmation failed';
-        setError(message);
-        setLoading(false);
-        throw new Error(message);
-      }
-    },
-    [setError, setLoading],
-  );
+      window.location.href = loginUrl.toString();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign in failed';
+      setError(message);
+      setLoading(false);
+      throw new Error(message);
+    }
+  }, [setError, setLoading]);
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
-      if (state.user?.accessToken) {
-        await cognitoAuthClient.signOut(state.user.accessToken);
-      }
+      // Redirect to logout API route which will handle Cognito logout
+      window.location.href = '/api/auth/logout';
     } catch (error) {
-      // Even if sign out fails on the server, clear local state
-      console.error('Server sign out failed:', error);
-    } finally {
+      // Even if logout fails, clear local state
+      console.error('Logout failed:', error);
       clearUser();
     }
-  }, [state.user, clearUser]);
+  }, [clearUser]);
 
   const refreshToken = useCallback(async (): Promise<void> => {
-    if (!state.user) {
-      throw new Error('No user to refresh token for');
-    }
-
     try {
-      const refreshResult = await cognitoAuthClient.refreshToken(state.user.refreshToken);
-      const userInfo = await cognitoAuthClient.getUser(refreshResult.accessToken);
+      const refreshResponse = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
 
-      const updatedUser: AuthUser = {
-        ...userInfo,
-        accessToken: refreshResult.accessToken,
-        refreshToken: refreshResult.refreshToken,
-        idToken: refreshResult.idToken,
-        expiresAt: Date.now() + refreshResult.expiresIn * 1000,
-      };
+      if (refreshResponse.ok) {
+        const data: RefreshResponse = await refreshResponse.json();
+        const tokens: AuthTokens = {
+          accessToken: data.accessToken,
+          idToken: data.idToken,
+          expiresAt: Date.now() + data.expiresIn * 1000,
+        };
+        secureStorage.setTokens(tokens);
 
-      await setUser(updatedUser);
+        const user = parseUserFromIdToken(data.idToken);
+        if (user) {
+          setUser(user);
+        }
+      } else {
+        clearUser();
+        throw new Error('Token refresh failed');
+      }
     } catch (error) {
       clearUser();
       throw error;
     }
-  }, [state.user, setUser, clearUser]);
+  }, [setUser, clearUser]);
 
   return {
     user: state.user,
     loading: state.loading,
     error: state.error,
+    isAuthenticated: state.isAuthenticated,
+    accessToken: secureStorage.getAccessToken(),
     signIn,
-    signUp,
-    confirmSignUp,
     signOut,
     refreshToken,
     clearError: () => setError(null),
   };
+}
+
+/**
+ * Parses user information from ID token
+ */
+function parseUserFromIdToken(idToken: string): AuthUser | null {
+  try {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const base64Url = idToken.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(''),
+    );
+
+    const payload = JSON.parse(jsonPayload);
+
+    return {
+      email: payload.email || '',
+      firstName: payload.given_name || '',
+      lastName: payload.family_name || '',
+      emailVerified: payload.email_verified === true,
+    };
+  } catch (error) {
+    console.error('Failed to parse ID token:', error);
+    return null;
+  }
 }
