@@ -34,21 +34,35 @@ const getSecureCookieOptions = (maxAge?: number) => ({
  * @param refreshToken The refresh token to store
  * @param expiresIn Optional expiration time in seconds
  */
-export function setRefreshTokenCookie(refreshToken: string, expiresIn?: number): void {
-  const cookieStore = cookies();
+export async function setRefreshTokenCookie(
+  refreshToken: string,
+  expiresIn?: number,
+): Promise<void> {
+  const cookieStore = await cookies();
+  const options = getSecureCookieOptions(expiresIn);
+  
+  console.log('Setting refresh token cookie with options:', {
+    ...options,
+    refreshToken: refreshToken.substring(0, 20) + '...',
+  });
 
-  cookieStore.set(COOKIE_CONFIG.REFRESH_TOKEN, refreshToken, getSecureCookieOptions(expiresIn));
+  cookieStore.set(COOKIE_CONFIG.REFRESH_TOKEN, refreshToken, options);
 }
 
 /**
  * Gets refresh token from secure cookie
  * @returns Refresh token or null if not found
  */
-export function getRefreshTokenCookie(): string | null {
-  const cookieStore = cookies();
+export async function getRefreshTokenCookie(): Promise<string | null> {
+  const cookieStore = await cookies();
 
   try {
     const cookie = cookieStore.get(COOKIE_CONFIG.REFRESH_TOKEN);
+    console.log('Getting refresh token cookie:', {
+      found: !!cookie,
+      hasValue: !!cookie?.value,
+      cookieName: COOKIE_CONFIG.REFRESH_TOKEN
+    });
     return cookie?.value || null;
   } catch (error) {
     console.error('Failed to retrieve refresh token cookie:', error);
@@ -59,8 +73,8 @@ export function getRefreshTokenCookie(): string | null {
 /**
  * Clears refresh token cookie
  */
-export function clearRefreshTokenCookie(): void {
-  const cookieStore = cookies();
+export async function clearRefreshTokenCookie(): Promise<void> {
+  const cookieStore = await cookies();
 
   cookieStore.set(COOKIE_CONFIG.REFRESH_TOKEN, '', {
     ...getSecureCookieOptions(),
@@ -72,8 +86,8 @@ export function clearRefreshTokenCookie(): void {
  * Sets session ID cookie for tracking user sessions
  * @param sessionId Unique session identifier
  */
-export function setSessionCookie(sessionId: string): void {
-  const cookieStore = cookies();
+export async function setSessionCookie(sessionId: string): Promise<void> {
+  const cookieStore = await cookies();
 
   cookieStore.set(COOKIE_CONFIG.SESSION_ID, sessionId, getSecureCookieOptions());
 }
@@ -82,8 +96,8 @@ export function setSessionCookie(sessionId: string): void {
  * Gets session ID from cookie
  * @returns Session ID or null if not found
  */
-export function getSessionCookie(): string | null {
-  const cookieStore = cookies();
+export async function getSessionCookie(): Promise<string | null> {
+  const cookieStore = await cookies();
 
   try {
     const cookie = cookieStore.get(COOKIE_CONFIG.SESSION_ID);
@@ -97,8 +111,8 @@ export function getSessionCookie(): string | null {
 /**
  * Clears session cookie
  */
-export function clearSessionCookie(): void {
-  const cookieStore = cookies();
+export async function clearSessionCookie(): Promise<void> {
+  const cookieStore = await cookies();
 
   cookieStore.set(COOKIE_CONFIG.SESSION_ID, '', {
     ...getSecureCookieOptions(),
@@ -109,9 +123,9 @@ export function clearSessionCookie(): void {
 /**
  * Clears all authentication cookies
  */
-export function clearAllAuthCookies(): void {
-  clearRefreshTokenCookie();
-  clearSessionCookie();
+export async function clearAllAuthCookies(): Promise<void> {
+  await clearRefreshTokenCookie();
+  await clearSessionCookie();
 }
 
 /**

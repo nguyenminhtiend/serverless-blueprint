@@ -35,7 +35,11 @@ interface OAuthError {
 export async function POST(request: NextRequest) {
   try {
     // Get refresh token from secure cookie
-    const refreshToken = getRefreshTokenCookie();
+    const refreshToken = await getRefreshTokenCookie();
+    
+    // Debug: Log all cookies to see what's available
+    console.log('All cookies:', request.cookies.getAll().map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })));
+    console.log('Refresh token found:', !!refreshToken);
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
 
       // Update refresh token if a new one was provided
       if (tokens.refresh_token) {
-        setRefreshTokenCookie(tokens.refresh_token, tokens.expires_in);
+        await setRefreshTokenCookie(tokens.refresh_token, tokens.expires_in);
       }
 
       // Return new access token and ID token
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
       console.error('Token refresh failed:', refreshError);
 
       // Clear invalid refresh token
-      clearAllAuthCookies();
+      await clearAllAuthCookies();
 
       return NextResponse.json(
         {
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Check if refresh token exists
-    const refreshToken = getRefreshTokenCookie();
+    const refreshToken = await getRefreshTokenCookie();
 
     return NextResponse.json({
       hasRefreshToken: !!refreshToken,

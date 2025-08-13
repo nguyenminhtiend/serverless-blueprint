@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const returnTo = searchParams.get('returnTo') || '/';
 
     // Clear all authentication cookies
-    clearAllAuthCookies();
+    await clearAllAuthCookies();
 
     // Get auth configuration for Cognito logout
     const config = getAuthConfig();

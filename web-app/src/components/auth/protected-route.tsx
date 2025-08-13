@@ -12,16 +12,16 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, redirectTo = '/login', fallback }: ProtectedRouteProps) {
-  const { user, loading } = useAuthContext();
+  const { user, loading, isAuthenticated } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !isAuthenticated) {
       const currentPath = window.location.pathname;
       const redirectUrl = `${redirectTo}?redirect=${encodeURIComponent(currentPath)}`;
       router.push(redirectUrl);
     }
-  }, [user, loading, router, redirectTo]);
+  }, [isAuthenticated, loading, router, redirectTo]);
 
   if (loading) {
     return (
@@ -36,7 +36,7 @@ export function ProtectedRoute({ children, redirectTo = '/login', fallback }: Pr
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return fallback || null;
   }
 
@@ -49,14 +49,14 @@ interface PublicRouteProps {
 }
 
 export function PublicRoute({ children, redirectTo = '/dashboard' }: PublicRouteProps) {
-  const { user, loading } = useAuthContext();
+  const { user, loading, isAuthenticated } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && isAuthenticated && user) {
       router.push(redirectTo);
     }
-  }, [user, loading, router, redirectTo]);
+  }, [isAuthenticated, user, loading, router, redirectTo]);
 
   if (loading) {
     return (
@@ -69,7 +69,7 @@ export function PublicRoute({ children, redirectTo = '/dashboard' }: PublicRoute
     );
   }
 
-  if (user) {
+  if (isAuthenticated && user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
         <div className="flex items-center space-x-2">

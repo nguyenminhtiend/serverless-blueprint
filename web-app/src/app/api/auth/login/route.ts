@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     // Generate session ID for tracking
     const sessionId = generateSessionId();
-    setSessionCookie(sessionId);
+    await setSessionCookie(sessionId);
 
     // Build authorization URL
     const authParams = new URLSearchParams({

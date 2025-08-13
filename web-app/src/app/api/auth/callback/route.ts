@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     const [pkceState, returnTo = '/dashboard', expectedSessionId] = state.split(':');
 
     // Validate session ID
-    const currentSessionId = getSessionCookie();
+    const currentSessionId = await getSessionCookie();
     if (expectedSessionId !== currentSessionId) {
       console.error('Session ID mismatch:', {
         expected: expectedSessionId,
@@ -85,8 +85,16 @@ export async function GET(request: NextRequest) {
     // Exchange authorization code for tokens
     const tokens = await exchangeCodeForTokens(code, pkceSession);
 
+    console.log('Token exchange successful:', {
+      hasAccessToken: !!tokens.access_token,
+      hasRefreshToken: !!tokens.refresh_token,
+      hasIdToken: !!tokens.id_token,
+      expiresIn: tokens.expires_in
+    });
+
     // Store refresh token in secure cookie
-    setRefreshTokenCookie(tokens.refresh_token, tokens.expires_in);
+    await setRefreshTokenCookie(tokens.refresh_token, tokens.expires_in);
+    console.log('Refresh token cookie set');
 
     // Create response with redirect
     const redirectUrl = new URL(returnTo, request.url);

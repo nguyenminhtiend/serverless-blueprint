@@ -99,17 +99,17 @@ export class CognitoStack extends cdk.Stack {
       userPool: this.userPool,
       userPoolClientName: `${environment}-serverless-microservices-client`,
 
-      // Auth flows - Updated for PKCE OAuth flow
+      // Auth flows - OAuth + PKCE flow compatible
       authFlows: {
-        userSrp: false, // Disable SRP for OAuth-only flow
-        userPassword: false, // Disable password auth for security
+        userSrp: true, // Enable SRP for Hosted UI compatibility
+        userPassword: false, // Disable direct password auth for security
         adminUserPassword: false, // Admin auth disabled
         custom: false, // Custom auth disabled for now
       },
 
       // Enable PKCE for enhanced security
       supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
-      
+
       // Generate client secret: false for PKCE (public clients)
       generateSecret: false,
 
@@ -119,18 +119,17 @@ export class CognitoStack extends cdk.Stack {
           authorizationCodeGrant: true, // Required for PKCE
           implicitCodeGrant: false, // Disabled for security
         },
-        scopes: [
-          cognito.OAuthScope.EMAIL,
-          cognito.OAuthScope.OPENID,
-          cognito.OAuthScope.PROFILE,
-        ],
+        scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
         callbackUrls: [
           `${webAppDomain}/auth/callback`, // OAuth callback endpoint
+          'http://localhost:3000/auth/callback', // Development callback
           ...additionalCallbackUrls,
         ],
         logoutUrls: [
-          `${webAppDomain}/auth/logout`, // Post-logout redirect
+          `${webAppDomain}/logout`, // Post-logout redirect (fixed path)
           `${webAppDomain}/`, // Also allow redirect to home
+          'http://localhost:3000/logout', // Development logout
+          'http://localhost:3000/', // Development home
           ...additionalLogoutUrls,
         ],
       },
